@@ -1,6 +1,7 @@
 #ifndef ISE_BASE_H
 #define ISE_BASE_H
 
+#define global   static
 #define function static
 
 typedef unsigned char       u8;
@@ -34,5 +35,8 @@ static_assert(sizeof(b32) == 4);
 
 static_assert(sizeof(f32) == 4);
 static_assert(sizeof(f64) == 8);
+
+#define Min(A, B) (((A) < (B)) ? (A) : (B))
+#define Max(A, B) (((A) > (B)) ? (A) : (B))
 
 #endif
