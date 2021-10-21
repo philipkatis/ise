@@ -1,2 +1,2 @@
 #!/bin/bash
-g++ code/ise.cpp -o ise
+g++ code/ise.cpp -Wno-write-strings -o ise
