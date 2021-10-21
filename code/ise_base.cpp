@@ -1,12 +1,12 @@
 function u64
 StringLength(char *String)
 {
-    u64 Length = 0;
+    u64 Result = 0;
 
-    while (String[Length])
+    while (String[Result])
     {
-        ++Length;
+        ++Result;
     }
 
-    return Length;
+    return Result;
 }
