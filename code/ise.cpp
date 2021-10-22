@@ -5,6 +5,31 @@
 
 #include "ise_base.cpp"
 
+/*
+
+  TODO(philip): Implement an Assert macro and use it to catch very wrong outputs from the keyword matching
+  functions.
+
+  NOTE(philip): There are many ways to optimize the keyword matching functions. If there's a need to in the
+  future, we should investigate whether the use of intrinsics (SSE) is allowed.
+
+  TODO(philip): For deduplication, a keyword hash table per document could be used. This way, each keyword can
+  be checked against ones with identical hash values. If they are identical, we can cull them.
+
+  TODO(philip): Based on the assignment it looks like in order for a document to answer a specific query, all the
+  keywords that make up the query must have similar keywords inside the docuemnt. So there needs to be some sort
+  of relation between all the query words. Here are some ideas of how this can be achieved. 1) Store the data that
+  make up a query separately from the acceleration structure. This will require a lot of fetching of data from RAM,
+  thus making it slower. 2) Make the BK Tree nodes act as a linked list that contains the query keywords. This
+  will probably require additional logic to ensure keywords are checked only once.
+
+  TODO(philip): Investigate how we choose what keyword matching function is used each time.
+
+  TODO(philip): There is not information in the assignment about duplicate keywords in the queries, only in the
+  documents. Is that something that needs to be addressed?
+
+*/
+
 function b32
 IsExactMatch(char *A, char *B)
 {
