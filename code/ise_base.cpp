@@ -11,6 +11,22 @@ ZeroMemory(void *Memory, u64 Size)
     }
 }
 
+function void
+CopyMemory(void *Source, u64 Size, void *Destination)
+{
+    u8 *SourceByte      = (u8 *)Source;
+    u8 *End             = (u8 *)Source + Size;
+    u8 *DestinationByte = (u8 *)Destination;
+
+    while (SourceByte != End)
+    {
+        *DestinationByte = *SourceByte;
+
+        ++SourceByte;
+        ++DestinationByte;
+    }
+}
+
 function u64
 StringLength(char *String)
 {

@@ -39,4 +39,6 @@ static_assert(sizeof(f64) == 8);
 #define Min(A, B) (((A) < (B)) ? (A) : (B))
 #define Max(A, B) (((A) > (B)) ? (A) : (B))
 
+#define ArrayCount(Array) (sizeof((Array)) / sizeof(*(Array)))
+
 #endif

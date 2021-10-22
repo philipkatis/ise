@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "ise_base.h"
@@ -27,6 +28,10 @@
 
   TODO(philip): There is not information in the assignment about duplicate keywords in the queries, only in the
   documents. Is that something that needs to be addressed?
+
+  TODO(philip): How does the entry_list work?
+
+  TODO(philip): Replace malloc() and free() with custom function that can be instrumented later on.
 
 */
 
@@ -152,25 +157,116 @@ CalculateLevenshteinDistance(char *A, char *B)
     return LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * LengthB + LengthA];
 }
 
+function bk_tree_node *
+BKTree_AllocateNode(char *Word)
+{
+    bk_tree_node *Result = (bk_tree_node *)malloc(sizeof(bk_tree_node));
+
+    u64 WordLength = StringLength(Word);
+    CopyMemory(Word, WordLength * sizeof(char), Result->Word);
+
+    return Result;
+}
+
+function bk_tree_node *
+BKTree_Create(char *RootWord)
+{
+    return BKTree_AllocateNode(RootWord);
+}
+
+function bk_tree_node *
+BKTree_Insert(bk_tree_node *Tree, char *Word)
+{
+    bk_tree_node *Result = BKTree_AllocateNode(Word);
+
+    bk_tree_node *Node = Tree;
+    b32 Complete = false;
+
+    while (!Complete)
+    {
+        u32 Distance = CalculateLevenshteinDistance(Node->Word, Result->Word);
+        if (Node->Children[Distance - 1])
+        {
+            Node = Node->Children[Distance - 1];
+        }
+        else
+        {
+            Node->Children[Distance - 1] = Result;
+            Complete = true;
+        }
+    }
+
+    return Result;
+}
+
+function void
+BKTree_Destroy(bk_tree_node *Node)
+{
+    for (u64 Index = 0;
+         Index < MAX_KEYWORD_LENGTH - 1;
+         ++Index)
+    {
+        if (Node->Children[Index])
+        {
+            BKTree_Destroy(Node->Children[Index]);
+        }
+    }
+
+    free(Node);
+}
+
+function void
+PrintSpaces(u64 Count)
+{
+    for (u64 Index = 0;
+         Index < Count;
+         ++Index)
+    {
+        printf(" ");
+    }
+}
+
+function void
+BKTree_Visualize(bk_tree_node *Node, u64 Depth = 0)
+{
+    PrintSpaces(Depth * 4);
+    printf("{\n");
+
+    PrintSpaces(Depth * 4 + 4);
+    printf("Word: %s\n", Node->Word);
+
+    for (u64 Index = 0;
+         Index < MAX_KEYWORD_LENGTH - 1;
+         ++Index)
+    {
+        if (Node->Children[Index])
+        {
+            PrintSpaces(Depth * 4 + 4);
+            printf("\nDistance: %llu\n", Index + 1);
+
+            BKTree_Visualize(Node->Children[Index], Depth + 1);
+        }
+    }
+
+    PrintSpaces(Depth * 4);
+    printf("}\n");
+}
+
 s32 main()
 {
-    u32 Result = CalculateLevenshteinDistance("hell", "help");
-    printf("%d\n", Result);
+    char *Words[] = { "hell", "help", "fall", "felt", "fell", "small", "melt" };
+    bk_tree_node *Tree = BKTree_Create(Words[0]);
 
-    Result = CalculateLevenshteinDistance("hell", "fall");
-    printf("%d\n", Result);
+    for (u64 Index = 1;
+         Index < ArrayCount(Words);
+         ++Index)
+    {
+        BKTree_Insert(Tree, Words[Index]);
+    }
 
-    Result = CalculateLevenshteinDistance("hell", "small");
-    printf("%d\n", Result);
+    BKTree_Visualize(Tree);
 
-    Result = CalculateLevenshteinDistance("help", "fell");
-    printf("%d\n", Result);
-
-    Result = CalculateLevenshteinDistance("fall", "felt");
-    printf("%d\n", Result);
-
-    Result = CalculateLevenshteinDistance("fall", "melt");
-    printf("%d\n", Result);
+    BKTree_Destroy(Tree);
 
     return 0;
 }
