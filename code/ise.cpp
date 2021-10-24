@@ -241,8 +241,9 @@ BKTree_Visualize(bk_tree_node *Node, u64 Depth = 0)
     {
         if (Node->Children[Index])
         {
+            printf("\n");
             PrintSpaces(Depth * 4 + 4);
-            printf("\nDistance: %llu\n", Index + 1);
+            printf("Distance: %llu\n", Index + 1);
 
             BKTree_Visualize(Node->Children[Index], Depth + 1);
         }
