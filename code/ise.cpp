@@ -31,7 +31,7 @@
 
   TODO(philip): How does the entry_list work?
 
-  TODO(philip): Replace malloc() and free() with custom function that can be instrumented later on.
+  TODO(philip): Replace calloc() and free() with custom function that can be instrumented later on.
 
 */
 
@@ -160,7 +160,7 @@ CalculateLevenshteinDistance(char *A, char *B)
 function bk_tree_node *
 BKTree_AllocateNode(char *Word)
 {
-    bk_tree_node *Result = (bk_tree_node *)malloc(sizeof(bk_tree_node));
+    bk_tree_node *Result = (bk_tree_node *)calloc(1, sizeof(bk_tree_node));
 
     u64 WordLength = StringLength(Word);
     CopyMemory(Word, WordLength * sizeof(char), Result->Word);
