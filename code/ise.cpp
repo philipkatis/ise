@@ -384,7 +384,6 @@ Create_entry(char *Word)
 
     return Entry;
 }
-//Push Test//
 
 s32 main()
 {
