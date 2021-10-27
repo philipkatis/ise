@@ -47,4 +47,17 @@ struct bk_tree_node
     bk_tree_node *Children[MAX_KEYWORD_LENGTH - 1];
 };
 
+struct entry
+{
+    char Word[MAX_KEYWORD_LENGTH + 1];
+    u64 payload;
+    /*
+    
+    NOTE(Alex): I guess the payload needs to point to some queries however we get them or wherever we store them.
+
+    */
+};
+
+
+
 #endif

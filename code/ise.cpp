@@ -353,6 +353,38 @@ LoadTextFile(char *Path, buffer *Buffer)
     return Result;
 }
 
+function entry
+Allocate_entry(char* Word)
+{
+    entry* Result = (entry*)calloc(1, sizeof(entry));
+
+    u64 WordLength = StringLength(Word);
+    CopyMemory(Word, WordLength * sizeof(char), Result->Word);
+
+    return Result;
+}
+
+function void
+Deallocate_entry(entry *Entry)
+{
+    free(Entry);
+}
+
+function entry
+Create_entry(char *Word)
+{
+    entry Entry = Allocate_entry(Word);
+    Entry.Word = Word;
+
+    /*
+    
+    NOTE(Alex): Initialize payload here too.
+    
+    */
+
+    return Entry;
+}
+
 s32 main()
 {
     buffer Test = { };
