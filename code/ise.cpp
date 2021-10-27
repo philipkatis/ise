@@ -234,33 +234,31 @@ KeywordList_Visualize(keyword_list *List)
 }
 
 function bk_tree_node *
-BKTree_AllocateNode(char *Word)
+BKTree_AllocateNode(keyword_list_node *Keyword)
 {
     bk_tree_node *Result = (bk_tree_node *)calloc(1, sizeof(bk_tree_node));
-
-    u64 WordLength = StringLength(Word);
-    CopyMemory(Word, WordLength * sizeof(char), Result->Word);
+    Result->Keyword = Keyword;
 
     return Result;
 }
 
 function bk_tree_node *
-BKTree_Create(char *RootWord)
+BKTree_Create(keyword_list_node *RootKeyword)
 {
-    return BKTree_AllocateNode(RootWord);
+    return BKTree_AllocateNode(RootKeyword);
 }
 
 function bk_tree_node *
-BKTree_Insert(bk_tree_node *Tree, char *Word)
+BKTree_Insert(bk_tree_node *Tree, keyword_list_node *Keyword)
 {
-    bk_tree_node *Result = BKTree_AllocateNode(Word);
+    bk_tree_node *Result = BKTree_AllocateNode(Keyword);
 
     bk_tree_node *Node = Tree;
     b32 Complete = false;
 
     while (!Complete)
     {
-        u32 Distance = CalculateLevenshteinDistance(Node->Word, Result->Word);
+        u32 Distance = CalculateLevenshteinDistance(Node->Keyword->Word, Result->Keyword->Word);
         if (Node->Children[Distance - 1])
         {
             Node = Node->Children[Distance - 1];
@@ -309,7 +307,7 @@ BKTree_Visualize(bk_tree_node *Node, u64 Depth = 0)
     printf("{\n");
 
     PrintSpaces(Depth * 4 + 4);
-    printf("Word: %s\n", Node->Word);
+    printf("Word: %s\n", Node->Keyword->Word);
 
     for (u64 Index = 0;
          Index < MAX_KEYWORD_LENGTH - 1;
@@ -380,22 +378,22 @@ s32 main()
     }
 
     KeywordList_Visualize(&List);
-    KeywordList_Destroy(&List);
 
-#if 0
-    bk_tree_node *Tree = BKTree_Create(Words[0]);
+    printf("\n\n");
 
-    for (u64 Index = 1;
-         Index < ArrayCount(Words);
-         ++Index)
+    bk_tree_node *Tree = BKTree_Create(List.Tail);
+
+    for (keyword_list_node *Node = List.Tail->Previous;
+         Node;
+         Node = Node->Previous)
     {
-        BKTree_Insert(Tree, Words[Index]);
+        BKTree_Insert(Tree, Node);
     }
 
     BKTree_Visualize(Tree);
 
     BKTree_Destroy(Tree);
-#endif
+    KeywordList_Destroy(&List);
 
     return 0;
 }
