@@ -8,30 +8,34 @@
 
 /*
 
+  NOTE(philip): The queries will come from a file. Each query will be on a separate line, with the line number
+  acting as the query number/ID. Each query will have up to 5 keywords (based on files from the competition),
+  separated by a space. The keywords must follow the regular keyword restrictions.
+
+  NOTE(philip): Deduplication should happen to both the query keywords and the document contents. The most ideal
+  way to achieve this has to be a hash table, where we store all the words and only compare them when their hash
+  values are the same.
+
+  NOTE(philip): The entry list seems to simply be a list of keywords where each node contains the keyword but also
+  additional information. (For example the query ID that that particular keyword is part of.) Based on the
+  assignment, this list has to be used in two cases. 1) To supply the query keywords to the BK-tree for
+  construction, and 2) as return value for the BK-tree lookup function.
+
+  TODO(philip): What is the final resting point of the query keywords? Are they stored in a keyword list and then
+  referenced to by a pointer? Are they stored in the BK-tree for faster accesss?
+
+  TODO(philip): Can the keyword list not be a list??? It makes more sence for it to be a hash table for O(1)
+  access, since that will be the most common case. A hash table can also accelerate the deduplication.
+
   TODO(philip): Implement an Assert macro and use it to catch very wrong outputs from the keyword matching
   functions.
 
-  NOTE(philip): There are many ways to optimize the keyword matching functions. If there's a need to in the
-  future, we should investigate whether the use of intrinsics (SSE) is allowed.
-
-  TODO(philip): For deduplication, a keyword hash table per document could be used. This way, each keyword can
-  be checked against ones with identical hash values. If they are identical, we can cull them.
-
-  TODO(philip): Based on the assignment it looks like in order for a document to answer a specific query, all the
-  keywords that make up the query must have similar keywords inside the docuemnt. So there needs to be some sort
-  of relation between all the query words. Here are some ideas of how this can be achieved. 1) Store the data that
-  make up a query separately from the acceleration structure. This will require a lot of fetching of data from RAM,
-  thus making it slower. 2) Make the BK Tree nodes act as a linked list that contains the query keywords. This
-  will probably require additional logic to ensure keywords are checked only once.
-
   TODO(philip): Investigate how we choose what keyword matching function is used each time.
 
-  TODO(philip): There is not information in the assignment about duplicate keywords in the queries, only in the
-  documents. Is that something that needs to be addressed?
-
-  TODO(philip): How does the entry_list work?
-
   TODO(philip): Replace calloc() and free() with custom function that can be instrumented later on.
+
+  NOTE(philip): There are many ways to optimize the keyword matching functions. If there's a need to in the
+  future, we should investigate whether the use of intrinsics (SSE) is allowed.
 
 */
 
