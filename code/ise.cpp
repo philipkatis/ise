@@ -161,6 +161,78 @@ CalculateLevenshteinDistance(char *A, char *B)
     return LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * LengthB + LengthA];
 }
 
+function keyword_list_node *
+KeywordList_AllocateNode(char *Word)
+{
+    keyword_list_node *Result = (keyword_list_node *)calloc(1, sizeof(keyword_list_node));
+
+    u64 WordLength = StringLength(Word);
+    CopyMemory(Word, WordLength * sizeof(char), Result->Word);
+
+    return Result;
+}
+
+function void
+KeywordList_DeallocateNode(keyword_list_node *Node)
+{
+    free(Node);
+}
+
+function keyword_list
+KeywordList_Create()
+{
+    keyword_list Result = { };
+    return Result;
+}
+
+function void
+KeywordList_Insert(keyword_list *List, keyword_list_node *Node)
+{
+    if (List->Head == 0)
+    {
+        List->Head = Node;
+        List->Tail = Node;
+    }
+    else
+    {
+        keyword_list_node *Next = List->Head;
+        Next->Previous = Node;
+
+        Node->Next = Next;
+        List->Head = Node;
+    }
+}
+
+function void
+KeywordList_Destroy(keyword_list *List)
+{
+    keyword_list_node *Node = List->Head;
+    while (Node)
+    {
+        keyword_list_node *Next = Node->Next;
+        KeywordList_DeallocateNode(Node);
+        Node = Next;
+    }
+
+    List->Head = 0;
+    List->Tail = 0;
+    List->Count = 0;
+}
+
+function void
+KeywordList_Visualize(keyword_list *List)
+{
+    keyword_list_node *Node = List->Head;
+    u64 Index = 0;
+
+    while (Node)
+    {
+        printf("Index: %llu, Word: %s\n", Index, Node->Word);
+        Node = Node->Next;
+        Index++;
+    }
+}
+
 function bk_tree_node *
 BKTree_AllocateNode(char *Word)
 {
@@ -297,6 +369,20 @@ s32 main()
     }
 
     char *Words[] = { "hell", "help", "fall", "felt", "fell", "small", "melt" };
+
+    keyword_list List = KeywordList_Create();
+    for (u64 Index = 0;
+         Index < ArrayCount(Words);
+         ++Index)
+    {
+        keyword_list_node *Node = KeywordList_AllocateNode(Words[Index]);
+        KeywordList_Insert(&List, Node);
+    }
+
+    KeywordList_Visualize(&List);
+    KeywordList_Destroy(&List);
+
+#if 0
     bk_tree_node *Tree = BKTree_Create(Words[0]);
 
     for (u64 Index = 1;
@@ -309,6 +395,7 @@ s32 main()
     BKTree_Visualize(Tree);
 
     BKTree_Destroy(Tree);
+#endif
 
     return 0;
 }

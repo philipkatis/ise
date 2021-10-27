@@ -5,6 +5,22 @@
 // project assignment. We assume that this limit does not include the zero-termination character.
 #define MAX_KEYWORD_LENGTH 31
 
+struct keyword_list_node
+{
+    // TODO(philip): Investigate whether this is the best place to store the word.
+    char Word[MAX_KEYWORD_LENGTH + 1];
+
+    keyword_list_node *Previous;
+    keyword_list_node *Next;
+};
+
+struct keyword_list
+{
+    keyword_list_node *Head;
+    keyword_list_node *Tail;
+    u64 Count;
+};
+
 /*
 
   NOTE(philip): The max Levenshtein distance between two keywords cannot exceed the length
