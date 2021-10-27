@@ -39,3 +39,22 @@ StringLength(char *String)
 
     return Result;
 }
+
+function buffer
+AllocateBuffer(u64 Size)
+{
+    buffer Result = { };
+    Result.Size = Size;
+    Result.Data = (u8 *)calloc(1, Size);
+
+    return Result;
+}
+
+function void
+DeallocateBuffer(buffer Buffer)
+{
+    free(Buffer.Data);
+
+    Buffer.Size = 0;
+    Buffer.Data = 0;
+}

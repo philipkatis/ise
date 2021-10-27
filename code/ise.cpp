@@ -147,7 +147,7 @@ CalculateLevenshteinDistance(char *A, char *B)
 
             b32 RequiresSubstitution = (A[IndexA - 1] != B[IndexB - 1]);
             u32 SubstitutionDistance = LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * (IndexB - 1) + (IndexA - 1)] +
-                                       RequiresSubstitution;
+                RequiresSubstitution;
 
             u32 *Distance = &LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * IndexB + IndexA];
             *Distance = Min(Min(DeletionDistance, InsertionDistance), SubstitutionDistance);
@@ -253,8 +253,45 @@ BKTree_Visualize(bk_tree_node *Node, u64 Depth = 0)
     printf("}\n");
 }
 
+function b32
+LoadTextFile(char *Path, buffer *Buffer)
+{
+    b32 Result = true;
+
+    FILE *File = fopen(Path, "rt");
+    if (File)
+    {
+        fseek(File, 0, SEEK_END);
+        u64 Length = ftell(File);
+
+        *Buffer = AllocateBuffer(Length * sizeof(char));
+
+        fseek(File, 0, SEEK_SET);
+        fread(Buffer->Data, 1, Length, File);
+
+        fclose(File);
+    }
+    else
+    {
+        Result = false;
+    }
+
+    return Result;
+}
+
 s32 main()
 {
+    buffer Test = { };
+    if (LoadTextFile("data/text.txt", &Test))
+    {
+        printf("%s\n", Test.Data);
+        DeallocateBuffer(Test);
+    }
+    else
+    {
+        printf("Could not open file!\n");
+    }
+
     char *Words[] = { "hell", "help", "fall", "felt", "fell", "small", "melt" };
     bk_tree_node *Tree = BKTree_Create(Words[0]);
 

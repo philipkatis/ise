@@ -41,4 +41,10 @@ static_assert(sizeof(f64) == 8);
 
 #define ArrayCount(Array) (sizeof((Array)) / sizeof(*(Array)))
 
+struct buffer
+{
+    u64 Size;
+    u8 *Data;
+};
+
 #endif
