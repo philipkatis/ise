@@ -353,7 +353,7 @@ LoadTextFile(char *Path, buffer *Buffer)
     return Result;
 }
 
-function entry
+function entry *
 Allocate_entry(char* Word)
 {
     entry* Result = (entry*)calloc(1, sizeof(entry));
@@ -370,16 +370,15 @@ Deallocate_entry(entry *Entry)
     free(Entry);
 }
 
-function entry
+function entry *
 Create_entry(char *Word)
 {
-    entry Entry = Allocate_entry(Word);
-    Entry.Word = Word;
+    entry *Entry = Allocate_entry(Word);
 
     /*
-    
+
     NOTE(Alex): Initialize payload here too.
-    
+
     */
 
     return Entry;
@@ -387,15 +386,17 @@ Create_entry(char *Word)
 
 s32 main()
 {
+    char *CommandFilePath = "data/commands.txt";
+
     buffer Test = { };
-    if (LoadTextFile("data/text.txt", &Test))
+    if (LoadTextFile(CommandFilePath, &Test))
     {
         printf("%s\n", Test.Data);
         DeallocateBuffer(Test);
     }
     else
     {
-        printf("Could not open file!\n");
+        printf("Could not open command file! (Path: \"%s\")\n", CommandFilePath);
     }
 
     char *Words[] = { "hell", "help", "fall", "felt", "fell", "small", "melt" };
