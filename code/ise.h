@@ -63,7 +63,7 @@ struct entry
 // NOTE(philip): This struct contains the context while parsing a command file, throughout multiple function calls.
 struct parse_context
 {
-    u8 *Pointer;
+    char *Pointer;
 };
 
 #endif

@@ -27,9 +27,6 @@
   TODO(philip): Can the keyword list not be a list??? It makes more sence for it to be a hash table for O(1)
   access, since that will be the most common case. A hash table can also accelerate the deduplication.
 
-  TODO(philip): Implement an Assert macro and use it to catch very wrong outputs from the keyword matching
-  functions.
-
   TODO(philip): Investigate how we choose what keyword matching function is used each time.
 
   TODO(philip): Replace calloc() and free() with custom function that can be instrumented later on.
@@ -424,7 +421,7 @@ NullifyWhitespace(parse_context *Context)
 }
 
 function u32
-ParseQueryEntry(parse_context *Context, u8 **Tokens, u32 MaxTokenCount)
+ParseQueryEntry(parse_context *Context, char **Tokens, u32 MaxTokenCount)
 {
     u32 TokenCount = 0;
 
@@ -460,7 +457,7 @@ ParseQueryEntry(parse_context *Context, u8 **Tokens, u32 MaxTokenCount)
         }
     }
 
-    // TODO(philip): Assert that the current character is a new line.
+    Assert(*Context->Pointer == '\n');
     *Context->Pointer = 0;
 
     return TokenCount;
@@ -470,7 +467,7 @@ function void
 ParseCommandFile(buffer Contents)
 {
     parse_context Context = { };
-    Context.Pointer = Contents.Data;
+    Context.Pointer = (char *)Contents.Data;
 
     u64 LineNumber = 1;
 
@@ -486,7 +483,7 @@ ParseCommandFile(buffer Contents)
 
 #define MAX_TOKEN_COUNT (4 + MAX_KEYWORD_COUNT_PER_QUERY)
 
-            u8 *Tokens[MAX_TOKEN_COUNT];
+            char *Tokens[MAX_TOKEN_COUNT];
             u32 TokenCount = ParseQueryEntry(&Context, Tokens, MAX_TOKEN_COUNT);
 
             if (TokenCount >= 4 && TokenCount <= MAX_TOKEN_COUNT)

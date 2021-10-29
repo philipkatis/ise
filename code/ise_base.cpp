@@ -41,7 +41,7 @@ StringLength(char *String)
 }
 
 function b32
-IsWhitespace(u8 Character)
+IsWhitespace(char Character)
 {
     b32 Result = ((Character == ' ') || (Character == '\t') || (Character == '\r') || (Character == '\n'));
     return Result;

@@ -36,6 +36,23 @@ static_assert(sizeof(b32) == 4);
 static_assert(sizeof(f32) == 4);
 static_assert(sizeof(f64) == 8);
 
+#define DebugBreak() __builtin_trap()
+
+#define Assert(Condition) \
+    if (!(Condition)) \
+    { \
+        printf("\n"); \
+        printf("*** Assertion Failed ***\n"); \
+        printf("\n"); \
+        printf("  File: %s\n", __FILE__); \
+        printf("  Line: %d\n", __LINE__); \
+        printf("  Condition: %s\n", #Condition); \
+        printf("\n"); \
+        printf("************************\n"); \
+        printf("\n"); \
+        DebugBreak(); \
+    }
+
 #define Min(A, B) (((A) < (B)) ? (A) : (B))
 #define Max(A, B) (((A) > (B)) ? (A) : (B))
 
