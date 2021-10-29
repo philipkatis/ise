@@ -11,10 +11,26 @@
 #define MAX_KEYWORD_LENGTH           31
 #define MAX_KEYWORD_COUNT_PER_QUERY  5
 
+typedef u32 match_type;
+enum
+{
+    MatchType_Exact       = 0,
+    MatchType_Hamming     = 1,
+    MatchType_Levenshtein = 2
+};
+
 struct keyword_list_node
 {
-    // TODO(philip): Investigate whether this is the best place to store the word.
-    char Word[MAX_KEYWORD_LENGTH + 1];
+    // NOTE(philip): This now stores a pointer to the word in the file contents. Still not sure whether this is
+    // the right approach.
+    char *Word;
+
+    u64 QueryID;
+
+    // TODO(philip): These are properties of the query and certainly should not be in here. Maybe we need an
+    // additional "query metadata" structure to store them. And then the query ID can be replaced by a pointer.
+    match_type MatchType;
+    u32 MatchDistance;
 
     keyword_list_node *Previous;
     keyword_list_node *Next;
@@ -62,13 +78,6 @@ struct entry
     NOTE(Alex): I guess the payload needs to point to some queries however we get them or wherever we store them.
 
     */
-};
-
-// NOTE(philip): This struct contains the context while parsing a command file, throughout multiple function calls.
-struct parse_context
-{
-    char *Pointer;
-    u64 LineNumber;
 };
 
 #endif

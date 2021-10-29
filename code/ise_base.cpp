@@ -84,3 +84,29 @@ DeallocateBuffer(buffer Buffer)
     Buffer.Size = 0;
     Buffer.Data = 0;
 }
+
+function b32
+LoadTextFile(char *Path, buffer *Buffer)
+{
+    b32 Result = true;
+
+    FILE *File = fopen(Path, "rt");
+    if (File)
+    {
+        fseek(File, 0, SEEK_END);
+        u64 Length = ftell(File);
+
+        *Buffer = AllocateBuffer(Length * sizeof(char));
+
+        fseek(File, 0, SEEK_SET);
+        fread(Buffer->Data, 1, Length, File);
+
+        fclose(File);
+    }
+    else
+    {
+        Result = false;
+    }
+
+    return Result;
+}
