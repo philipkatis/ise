@@ -384,21 +384,161 @@ Create_entry(char *Word)
     return Entry;
 }
 
+/*
+
+  NOTE(philip): Since all the data that the application needs to process come from a file, we read the entire
+  file contents and store them in a contiguous buffer. That buffer is then directly modified to separate the
+  different data from one another, and then pointers into the buffer are used to reference each of them.
+
+  TODO(philip): We should investigate the performance characteristics of this approach. While this requires the
+  least number of string copies (which is an expensive operation), there are two other problems that I can think
+  of right now.
+
+  1) Cache misses. Since the actual data is separated from the BK-tree (the structure that we will need to
+  traverse the most), the keyword strings will be loaded/unloaded to/from the cache all the time.
+
+  2) Data duplication. We can certainly use separate data-structures to cull duplicate keywords from being
+  processed, but the data will always be loaded in memory.
+
+  NOTE(philip): Right now we assume that there will stricly be a single command per line.
+
+*/
+
+function b32
+EndOfCommand(parse_context *Context)
+{
+    b32 Result = (!(*Context->Pointer) || (*Context->Pointer == '\n'));
+    return Result;
+}
+
+// NOTE(philip): This function is what modifies the file data, essentially replacing whitespace with 0, except
+// new line characters. That replacement occurs at ParseCommandFile().
+function void
+NullifyWhitespace(parse_context *Context)
+{
+    while (!EndOfCommand(Context) && IsWhitespace(*Context->Pointer))
+    {
+        *Context->Pointer = 0;
+        ++Context->Pointer;
+    }
+}
+
+function u32
+ParseQueryEntry(parse_context *Context, u8 **Tokens, u32 MaxTokenCount)
+{
+    u32 TokenCount = 0;
+
+    // NOTE(philip): Get rid of any whitespace before the first token.
+    NullifyWhitespace(Context);
+
+    if (!EndOfCommand(Context))
+    {
+        while (!EndOfCommand(Context) && (TokenCount <= MaxTokenCount))
+        {
+            ++TokenCount;
+            Tokens[TokenCount - 1] = Context->Pointer;
+
+            ++Context->Pointer;
+
+            // NOTE(philip): Go over all the token characters.
+            while (!EndOfCommand(Context) && !IsWhitespace(*Context->Pointer))
+            {
+                ++Context->Pointer;
+            }
+
+            // NOTE(philip): Get rid of any whitespace before the next token.
+            NullifyWhitespace(Context);
+        }
+
+        // NOTE(philip): If there are more tokens that the maximum allowable number, skip them.
+        if (TokenCount > MaxTokenCount)
+        {
+            while (!EndOfCommand(Context))
+            {
+                ++Context->Pointer;
+            }
+        }
+    }
+
+    // TODO(philip): Assert that the current character is a new line.
+    *Context->Pointer = 0;
+
+    return TokenCount;
+}
+
+function void
+ParseCommandFile(buffer Contents)
+{
+    parse_context Context = { };
+    Context.Pointer = Contents.Data;
+
+    u64 LineNumber = 1;
+
+    while (*Context.Pointer)
+    {
+        if (*Context.Pointer == 's')
+        {
+            *Context.Pointer = 0;
+            ++Context.Pointer;
+
+            // NOTE(philip): This command adds a new query to the active set. We know the format of this command.
+            // s <Query ID> <> <> <Keyword Count> keyword1 ... ... ... ...
+
+#define MAX_TOKEN_COUNT (4 + MAX_KEYWORD_COUNT_PER_QUERY)
+
+            u8 *Tokens[MAX_TOKEN_COUNT];
+            u32 TokenCount = ParseQueryEntry(&Context, Tokens, MAX_TOKEN_COUNT);
+
+            if (TokenCount >= 4 && TokenCount <= MAX_TOKEN_COUNT)
+            {
+                printf("{\n");
+
+                for (u32 Index = 0;
+                     Index < TokenCount;
+                     ++Index)
+                {
+                    printf("    %s\n", Tokens[Index]);
+                }
+
+                printf("}\n\n");
+            }
+            else
+            {
+                printf("[Warning]: Incorrect argument count for query insertion! Skipping... (Line: %llu)\n",
+                       LineNumber);
+            }
+
+#undef MAX_TOKEN_COUNT
+        }
+        else
+        {
+            printf("[Warning]: Skipping unknown command! (Command: '%c', Line: %llu)\n", *Context.Pointer,
+                   LineNumber);
+        }
+
+        // NOTE(philip): This should point to the previously new line character. Advance to the next command.
+        ++Context.Pointer;
+
+        ++LineNumber;
+    }
+}
+
 s32 main()
 {
     char *CommandFilePath = "data/commands.txt";
 
-    buffer Test = { };
-    if (LoadTextFile(CommandFilePath, &Test))
+    buffer CommandFileContents = { };
+    if (LoadTextFile(CommandFilePath, &CommandFileContents))
     {
-        printf("%s\n", Test.Data);
-        DeallocateBuffer(Test);
+        ParseCommandFile(CommandFileContents);
+        DeallocateBuffer(CommandFileContents);
     }
     else
     {
-        printf("Could not open command file! (Path: \"%s\")\n", CommandFilePath);
+        printf("[Error]: Could not open command file! (Path: \"%s\")\n", CommandFilePath);
     }
 
+#if 0
     char *Words[] = { "hell", "help", "fall", "felt", "fell", "small", "melt" };
 
     keyword_list List = KeywordList_Create();
@@ -427,6 +567,7 @@ s32 main()
 
     BKTree_Destroy(Tree);
     KeywordList_Destroy(&List);
+#endif
 
     return 0;
 }

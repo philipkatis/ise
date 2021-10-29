@@ -40,6 +40,13 @@ StringLength(char *String)
     return Result;
 }
 
+function b32
+IsWhitespace(u8 Character)
+{
+    b32 Result = ((Character == ' ') || (Character == '\t') || (Character == '\r') || (Character == '\n'));
+    return Result;
+}
+
 function buffer
 AllocateBuffer(u64 Size)
 {

@@ -5,6 +5,8 @@
 // project assignment. We assume that this limit does not include the zero-termination character.
 #define MAX_KEYWORD_LENGTH 31
 
+#define MAX_KEYWORD_COUNT_PER_QUERY 5
+
 struct keyword_list_node
 {
     // TODO(philip): Investigate whether this is the best place to store the word.
@@ -52,12 +54,16 @@ struct entry
     char Word[MAX_KEYWORD_LENGTH + 1];
     u64 payload;
     /*
-    
+
     NOTE(Alex): I guess the payload needs to point to some queries however we get them or wherever we store them.
 
     */
 };
 
-
+// NOTE(philip): This struct contains the context while parsing a command file, throughout multiple function calls.
+struct parse_context
+{
+    u8 *Pointer;
+};
 
 #endif
