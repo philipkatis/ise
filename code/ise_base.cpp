@@ -47,6 +47,25 @@ IsWhitespace(char Character)
     return Result;
 }
 
+function b32
+IsInteger(char *String)
+{
+    b32 Result = true;
+
+    for (char *Character = String;
+         *Character;
+         ++Character)
+    {
+        if ((*Character < '0') || (*Character > '9'))
+        {
+            Result = false;
+            break;
+        }
+    }
+
+    return Result;
+}
+
 function buffer
 AllocateBuffer(u64 Size)
 {

@@ -248,21 +248,31 @@ BKTree_Create(keyword_list_node *RootKeyword)
 function bk_tree_node *
 BKTree_Insert(bk_tree_node *Tree, keyword_list_node *Keyword)
 {
-    bk_tree_node *Result = BKTree_AllocateNode(Keyword);
+    bk_tree_node *Result = 0;
 
     bk_tree_node *Node = Tree;
     b32 Complete = false;
 
     while (!Complete)
     {
-        u32 Distance = CalculateLevenshteinDistance(Node->Keyword->Word, Result->Keyword->Word);
-        if (Node->Children[Distance - 1])
+        u32 Distance = CalculateLevenshteinDistance(Node->Keyword->Word, Keyword->Word);
+        if (Distance > 0)
         {
-            Node = Node->Children[Distance - 1];
+            if (Node->Children[Distance - 1])
+            {
+                Node = Node->Children[Distance - 1];
+            }
+            else
+            {
+                Result = BKTree_AllocateNode(Keyword);
+                Node->Children[Distance - 1] = Result;
+
+                Complete = true;
+            }
         }
         else
         {
-            Node->Children[Distance - 1] = Result;
+            // NOTE(philip): If the keyword is already in the BK-tree, do not insert it.
             Complete = true;
         }
     }
@@ -420,9 +430,12 @@ NullifyWhitespace(parse_context *Context)
     }
 }
 
-function u32
-ParseQueryEntry(parse_context *Context, char **Tokens, u32 MaxTokenCount)
+function void
+ParseQueryEntry(parse_context *Context)
 {
+#define MAX_TOKEN_COUNT (4 + MAX_KEYWORD_COUNT_PER_QUERY)
+
+    char *Tokens[MAX_TOKEN_COUNT];
     u32 TokenCount = 0;
 
     // NOTE(philip): Get rid of any whitespace before the first token.
@@ -430,7 +443,7 @@ ParseQueryEntry(parse_context *Context, char **Tokens, u32 MaxTokenCount)
 
     if (!EndOfCommand(Context))
     {
-        while (!EndOfCommand(Context) && (TokenCount <= MaxTokenCount))
+        while (!EndOfCommand(Context) && (TokenCount <= MAX_TOKEN_COUNT))
         {
             ++TokenCount;
             Tokens[TokenCount - 1] = Context->Pointer;
@@ -448,7 +461,7 @@ ParseQueryEntry(parse_context *Context, char **Tokens, u32 MaxTokenCount)
         }
 
         // NOTE(philip): If there are more tokens that the maximum allowable number, skip them.
-        if (TokenCount > MaxTokenCount)
+        if (TokenCount > MAX_TOKEN_COUNT)
         {
             while (!EndOfCommand(Context))
             {
@@ -457,10 +470,96 @@ ParseQueryEntry(parse_context *Context, char **Tokens, u32 MaxTokenCount)
         }
     }
 
+    // NOTE(philip): After parsing is complete, the last character should always be a new line character.
     Assert(*Context->Pointer == '\n');
     *Context->Pointer = 0;
 
-    return TokenCount;
+    // NOTE(philip): Ensure that the data we read is all valid.
+
+    if (TokenCount < 4 || TokenCount > MAX_TOKEN_COUNT)
+    {
+        printf("[Warning]: Incorrect argument count for query insertion! Skipping... (Line: %llu)\n",
+               Context->LineNumber);
+        return;
+    }
+
+    if (!IsInteger(Tokens[0]))
+    {
+        printf("[Warning]: Found query with non-integer ID! Skipping... (Line: %llu)\n", Context->LineNumber);
+        return;
+    }
+
+    if (!IsInteger(Tokens[1]))
+    {
+        printf("[Warning]: Found query with non-integer match type! Skipping... (Line: %llu)\n",
+               Context->LineNumber);
+        return;
+    }
+
+    if (!IsInteger(Tokens[2]))
+    {
+        printf("[Warning]: Found query with non-integer match distance! Skipping... (Line: %llu)\n",
+               Context->LineNumber);
+        return;
+    }
+
+    if (!IsInteger(Tokens[3]))
+    {
+        printf("[Warning]: Found query with non-integer keyword count! Skipping... (Line: %llu)\n",
+               Context->LineNumber);
+        return;
+    }
+
+    u32 ID = atoi(Tokens[0]);
+    u32 MatchType = atoi(Tokens[1]);
+    u32 MatchDistance = atoi(Tokens[2]);
+    u32 KeywordCount = atoi(Tokens[3]);
+
+    // TODO(philip): Check for duplicate IDs.
+
+    if (MatchType > 2)
+    {
+        printf("[Warning]: Found query with out-of-bounds match type! Skipping... (Line: %llu)\n",
+               Context->LineNumber);
+        return;
+    }
+
+    u32 MinMatchDistance = ((MatchType == 0) ? 0 : 1);
+    u32 MaxMatchDistance = ((MatchType == 0) ? 0 : MAX_KEYWORD_LENGTH);
+
+    if (MatchDistance < MinMatchDistance || MatchDistance > MaxMatchDistance)
+    {
+        printf("[Warning]: Found query with out-of-bounds match distance! Skipping... (Line: %llu)\n",
+               Context->LineNumber);
+        return;
+    }
+
+    if (KeywordCount <= 0 || KeywordCount > MAX_KEYWORD_COUNT_PER_QUERY)
+    {
+        printf("[Warning]: Found query with out-of-bounds keyword count! Skipping... (Line: %llu)\n",
+               Context->LineNumber);
+        return;
+    }
+
+    if (KeywordCount != TokenCount - 4)
+    {
+        printf("[Warning]: Found query with different keyword count and real keyword count! Skipping... (Line: %llu)\n",
+               Context->LineNumber);
+        return;
+    }
+
+    printf("Query %d:\n{\n", ID);
+
+    for (u32 Index = 4;
+         Index < TokenCount;
+         ++Index)
+    {
+        printf("    %s\n", Tokens[Index]);
+    }
+
+    printf("}\n\n");
+
+#undef MAX_TOKEN_COUNT
 }
 
 function void
@@ -468,55 +567,32 @@ ParseCommandFile(buffer Contents)
 {
     parse_context Context = { };
     Context.Pointer = (char *)Contents.Data;
-
-    u64 LineNumber = 1;
+    Context.LineNumber = 1;
 
     while (*Context.Pointer)
     {
         if (*Context.Pointer == 's')
         {
+            // NOTE(philip): This command adds a new query to the active set. The format of this command is known.
+            // s <Query ID> <> <> <Keyword Count> keyword1 ... ... ... ...
+
+            // NOTE(philip): This is the command signature.
             *Context.Pointer = 0;
             ++Context.Pointer;
 
-            // NOTE(philip): This command adds a new query to the active set. We know the format of this command.
-            // s <Query ID> <> <> <Keyword Count> keyword1 ... ... ... ...
-
-#define MAX_TOKEN_COUNT (4 + MAX_KEYWORD_COUNT_PER_QUERY)
-
-            char *Tokens[MAX_TOKEN_COUNT];
-            u32 TokenCount = ParseQueryEntry(&Context, Tokens, MAX_TOKEN_COUNT);
-
-            if (TokenCount >= 4 && TokenCount <= MAX_TOKEN_COUNT)
-            {
-                printf("{\n");
-
-                for (u32 Index = 0;
-                     Index < TokenCount;
-                     ++Index)
-                {
-                    printf("    %s\n", Tokens[Index]);
-                }
-
-                printf("}\n\n");
-            }
-            else
-            {
-                printf("[Warning]: Incorrect argument count for query insertion! Skipping... (Line: %llu)\n",
-                       LineNumber);
-            }
-
-#undef MAX_TOKEN_COUNT
+            ParseQueryEntry(&Context);
         }
         else
         {
             printf("[Warning]: Skipping unknown command! (Command: '%c', Line: %llu)\n", *Context.Pointer,
-                   LineNumber);
+                   Context.LineNumber);
         }
 
-        // NOTE(philip): This should point to the previously new line character. Advance to the next command.
+        // NOTE(philip): This should always be zero (previously the new line character). Advance to
+        // the next command.
         ++Context.Pointer;
 
-        ++LineNumber;
+        ++Context.LineNumber;
     }
 }
 

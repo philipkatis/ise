@@ -1,11 +1,15 @@
 #ifndef ISE_H
 #define ISE_H
 
-// NOTE(philip): This limit is based on the SIGMOD 2013 Programming Contest referenced by the
-// project assignment. We assume that this limit does not include the zero-termination character.
-#define MAX_KEYWORD_LENGTH 31
+/*
 
-#define MAX_KEYWORD_COUNT_PER_QUERY 5
+  NOTE(philip): These limits are based on the SIGMOD 2013 Programming Contest referenced by the
+  project assignment. We assume string length limits, do not include the zero termination character.
+
+*/
+
+#define MAX_KEYWORD_LENGTH           31
+#define MAX_KEYWORD_COUNT_PER_QUERY  5
 
 struct keyword_list_node
 {
@@ -64,6 +68,7 @@ struct entry
 struct parse_context
 {
     char *Pointer;
+    u64 LineNumber;
 };
 
 #endif
