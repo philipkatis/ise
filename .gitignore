@@ -1,5 +1,8 @@
 # Directories
 .vs/
 
+# File Types
+*.4coder
+
 # Files
 ise

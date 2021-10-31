@@ -358,7 +358,7 @@ Create_entry(char *Word)
 
 s32 main()
 {
-#if 0
+#if 1
     char *CommandFilePath = "data/commands.txt";
 
     buffer CommandFileContents = { };
@@ -373,7 +373,7 @@ s32 main()
     }
 #endif
 
-#if 1
+#if 0
     char *Words[] = { "hell", "help", "fall", "felt", "fell", "small", "melt" };
 
     keyword_list List = KeywordList_Create();

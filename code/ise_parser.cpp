@@ -37,12 +37,8 @@ NullifyWhitespace(parse_context *Context)
     }
 }
 
-
-// TODO(philip): This function should return something containing the query data. And that should be passed into
-// a separate function to add it to the data-structures. That ensures a separation layer between the parser and the
-// data-structures, which should be agnostic to the way data is coming in.
-function void
-ParseQueryEntry(parse_context *Context)
+function b32
+ParseQueryEntry(parse_context *Context, query_data *Data)
 {
 #define MAX_TOKEN_COUNT (4 + MAX_KEYWORD_COUNT_PER_QUERY)
 
@@ -91,34 +87,36 @@ ParseQueryEntry(parse_context *Context)
     {
         printf("[Warning]: Incorrect argument count for query insertion! Skipping... (Line: %llu)\n",
                Context->LineNumber);
-        return;
+        return false;
     }
+
+#undef MAX_TOKEN_COUNT
 
     if (!IsInteger(Tokens[0]))
     {
         printf("[Warning]: Found query with non-integer ID! Skipping... (Line: %llu)\n", Context->LineNumber);
-        return;
+        return false;
     }
 
     if (!IsInteger(Tokens[1]))
     {
         printf("[Warning]: Found query with non-integer match type! Skipping... (Line: %llu)\n",
                Context->LineNumber);
-        return;
+        return false;
     }
 
     if (!IsInteger(Tokens[2]))
     {
         printf("[Warning]: Found query with non-integer match distance! Skipping... (Line: %llu)\n",
                Context->LineNumber);
-        return;
+        return false;
     }
 
     if (!IsInteger(Tokens[3]))
     {
         printf("[Warning]: Found query with non-integer keyword count! Skipping... (Line: %llu)\n",
                Context->LineNumber);
-        return;
+        return false;
     }
 
     u64 QueryID = atoi(Tokens[0]);
@@ -132,7 +130,7 @@ ParseQueryEntry(parse_context *Context)
     {
         printf("[Warning]: Found query with out-of-bounds match type! Skipping... (Line: %llu)\n",
                Context->LineNumber);
-        return;
+        return false;
     }
 
     u32 MinMatchDistance = ((MatchType == 0) ? 0 : 1);
@@ -142,35 +140,38 @@ ParseQueryEntry(parse_context *Context)
     {
         printf("[Warning]: Found query with out-of-bounds match distance! Skipping... (Line: %llu)\n",
                Context->LineNumber);
-        return;
+        return false;
     }
 
     if (KeywordCount <= 0 || KeywordCount > MAX_KEYWORD_COUNT_PER_QUERY)
     {
         printf("[Warning]: Found query with out-of-bounds keyword count! Skipping... (Line: %llu)\n",
                Context->LineNumber);
-        return;
+        return false;
     }
 
     if (KeywordCount != TokenCount - 4)
     {
         printf("[Warning]: Found query with different keyword count and real keyword count! Skipping... (Line: %llu)\n",
                Context->LineNumber);
-        return;
+        return false;
     }
 
-    printf("Query %llu:\n{\n", QueryID);
+    // NOTE(philip): Copy the data to the output struct.
 
-    for (u32 Index = 4;
-         Index < TokenCount;
+    for (u64 Index = 0;
+         Index < KeywordCount;
          ++Index)
     {
-        printf("    %s\n", Tokens[Index]);
+        Data->Keywords[Index] = Tokens[4 + Index];
     }
 
-    printf("}\n\n");
+    Data->QueryID       = QueryID;
+    Data->MatchType     = MatchType;
+    Data->MatchDistance = MatchDistance;
+    Data->KeywordCount  = KeywordCount;
 
-#undef MAX_TOKEN_COUNT
+    return true;
 }
 
 function void
@@ -191,7 +192,29 @@ ParseCommandFile(buffer Contents)
             *Context.Pointer = 0;
             ++Context.Pointer;
 
-            ParseQueryEntry(&Context);
+            query_data QueryData = { };
+            if (ParseQueryEntry(&Context, &QueryData))
+            {
+                printf("Query %llu:\n{\n", QueryData.QueryID);
+                printf("    Match Type: %d\n", QueryData.MatchType);
+                printf("    Match Distance: %d\n", QueryData.MatchDistance);
+                printf("    Keyword Count: %d\n", QueryData.KeywordCount);
+                printf("    Keywords: {");
+
+                for (u64 Index = 0;
+                     Index < QueryData.KeywordCount;
+                     ++Index)
+                {
+                    if (Index != 0)
+                    {
+                        printf(", ");
+                    }
+
+                    printf(" %s", QueryData.Keywords[Index]);
+                }
+
+                printf(" }\n}\n\n");
+            }
         }
         else
         {

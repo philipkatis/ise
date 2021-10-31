@@ -19,6 +19,17 @@ enum
     MatchType_Levenshtein = 2
 };
 
+struct query_data
+{
+    char *Keywords[MAX_KEYWORD_COUNT_PER_QUERY];
+
+    // TODO(philip): Maybe these sizes are not right.
+    u64 QueryID;
+    match_type MatchType;
+    u32 MatchDistance;
+    u32 KeywordCount;
+};
+
 struct keyword_list_node
 {
     // NOTE(philip): This now stores a pointer to the word in the file contents. Still not sure whether this is
