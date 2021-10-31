@@ -26,10 +26,10 @@
 
 */
 
-function b32
+function u32
 IsExactMatch(char *A, char *B)
 {
-    b32 Result = true;
+    u32 Result = 1;
 
     u64 LengthA = StringLength(A);
     u64 LengthB = StringLength(B);
@@ -42,22 +42,20 @@ IsExactMatch(char *A, char *B)
         {
             if (A[Index] != B[Index])
             {
-                Result = false;
+                Result = 0;
                 break;
             }
         }
     }
     else
     {
-        Result = false;
+        Result = 0;
     }
 
     return Result;
 }
 
-// TODO(philip): What if we give this strings of different lengths??? Is that ever a case??? If so, does this
-// function handle it??? For now a special value of -1 is returned.
-function s32
+function u32
 CalculateHammingDistance(char *A, char *B)
 {
     s32 Result = 0;
@@ -76,10 +74,6 @@ CalculateHammingDistance(char *A, char *B)
                 ++Result;
             }
         }
-    }
-    else
-    {
-        Result = -1;
     }
 
     return Result;
@@ -148,6 +142,10 @@ CalculateLevenshteinDistance(char *A, char *B)
     return LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * LengthB + LengthA];
 }
 
+// NOTE(philip): This array stores all the different keyword matching functions in such a way where the match_type
+// can be used to index into it.
+global match_function MatchFunctions[3] = { IsExactMatch, CalculateHammingDistance, CalculateLevenshteinDistance };
+
 function keyword_list_node *
 KeywordList_AllocateNode(char *Word, u64 QueryID, match_type MatchType, u32 MatchDistance)
 {
@@ -189,6 +187,8 @@ KeywordList_Insert(keyword_list *List, keyword_list_node *Node)
         Node->Next = Next;
         List->Head = Node;
     }
+
+    ++List->Count;
 }
 
 function void
@@ -202,8 +202,8 @@ KeywordList_Destroy(keyword_list *List)
         Node = Next;
     }
 
-    List->Head = 0;
-    List->Tail = 0;
+    List->Head  = 0;
+    List->Tail  = 0;
     List->Count = 0;
 }
 
@@ -265,6 +265,81 @@ BKTree_Insert(bk_tree_node *Tree, keyword_list_node *Keyword)
         {
             // NOTE(philip): If the keyword is already in the BK-tree, do not insert it.
             Complete = true;
+        }
+    }
+
+    return Result;
+}
+
+function keyword_list
+BKTree_Search(bk_tree_node *Tree, char *Word)
+{
+    keyword_list Result = KeywordList_Create();
+
+    // TODO(philip): Total jank.
+    bk_tree_node *CandidateKeywords[1024];
+    u64 CandidateKeywordCount = 0;
+
+    // NOTE(philip): Initialize the candidate keyword list.
+    CandidateKeywords[CandidateKeywordCount] = Tree;
+    ++CandidateKeywordCount;
+
+    for (u64 Index = 0;
+         Index < CandidateKeywordCount;
+         ++Index)
+    {
+        // NOTE(philip): Pop the last item from the array.
+        bk_tree_node *CandidateKeyword = CandidateKeywords[CandidateKeywordCount - Index - 1];
+        --CandidateKeywordCount;
+
+        keyword_list_node *Keyword = CandidateKeyword->Keyword;
+
+        // TODO(philip): I do not know if this is the correct way to approach this. We are using the current
+        // keyword's query-specific matching type and matching distance. This might prevent words later down the
+        // tree from being searched.
+
+        // NOTE(philip): Get the correct match function and calculate the distance.
+        match_function MatchFunction = MatchFunctions[Keyword->MatchType];
+        u32 Distance = MatchFunction(Word, Keyword->Word);
+
+        // NOTE(philip): Account for the difference in maximum match distance.
+        b32 IsValid = false;
+        if (Keyword->MatchType == MatchType_Exact)
+        {
+            IsValid = Distance;
+        }
+        else
+        {
+            IsValid = (Distance <= Keyword->MatchDistance);
+        }
+
+        if (IsValid)
+        {
+            keyword_list_node *Node = KeywordList_AllocateNode(Keyword->Word, Keyword->QueryID, Keyword->MatchType,
+                                                               Keyword->MatchDistance);
+            KeywordList_Insert(&Result, Node);
+        }
+
+        // TODO(philip): Again, this doesn't seem right.
+        if (Keyword->MatchType != MatchType_Exact)
+        {
+            s32 MinDistanceFromParent = Distance - Keyword->MatchDistance;
+            Assert(MinDistanceFromParent >= 0);
+
+            s32 MaxDistanceFromParent = Distance + Keyword->MatchDistance;
+            Assert(MaxDistanceFromParent > MinDistanceFromParent);
+
+            for (s32 Index = MinDistanceFromParent;
+                 Index < MaxDistanceFromParent;
+                 Index++)
+            {
+
+                if (CandidateKeyword->Children[Index])
+                {
+                    CandidateKeywords[CandidateKeywordCount] = CandidateKeyword->Children[Index];
+                    ++CandidateKeywordCount;
+                }
+            }
         }
     }
 
@@ -358,7 +433,7 @@ Create_entry(char *Word)
 
 s32 main()
 {
-#if 1
+#if 0
     char *CommandFilePath = "data/commands.txt";
 
     buffer CommandFileContents = { };
@@ -373,7 +448,7 @@ s32 main()
     }
 #endif
 
-#if 0
+#if 1
     char *Words[] = { "hell", "help", "fall", "felt", "fell", "small", "melt" };
 
     keyword_list List = KeywordList_Create();
@@ -381,13 +456,12 @@ s32 main()
          Index < ArrayCount(Words);
          ++Index)
     {
-        keyword_list_node *Node = KeywordList_AllocateNode(Words[Index], 0, 0, 0);
+        keyword_list_node *Node = KeywordList_AllocateNode(Words[Index], 123, MatchType_Levenshtein, 2);
         KeywordList_Insert(&List, Node);
     }
 
-    KeywordList_Visualize(&List);
-
-    printf("\n\n");
+    // KeywordList_Visualize(&List);
+    // printf("\n\n");
 
     bk_tree_node *Tree = BKTree_Create(List.Tail);
 
@@ -398,7 +472,12 @@ s32 main()
         BKTree_Insert(Tree, Node);
     }
 
-    BKTree_Visualize(Tree);
+    // BKTree_Visualize(Tree);
+
+    keyword_list SearchResult = BKTree_Search(Tree, "henn");
+
+    KeywordList_Visualize(&SearchResult);
+    KeywordList_Destroy(&SearchResult);
 
     BKTree_Destroy(Tree);
     KeywordList_Destroy(&List);
