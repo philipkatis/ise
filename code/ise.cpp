@@ -475,6 +475,20 @@ EntryList_AddEntry(entry_list* List, entry_list_node* Node)
     ++List->Count;
 }
 
+function void
+EntryList_Visualize(entry_list* List)
+{
+    entry_list_node* Node = List->Head;
+    u64 Index = 0;
+
+    while (Node)
+    {
+        printf("Index: %llu, Word: %s\n", Index, Node->Entry->Word);
+        Node = Node->Next;
+        Index++;
+    }
+}
+
 function entry_list_node*
 EntryList_GetFirst(entry_list* List)
 {
