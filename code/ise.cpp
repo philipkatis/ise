@@ -424,7 +424,8 @@ Entry_Create(char *Word)
 
     /*
 
-    NOTE(Alex): Initialize payload here too.
+    NOTE(Alex): If the said payload is actually implemented, we need to search for queries in which the word
+    exists and insert their ID numbers in the matrix.
 
     */
 

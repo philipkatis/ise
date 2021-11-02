@@ -10,6 +10,7 @@
 
 #define MAX_KEYWORD_LENGTH           31
 #define MAX_KEYWORD_COUNT_PER_QUERY  5
+#define MAX_QUERIES_PER_ENTRY        64
 
 typedef u32 match_type;
 enum
@@ -74,10 +75,11 @@ struct bk_tree_node
 struct entry
 {
     char Word[MAX_KEYWORD_LENGTH + 1];
-    u64 payload;
+    u64 Payload[MAX_QUERIES_PER_ENTRY];
     /*
 
-    NOTE(Alex): I guess the payload needs to point to some queries however we get them or wherever we store them.
+    NOTE(Alex): The payload could potentially point to an array of numbers, the numbers of which will indicate
+    the corresponding queries in which the word exists.
 
     */
 };
