@@ -420,7 +420,7 @@ Entry_Destroy(entry *Entry)
 function entry *
 Entry_Create(char *Word)
 {
-    entry *Entry = Allocate_entry(Word);
+    entry *Entry = Entry_Allocate(Word);
 
     /*
 
@@ -523,6 +523,7 @@ EntryList_Destroy(entry_list* List)
     List->Tail = 0;
     List->Count = 0;
 }
+
 
 s32 main()
 {
