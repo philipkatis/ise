@@ -401,7 +401,7 @@ BKTree_Visualize(bk_tree_node *Node, u64 Depth = 0)
 }
 
 function entry *
-Allocate_entry(char* Word)
+Entry_Allocate(char* Word)
 {
     entry* Result = (entry*)calloc(1, sizeof(entry));
 
@@ -412,13 +412,13 @@ Allocate_entry(char* Word)
 }
 
 function void
-Deallocate_entry(entry *Entry)
+Entry_Destroy(entry *Entry)
 {
     free(Entry);
 }
 
 function entry *
-Create_entry(char *Word)
+Entry_Create(char *Word)
 {
     entry *Entry = Allocate_entry(Word);
 
@@ -429,6 +429,84 @@ Create_entry(char *Word)
     */
 
     return Entry;
+}
+
+function entry_list_node*
+EntryList_AllocateNode(entry* Entry)
+{
+    entry_list_node* Result = (entry_list_node*)calloc(1, sizeof(entry_list_node));
+    Result->Entry = Entry;
+    Result->Previous = NULL;
+    Result->Next = NULL;
+
+    return Result;
+}
+
+function void
+EntryList_DeallocateNode(entry_list_node* Node)
+{
+    free(Node);
+}
+
+function entry_list
+EntryList_Create()
+{
+    entry_list Result = { };
+    return Result;
+}
+
+function void
+EntryList_AddEntry(entry_list* List, entry_list_node* Node)
+{
+    if (List->Head == 0)
+    {
+        List->Head = Node;
+        List->Tail = Node;
+    }
+    else
+    {
+        entry_list_node* Next = List->Head;
+        Next->Previous = Node;
+
+        Node->Next = Next;
+        List->Head = Node;
+    }
+
+    ++List->Count;
+}
+
+function entry_list_node*
+EntryList_GetFirst(entry_list* List)
+{
+    return List->Head;
+}
+
+function entry_list_node*
+EntryList_GetNext(entry_list_node* Node)
+{
+    return Node->Next;
+}
+
+function u32
+EntryList_GetNumberEntries(entry_list* List)
+{
+    return List->Count;
+}
+
+function void
+EntryList_Destroy(entry_list* List)
+{
+    entry_list_node* Node = List->Head;
+    while (Node)
+    {
+        entry_list_node* Next = Node->Next;
+        EntryList_DeallocateNode(Node);
+        Node = Next;
+    }
+
+    List->Head = 0;
+    List->Tail = 0;
+    List->Count = 0;
 }
 
 s32 main()

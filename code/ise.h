@@ -82,4 +82,18 @@ struct entry
     */
 };
 
+struct entry_list_node
+{
+    entry *Entry;
+    entry* Previous;
+    entry* Next;
+};
+
+struct entry_list
+{
+    entry_list_node* Head;
+    entry_list_node* Tail;
+    u64 Count;
+};
+
 #endif
