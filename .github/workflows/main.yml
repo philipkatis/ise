@@ -1,0 +1,16 @@
+name: tests
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: compile
+        run: make
+
+      - name: test
+        run: make tests
