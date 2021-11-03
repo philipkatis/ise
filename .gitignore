@@ -1,8 +1,6 @@
 # Directories
 .vs/
+build/
 
 # File Types
 *.4coder
-
-# Files
-ise
