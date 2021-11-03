@@ -6,7 +6,17 @@
 #include "ise.h"
 
 #include "ise_base.cpp"
+#include "ise_match.cpp"
 #include "ise_parser.cpp"
+
+/*
+
+  TODO(philip): Passing around strings with their length is a common thing that happens. We should probalby add a
+  string structure to group them together.
+
+  TODO(philip): Currently the Assert() macro is pressent in all builds. It should be stripped from release builds.
+
+*/
 
 /*
 
@@ -25,126 +35,6 @@
   future, we should investigate whether the use of intrinsics (SSE) is allowed.
 
 */
-
-function u32
-IsExactMatch(char *A, char *B)
-{
-    u32 Result = 1;
-
-    u64 LengthA = StringLength(A);
-    u64 LengthB = StringLength(B);
-
-    if (LengthA == LengthB)
-    {
-        for (u64 Index = 0;
-             Index < LengthA;
-             ++Index)
-        {
-            if (A[Index] != B[Index])
-            {
-                Result = 0;
-                break;
-            }
-        }
-    }
-    else
-    {
-        Result = 0;
-    }
-
-    return Result;
-}
-
-function u32
-CalculateHammingDistance(char *A, char *B)
-{
-    s32 Result = 0;
-
-    u64 LengthA = StringLength(A);
-    u64 LengthB = StringLength(B);
-
-    if (LengthA == LengthB)
-    {
-        for (u64 Index = 0;
-             Index < LengthA;
-             ++Index)
-        {
-            if (A[Index] != B[Index])
-            {
-                ++Result;
-            }
-        }
-    }
-
-    return Result;
-}
-
-/*
-
-  NOTE(philip): There are several algorithm implementations for calculating the Levenshtein distance between
-  two strings, but here we are using the one with the matrix cache. The regular implementation uses 3 recursive
-  function calls. Appart from the fact that function calls are expensive for a function called so many times,
-  that specific implementation recalculates the length between two substrings multiple times, thus wasting CPU
-  time. The version used here is not recursive and uses a 2D matrix to cache distance calculation results that
-  might need to be used in the future.
-
-  One small implementation detail is that this matrix is stored as a 1D array in memory. This should be more
-  cache friendly. Additionally, the matrix is a global variable and it is reused on every function call.
-
-  Implementation Reference: https://en.wikipedia.org/wiki/Wagner%E2%80%93Fischer_algorithm
-
-*/
-
-global u32 LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * MAX_KEYWORD_LENGTH];
-
-function u32
-CalculateLevenshteinDistance(char *A, char *B)
-{
-    ZeroMemory(LevenshteinDistanceCache, MAX_KEYWORD_LENGTH * MAX_KEYWORD_LENGTH * sizeof(u32));
-
-    u64 LengthA = StringLength(A);
-    u64 LengthB = StringLength(B);
-
-    for (u64 Index = 1;
-         Index <= LengthA;
-         ++Index)
-    {
-        LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * 0 + Index] = Index;
-    }
-
-    for (u64 Index = 1;
-         Index <= LengthB;
-         ++Index)
-    {
-        LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * Index + 0] = Index;
-    }
-
-    for (u64 IndexB = 1;
-         IndexB <= LengthB;
-         ++IndexB)
-    {
-        for (u64 IndexA = 1;
-             IndexA <= LengthA;
-             ++IndexA)
-        {
-            u32 DeletionDistance  = LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * IndexB + (IndexA - 1)] + 1;
-            u32 InsertionDistance = LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * (IndexB - 1) + IndexA] + 1;
-
-            b32 RequiresSubstitution = (A[IndexA - 1] != B[IndexB - 1]);
-            u32 SubstitutionDistance = LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * (IndexB - 1) + (IndexA - 1)] +
-                RequiresSubstitution;
-
-            u32 *Distance = &LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * IndexB + IndexA];
-            *Distance = Min(Min(DeletionDistance, InsertionDistance), SubstitutionDistance);
-        }
-    }
-
-    return LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * LengthB + LengthA];
-}
-
-// NOTE(philip): This array stores all the different keyword matching functions in such a way where the match_type
-// can be used to index into it.
-global match_function MatchFunctions[3] = { IsExactMatch, CalculateHammingDistance, CalculateLevenshteinDistance };
 
 function keyword_list_node *
 KeywordList_AllocateNode(char *Word, u64 QueryID, match_type MatchType, u32 MatchDistance)
@@ -246,7 +136,8 @@ BKTree_Insert(bk_tree_node *Tree, keyword_list_node *Keyword)
 
     while (!Complete)
     {
-        u32 Distance = CalculateLevenshteinDistance(Node->Keyword->Word, Keyword->Word);
+        u32 Distance = CalculateLevenshteinDistance(Node->Keyword->Word, StringLength(Node->Keyword->Word),
+                                                    Keyword->Word, StringLength(Keyword->Word));
         if (Distance > 0)
         {
             if (Node->Children[Distance - 1])
@@ -300,7 +191,7 @@ BKTree_Search(bk_tree_node *Tree, char *Word)
 
         // NOTE(philip): Get the correct match function and calculate the distance.
         match_function MatchFunction = MatchFunctions[Keyword->MatchType];
-        u32 Distance = MatchFunction(Word, Keyword->Word);
+        u32 Distance = MatchFunction(Word, StringLength(Word), Keyword->Word, StringLength(Keyword->Word));
 
         // NOTE(philip): Account for the difference in maximum match distance.
         b32 IsValid = false;

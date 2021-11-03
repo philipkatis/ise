@@ -21,7 +21,7 @@ enum
 };
 
 // NOTE(philip): This is a function pointer for the matching functions.
-typedef u32 (*match_function)(char *A, char *B);
+typedef u32 (*match_function)(char *A, u64 LengthA, char *B, u64 LengthB);
 
 struct query_data
 {
