@@ -76,25 +76,27 @@ CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB)
 
 */
 
-global u32 LevenshteinDistanceCache[(MAX_KEYWORD_LENGTH + 1) * (MAX_KEYWORD_LENGTH + 1)];
+#define LEVENSHTEIN_CACHE_MATRIX_SIZE (MAX_KEYWORD_LENGTH + 1)
+
+global u32 LevenshteinDistanceCache[LEVENSHTEIN_CACHE_MATRIX_SIZE * LEVENSHTEIN_CACHE_MATRIX_SIZE];
 
 function u32
 CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 LengthB)
 {
-    ZeroMemory(LevenshteinDistanceCache, MAX_KEYWORD_LENGTH * MAX_KEYWORD_LENGTH * sizeof(u32));
+    ZeroMemory(LevenshteinDistanceCache, LEVENSHTEIN_CACHE_MATRIX_SIZE * LEVENSHTEIN_CACHE_MATRIX_SIZE * sizeof(u32));
 
     for (u64 Index = 1;
          Index <= LengthA;
          ++Index)
     {
-        LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * 0 + Index] = Index;
+        LevenshteinDistanceCache[LEVENSHTEIN_CACHE_MATRIX_SIZE * 0 + Index] = Index;
     }
 
     for (u64 Index = 1;
          Index <= LengthB;
          ++Index)
     {
-        LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * Index + 0] = Index;
+        LevenshteinDistanceCache[LEVENSHTEIN_CACHE_MATRIX_SIZE * Index + 0] = Index;
     }
 
     for (u64 IndexB = 1;
@@ -105,19 +107,19 @@ CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 LengthB)
              IndexA <= LengthA;
              ++IndexA)
         {
-            u32 DeletionDistance  = LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * IndexB + (IndexA - 1)] + 1;
-            u32 InsertionDistance = LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * (IndexB - 1) + IndexA] + 1;
+            u32 DeletionDistance  = LevenshteinDistanceCache[LEVENSHTEIN_CACHE_MATRIX_SIZE * IndexB + (IndexA - 1)] + 1;
+            u32 InsertionDistance = LevenshteinDistanceCache[LEVENSHTEIN_CACHE_MATRIX_SIZE * (IndexB - 1) + IndexA] + 1;
 
             b32 RequiresSubstitution = (A[IndexA - 1] != B[IndexB - 1]);
-            u32 SubstitutionDistance = LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * (IndexB - 1) + (IndexA - 1)] +
+            u32 SubstitutionDistance = LevenshteinDistanceCache[LEVENSHTEIN_CACHE_MATRIX_SIZE * (IndexB - 1) + (IndexA - 1)] +
                 RequiresSubstitution;
 
-            u32 *Distance = &LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * IndexB + IndexA];
+            u32 *Distance = &LevenshteinDistanceCache[LEVENSHTEIN_CACHE_MATRIX_SIZE * IndexB + IndexA];
             *Distance = Min(Min(DeletionDistance, InsertionDistance), SubstitutionDistance);
         }
     }
 
-    return LevenshteinDistanceCache[MAX_KEYWORD_LENGTH * LengthB + LengthA];
+    return LevenshteinDistanceCache[LEVENSHTEIN_CACHE_MATRIX_SIZE * LengthB + LengthA];
 }
 
 // NOTE(philip): This array stores all the different keyword matching functions in such a way that the match_type
