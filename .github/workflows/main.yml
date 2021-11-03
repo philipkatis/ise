@@ -1,23 +1,14 @@
 name: tests
-
-on:
-    push:
-        branches: [ main ]
-
-    pull_request:
-        branches: [ main ]
-
-    workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
-    build:
-        runs-on: ubuntu-18.04
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
 
-        steps:
-            - uses: actions/checkout@v2
+      - name: compile
+        run: make
 
-            - name: compile
-            run: make
-
-            - name: test
-            run: make tests
+      - name: test
+        run: make tests
