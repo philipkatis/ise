@@ -87,8 +87,8 @@ struct entry
 struct entry_list_node
 {
     entry *Entry;
-    entry* Previous;
-    entry* Next;
+    entry_list_node* Previous;
+    entry_list_node* Next;
 };
 
 struct entry_list
