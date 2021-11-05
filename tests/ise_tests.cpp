@@ -158,6 +158,34 @@ Test_CalculateLevenshteinDistance(void)
         TEST_CHECK(Result == 10);
     }
 
+    // NOTE(philip): Test some regular cases, since this function is more complex than the other keyword matching
+    // functions.
+    {
+        A = "kitten";
+        B = "sitten";
+
+        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        TEST_CHECK(Result == 1);
+
+        A = "sitten";
+        B = "sittin";
+
+        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        TEST_CHECK(Result == 1);
+
+        A = "sittin";
+        B = "sitting";
+
+        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        TEST_CHECK(Result == 1);
+
+        A = "bravo";
+        B = "raven";
+
+        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        TEST_CHECK(Result == 3);
+    }
+
     // NOTE(philip): Big string.
     {
         A = "0000000000000000000000000000001";
