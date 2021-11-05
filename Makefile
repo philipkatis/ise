@@ -2,7 +2,7 @@
 .PHONY: clean
 
 OutputDirectory = build
-CommonCompilerFlags = -g -Wno-write-strings -Icode
+CommonCompilerFlags = -DISE_DEBUG -g -Wno-write-strings -Icode
 
 first: code/ise.cpp tests/ise_tests.cpp | SetupOutputDirectory
 	g++ $(CommonCompilerFlags) code/ise.cpp -o $(OutputDirectory)/ise

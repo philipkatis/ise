@@ -1,58 +1,42 @@
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 
 #include "ise_base.h"
-#include "ise_parser.h"
+// #include "ise_parser.h"
 #include "ise.h"
 
 #include "ise_base.cpp"
 #include "ise_match.cpp"
-#include "ise_parser.cpp"
+// #include "ise_parser.cpp"
 
 /*
 
-  TODO(philip): Passing around strings with their length is a common thing that happens. We should probalby add a
-  string structure to group them together.
-
-  TODO(philip): Currently the Assert() macro is pressent in all builds. It should be stripped from release builds.
+  NOTE(philip): This function is used only for debugging. It prints the specified number of tabs to the
+  command-line. It is mostly used for visualization.
 
 */
 
-/*
-
-  NOTE(philip): Deduplication should happen to both the query keywords and the document contents. The most ideal
-  way to achieve this has to be a hash table, where we store all the words and only compare them when their hash
-  values are the same.
-
-  TODO(philip): Can the keyword list not be a list??? It makes more sence for it to be a hash table for O(1)
-  access, since that will be the most common case. A hash table can also accelerate the deduplication.
-
-  TODO(philip): Investigate how we choose what keyword matching function is used each time.
-
-  TODO(philip): Replace calloc() and free() with custom function that can be instrumented later on.
-
-  NOTE(philip): There are many ways to optimize the keyword matching functions. If there's a need to in the
-  future, we should investigate whether the use of intrinsics (SSE) is allowed.
-
-*/
-
-function keyword_list_node *
-KeywordList_AllocateNode(char *Word, u64 QueryID, match_type MatchType, u32 MatchDistance)
-{
-    keyword_list_node *Result = (keyword_list_node *)calloc(1, sizeof(keyword_list_node));
-    Result->Word = Word;
-    Result->QueryID = QueryID;
-    Result->MatchType = MatchType;
-    Result->MatchDistance = MatchDistance;
-
-    return Result;
-}
+#if ISE_DEBUG
 
 function void
-KeywordList_DeallocateNode(keyword_list_node *Node)
+PrintTabs(u64 Count)
 {
-    free(Node);
+    for (u64 Index = 0;
+         Index < Count;
+         ++Index)
+    {
+        printf("    ");
+    }
 }
+
+#endif
+
+/*
+
+  NOTE(philip): This function creates a keyword list with zero nodes.
+
+*/
 
 function keyword_list
 KeywordList_Create()
@@ -61,234 +45,357 @@ KeywordList_Create()
     return Result;
 }
 
-function void
-KeywordList_Insert(keyword_list *List, keyword_list_node *Node)
+/*
+
+  NOTE(philip): This function inserts a new keyword to the keyword list. The new word will be at the head of the
+  list. This is done to improve insertion speed. This function does not ensure that there are no duplicates. It is
+  up to the client to use KeywordList_Find() to implement that functionality.
+
+*/
+
+function keyword *
+KeywordList_Insert(keyword_list *List, char *Word)
 {
-    if (List->Head == 0)
-    {
-        List->Head = Node;
-        List->Tail = Node;
-    }
-    else
-    {
-        keyword_list_node *Next = List->Head;
-        Next->Previous = Node;
+    keyword *Keyword = (keyword *)calloc(1, sizeof(keyword));
+    Keyword->Word = Word;
 
-        Node->Next = Next;
-        List->Head = Node;
+    if (List->Head)
+    {
+        Keyword->Next = List->Head;
     }
 
-    ++List->Count;
+    List->Head = Keyword;
+
+    return Keyword;
 }
+
+/*
+
+  NOTE(philip): This function finds a word in the keyword list and returns it. If the word could not be found, this
+  function returns zero.
+
+*/
+
+function keyword *
+KeywordList_Find(keyword_list *List, char *Word)
+{
+    keyword *Result = 0;
+
+    for (keyword *Keyword = List->Head;
+         Keyword;
+         Keyword = Keyword->Next)
+    {
+        if (strcmp(Keyword->Word, Word) == 0)
+        {
+            Result = Keyword;
+            break;
+        }
+    }
+
+    return Result;
+}
+
+/*
+
+  NOTE(philip): This function is used only for debugging. It is a tool for visualizing the contents of a keyword
+  list, by dumping them into the command-line.
+
+*/
+
+#if ISE_DEBUG
+
+function void
+_KeywordList_Visualize(keyword_list *List)
+{
+    u64 Index = 0;
+
+    for (keyword *Keyword = List->Head;
+         Keyword;
+         Keyword = Keyword->Next)
+    {
+        printf("%llu: %s\n", Index, Keyword->Word);
+        ++Index;
+    }
+}
+
+#define KeywordList_Visualize(List) _KeywordList_Visualize((List))
+
+#else
+
+#define KeywordList_Visualize(List)
+
+#endif
+
+/*
+
+  NOTE(philip): This function destroys a keyword list, deallocating all the memory allocated by all it's nodes.
+  This does not deallocate the memory of the words referenced by all the nodes.
+
+*/
 
 function void
 KeywordList_Destroy(keyword_list *List)
 {
-    keyword_list_node *Node = List->Head;
-    while (Node)
+    keyword *Keyword = List->Head;
+    while (Keyword)
     {
-        keyword_list_node *Next = Node->Next;
-        KeywordList_DeallocateNode(Node);
-        Node = Next;
+        keyword *NextKeyword = Keyword->Next;
+        free(Keyword);
+        Keyword = NextKeyword;
     }
 
-    List->Head  = 0;
-    List->Tail  = 0;
-    List->Count = 0;
+    List->Head = 0;
 }
 
-function void
-KeywordList_Visualize(keyword_list *List)
+/*
+
+  NOTE(philip): This function creates a BK-Tree with zero nodes.
+
+*/
+
+function bk_tree
+BKTree_Create()
 {
-    keyword_list_node *Node = List->Head;
-    u64 Index = 0;
-
-    while (Node)
-    {
-        printf("Index: %llu, Word: %s\n", Index, Node->Word);
-        Node = Node->Next;
-        Index++;
-    }
+    bk_tree Result = { };
+    return Result;
 }
+
+/*
+
+  NOTE(philip): This function allocates the memory and sets the data for a new BK-Tree node.
+
+*/
 
 function bk_tree_node *
-BKTree_AllocateNode(keyword_list_node *Keyword)
+BKTree_AllocateNode(keyword *Keyword, u64 DistanceFromParent)
 {
     bk_tree_node *Result = (bk_tree_node *)calloc(1, sizeof(bk_tree_node));
     Result->Keyword = Keyword;
+    Result->DistanceFromParent = DistanceFromParent;
 
     return Result;
 }
 
-function bk_tree_node *
-BKTree_Create(keyword_list_node *RootKeyword)
-{
-    return BKTree_AllocateNode(RootKeyword);
-}
+/*
+
+  NOTE(philip): This functions inserts a new keyword into the BK-Tree at the correct location using the Levenshtein
+  distance calculation algorithm. In case the keyword we try to insert is already in the BK-Tree, this function will
+  return a reference to it.
+
+*/
 
 function bk_tree_node *
-BKTree_Insert(bk_tree_node *Tree, keyword_list_node *Keyword)
+BKTree_Insert(bk_tree *Tree, keyword *Keyword)
 {
-    bk_tree_node *Result = 0;
+    bk_tree_node *Node = 0;
 
-    bk_tree_node *Node = Tree;
-    b32 Complete = false;
-
-    while (!Complete)
+    if (Tree->Root)
     {
-        u32 Distance = CalculateLevenshteinDistance(Node->Keyword->Word, StringLength(Node->Keyword->Word),
-                                                    Keyword->Word, StringLength(Keyword->Word));
-        if (Distance > 0)
+        bk_tree_node *CurrentNode = Tree->Root;
+        while (true)
         {
-            if (Node->Children[Distance - 1])
+            u64 DistanceFromCurrentNode = CalculateLevenshteinDistance(CurrentNode->Keyword->Word,
+                                                                       StringLength(CurrentNode->Keyword->Word),
+                                                                       Keyword->Word, StringLength(Keyword->Word));
+            b32 FoundNodeWithSameDistance = false;
+
+            for (bk_tree_node *ChildNode = CurrentNode->FirstChild;
+                 ChildNode;
+                 ChildNode = ChildNode->NextSibling)
             {
-                Node = Node->Children[Distance - 1];
-            }
-            else
-            {
-                Result = BKTree_AllocateNode(Keyword);
-                Node->Children[Distance - 1] = Result;
-
-                Complete = true;
-            }
-        }
-        else
-        {
-            // NOTE(philip): If the keyword is already in the BK-tree, do not insert it.
-            Complete = true;
-        }
-    }
-
-    return Result;
-}
-
-function keyword_list
-BKTree_Search(bk_tree_node *Tree, char *Word)
-{
-    keyword_list Result = KeywordList_Create();
-
-    // TODO(philip): Total jank.
-    bk_tree_node *CandidateKeywords[1024];
-    u64 CandidateKeywordCount = 0;
-
-    // NOTE(philip): Initialize the candidate keyword list.
-    CandidateKeywords[CandidateKeywordCount] = Tree;
-    ++CandidateKeywordCount;
-
-    for (u64 Index = 0;
-         Index < CandidateKeywordCount;
-         ++Index)
-    {
-        // NOTE(philip): Pop the last item from the array.
-        bk_tree_node *CandidateKeyword = CandidateKeywords[CandidateKeywordCount - Index - 1];
-        --CandidateKeywordCount;
-
-        keyword_list_node *Keyword = CandidateKeyword->Keyword;
-
-        // TODO(philip): I do not know if this is the correct way to approach this. We are using the current
-        // keyword's query-specific matching type and matching distance. This might prevent words later down the
-        // tree from being searched.
-
-        // NOTE(philip): Get the correct match function and calculate the distance.
-        match_function MatchFunction = MatchFunctions[Keyword->MatchType];
-        u32 Distance = MatchFunction(Word, StringLength(Word), Keyword->Word, StringLength(Keyword->Word));
-
-        // NOTE(philip): Account for the difference in maximum match distance.
-        b32 IsValid = false;
-        if (Keyword->MatchType == MatchType_Exact)
-        {
-            IsValid = Distance;
-        }
-        else
-        {
-            IsValid = (Distance <= Keyword->MatchDistance);
-        }
-
-        if (IsValid)
-        {
-            keyword_list_node *Node = KeywordList_AllocateNode(Keyword->Word, Keyword->QueryID, Keyword->MatchType,
-                                                               Keyword->MatchDistance);
-            KeywordList_Insert(&Result, Node);
-        }
-
-        // TODO(philip): Again, this doesn't seem right.
-        if (Keyword->MatchType != MatchType_Exact)
-        {
-            s32 MinDistanceFromParent = Distance - Keyword->MatchDistance;
-            Assert(MinDistanceFromParent >= 0);
-
-            s32 MaxDistanceFromParent = Distance + Keyword->MatchDistance;
-            Assert(MaxDistanceFromParent > MinDistanceFromParent);
-
-            for (s32 Index = MinDistanceFromParent;
-                 Index < MaxDistanceFromParent;
-                 Index++)
-            {
-
-                if (CandidateKeyword->Children[Index])
+                if (ChildNode->DistanceFromParent == DistanceFromCurrentNode)
                 {
-                    CandidateKeywords[CandidateKeywordCount] = CandidateKeyword->Children[Index];
-                    ++CandidateKeywordCount;
+                    CurrentNode = ChildNode;
+                    FoundNodeWithSameDistance = true;
+
+                    break;
                 }
             }
+
+            if (!FoundNodeWithSameDistance)
+            {
+                Node = BKTree_AllocateNode(Keyword, DistanceFromCurrentNode);
+                Node->NextSibling = CurrentNode->FirstChild;
+
+                CurrentNode->FirstChild = Node;
+
+                break;
+            }
+        }
+    }
+    else
+    {
+        Node = BKTree_AllocateNode(Keyword, 0);
+        Tree->Root = Node;
+    }
+
+    return Node;
+}
+
+/*
+
+  NOTE(philip): This function searches through the BK-Tree in an optimized manner, in order to find the keywords
+  that match the specified word with the maximum threshold. It returns a keyword list containing the matches.
+
+*/
+
+function keyword_list
+BKTree_FindMatches(bk_tree *Tree, char *Word, u64 DistanceThreshold)
+{
+    keyword_list Matches = KeywordList_Create();
+
+    // TODO(philip): Implement this using a stack.
+    bk_tree_node *Candidates[1024];
+    u64 CandidateCount = 0;
+
+    // TODO(philip): Change this to a push operation.
+    Candidates[CandidateCount] = Tree->Root;
+    ++CandidateCount;
+
+    while (CandidateCount)
+    {
+        // TODO(philip): Change this to a pop operation.
+        bk_tree_node *CurrentCandidate = Candidates[CandidateCount - 1];
+        --CandidateCount;
+
+        u64 DistanceFromCurrentCandidate = CalculateLevenshteinDistance(CurrentCandidate->Keyword->Word,
+                                                                        StringLength(CurrentCandidate->Keyword->Word),
+                                                                        Word,
+                                                                        StringLength(Word));
+
+        if (DistanceFromCurrentCandidate <= DistanceThreshold)
+        {
+            KeywordList_Insert(&Matches, CurrentCandidate->Keyword->Word);
+        }
+
+        s32 ChildrenRangeStart = DistanceFromCurrentCandidate - DistanceThreshold;
+        if (ChildrenRangeStart)
+        {
+            ChildrenRangeStart = 1;
+        }
+
+        s32 ChildrenRangeEnd = DistanceFromCurrentCandidate + DistanceThreshold;
+
+        for (bk_tree_node *Child = CurrentCandidate->FirstChild;
+             Child;
+             Child = Child->NextSibling)
+        {
+            if (Child->DistanceFromParent >= ChildrenRangeStart && Child->DistanceFromParent <= ChildrenRangeEnd)
+            {
+                Candidates[CandidateCount] = Child;
+                ++CandidateCount;
+            }
         }
     }
 
-    return Result;
+    return Matches;
 }
 
+/*
+
+  NOTE(philip): This function is used only for debugging. It is a tool for visualizing the contents of a BK-Tree
+  node, by dumping them into the command-line. This is a recursive function that also prints all of the node's
+  siblings and children.
+
+*/
+
+#if ISE_DEBUG
+
 function void
-BKTree_Destroy(bk_tree_node *Node)
+BKTree_VisualizeNode(bk_tree_node *Node, u64 Depth)
 {
-    for (u64 Index = 0;
-         Index < MAX_KEYWORD_LENGTH - 1;
-         ++Index)
+    PrintTabs(Depth);
+    printf("Word: %s, DistanceFromParent: %llu, Depth: %llu\n", Node->Keyword->Word, Node->DistanceFromParent,
+           Depth);
+
+    if (Node->FirstChild)
     {
-        if (Node->Children[Index])
-        {
-            BKTree_Destroy(Node->Children[Index]);
-        }
+        PrintTabs(Depth);
+        printf("{\n");
+
+        BKTree_VisualizeNode(Node->FirstChild, Depth + 1);
+
+        PrintTabs(Depth);
+        printf("}\n");
+    }
+
+    if (Node->NextSibling)
+    {
+        printf("\n");
+        BKTree_VisualizeNode(Node->NextSibling, Depth);
+    }
+}
+
+#endif
+
+
+/*
+
+  NOTE(philip): This function is used only for debugging. It is a tool for visualizing the contents of a BK-Tree,
+  by dumping them into the command-line.
+
+*/
+
+#if ISE_DEBUG
+
+function void
+_BKTree_Visualize(bk_tree *Tree)
+{
+    if (Tree->Root)
+    {
+        BKTree_VisualizeNode(Tree->Root, 0);
+    }
+}
+
+#define BKTree_Visualize(Tree) _BKTree_Visualize((Tree))
+
+#else
+
+#define BKTree_Visualize(Tree)
+
+#endif
+
+
+/*
+
+  NOTE(philip): This function destroys a BK-Tree node and all of it's siblings and children. This is a recursive
+  function that also destroys all of the node's siblings and children.. This does not deallocate the memory of the
+  keywords referenced by all the nodes.
+
+*/
+
+function void
+BKTree_DestroyNode(bk_tree_node *Node)
+{
+    if (Node->FirstChild)
+    {
+        BKTree_DestroyNode(Node->FirstChild);
+    }
+
+    if (Node->NextSibling)
+    {
+        BKTree_DestroyNode(Node->NextSibling);
     }
 
     free(Node);
 }
 
-function void
-PrintSpaces(u64 Count)
-{
-    for (u64 Index = 0;
-         Index < Count;
-         ++Index)
-    {
-        printf(" ");
-    }
-}
+/*
+
+  NOTE(philip): This function destroys a BK-Tree, deallocating all the memory allocated by all it's nodes.
+  This does not deallocate the memory of the keywords referenced by all the nodes.
+
+*/
 
 function void
-BKTree_Visualize(bk_tree_node *Node, u64 Depth = 0)
+BKTree_Destroy(bk_tree *Tree)
 {
-    PrintSpaces(Depth * 4);
-    printf("{\n");
-
-    PrintSpaces(Depth * 4 + 4);
-    printf("Word: %s\n", Node->Keyword->Word);
-
-    for (u64 Index = 0;
-         Index < MAX_KEYWORD_LENGTH - 1;
-         ++Index)
+    if (Tree->Root)
     {
-        if (Node->Children[Index])
-        {
-            printf("\n");
-            PrintSpaces(Depth * 4 + 4);
-            printf("Distance: %llu\n", Index + 1);
-
-            BKTree_Visualize(Node->Children[Index], Depth + 1);
-        }
+        BKTree_DestroyNode(Tree->Root);
     }
 
-    PrintSpaces(Depth * 4);
-    printf("}\n");
+    Tree->Root = 0;
 }
 
 function entry *
@@ -415,6 +522,40 @@ EntryList_Destroy(entry_list* List)
     List->Count = 0;
 }
 
+s32 main()
+{
+    keyword_list List = KeywordList_Create();
+
+    KeywordList_Insert(&List, "halt");
+    KeywordList_Insert(&List, "oouch");
+    KeywordList_Insert(&List, "pop");
+    KeywordList_Insert(&List, "oops");
+    KeywordList_Insert(&List, "felt");
+    KeywordList_Insert(&List, "fell");
+    KeywordList_Insert(&List, "smell");
+    KeywordList_Insert(&List, "shell");
+    KeywordList_Insert(&List, "help");
+    KeywordList_Insert(&List, "hell");
+
+    bk_tree Tree = BKTree_Create();
+
+    for (keyword *Keyword = List.Head;
+         Keyword;
+         Keyword = Keyword->Next)
+    {
+        BKTree_Insert(&Tree, Keyword);
+    }
+
+    keyword_list Oops = BKTree_FindMatches(&Tree, "helt", 2);
+    KeywordList_Visualize(&Oops);
+
+    BKTree_Destroy(&Tree);
+    KeywordList_Destroy(&List);
+
+    return 0;
+}
+
+#if 0
 
 s32 main()
 {
@@ -470,3 +611,5 @@ s32 main()
 
     return 0;
 }
+
+#endif

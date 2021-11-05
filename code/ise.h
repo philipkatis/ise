@@ -34,42 +34,58 @@ struct query_data
     u32 KeywordCount;
 };
 
-struct keyword_list_node
+/*
+
+  NOTE(philip): A 'keyword' is a word from a static query. These words are stored somewhere in memory and this
+  structure references them. The word storage is a separate layer abstracted away from the keyword (yikes).
+  Furthermore, this structure is is used as a node for a linked list of keywords. These lists have several
+  usecases throughout the appilcation.
+
+*/
+
+struct keyword
 {
-    // NOTE(philip): This now stores a pointer to the word in the file contents. Still not sure whether this is
-    // the right approach.
     char *Word;
-
-    u64 QueryID;
-
-    // TODO(philip): These are properties of the query and certainly should not be in here. Maybe we need an
-    // additional "query metadata" structure to store them. And then the query ID can be replaced by a pointer.
-    match_type MatchType;
-    u32 MatchDistance;
-
-    keyword_list_node *Previous;
-    keyword_list_node *Next;
-};
-
-struct keyword_list
-{
-    keyword_list_node *Head;
-    keyword_list_node *Tail;
-    u64 Count;
+    keyword *Next;
 };
 
 /*
 
-  NOTE(philip): The max Levenshtein distance between two keywords cannot exceed the length
-  of the bigger one. A Levenshtein distance of zero, means the two keywords are the same and
-  thus cannot be in the tree at the same time.
+  NOTE(philip): A 'keyword list' is a collection of keywords which usually share a common attribute. That attribute
+  might not be keyword-specific but query-specific.
+
+*/
+
+struct keyword_list
+{
+    keyword *Head;
+};
+
+/*
+
+  NOTE(philip): A 'bk_tree_node' is the building block of a BK-Tree. It stores a reference to a keyword, that the
+  node represents.
 
 */
 
 struct bk_tree_node
 {
-    keyword_list_node *Keyword;
-    bk_tree_node *Children[MAX_KEYWORD_LENGTH - 1];
+    keyword *Keyword;
+    u64 DistanceFromParent;
+    bk_tree_node *FirstChild;
+    bk_tree_node *NextSibling;
+};
+
+/*
+
+  NOTE(philip): A 'bk_tree' is an acceleration tree structure that stores references to keywords in a way that
+  speeds up the search of similar keywords up to a certain threshold.
+
+*/
+
+struct bk_tree
+{
+    bk_tree_node *Root;
 };
 
 struct entry
