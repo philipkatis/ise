@@ -18,14 +18,6 @@ function u32 CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 Len
 #define MAX_KEYWORD_COUNT_PER_QUERY  5
 #define MAX_QUERIES_PER_ENTRY        64
 
-typedef u32 match_type;
-enum
-{
-    MatchType_Exact       = 0,
-    MatchType_Hamming     = 1,
-    MatchType_Levenshtein = 2
-};
-
 // NOTE(philip): This is a function pointer for the matching functions.
 typedef u32 (*match_function)(char *A, u64 LengthA, char *B, u64 LengthB);
 
@@ -40,6 +32,20 @@ struct query_data
     u32 KeywordCount;
 };
 #endif
+
+/*
+
+  NOTE(philip): These are the different types of keyword matching that we support.
+
+*/
+
+typedef u32 match_type;
+enum
+{
+    MatchType_Exact       = 0,
+    MatchType_Hamming     = 1,
+    MatchType_Levenshtein = 2
+};
 
 /*
 
@@ -94,6 +100,7 @@ struct bk_tree_node
 struct bk_tree
 {
     bk_tree_node *Root;
+    match_type MatchType;
 };
 
 /*
@@ -105,10 +112,10 @@ struct bk_tree
 typedef u32 error_code;
 enum
 {
-    ErrorCode_Success,
-    ErrorCode_InvalidParameters,
-    ErrorCode_FailedAllocation,
-    ErrorCode_DuplicateEntry
+    ErrorCode_Success           = 0,
+    ErrorCode_InvalidParameters = 1,
+    ErrorCode_FailedAllocation  = 2,
+    ErrorCode_DuplicateEntry    = 3
 };
 
 typedef keyword *entry;
@@ -124,6 +131,12 @@ function entry *get_first(entry_list *List);
 function entry *get_next(entry_list *List, entry *Entry);
 function u32 get_number_entries(entry_list *List);
 function error_code destroy_entry_list(entry_list *List);
+
+typedef bk_tree index;
+
+function error_code build_entry_index(entry_list *List, match_type MatchType, index *Index);
+function error_code lookup_entry_index(char *Word, index *Index, u32 Threshold, entry_list *Result);
+function error_code destroy_entry_index(index *Index);
 
 #if 0
 

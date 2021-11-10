@@ -192,9 +192,11 @@ KeywordList_Destroy(keyword_list *List)
 */
 
 function bk_tree
-BKTree_Create()
+BKTree_Create(match_type MatchType)
 {
     bk_tree Result = { };
+    Result.MatchType = MatchType;
+
     return Result;
 }
 
@@ -566,6 +568,56 @@ destroy_entry_list(entry_list *List)
     if (List)
     {
         KeywordList_Destroy(List);
+        return ErrorCode_Success;
+    }
+    else
+    {
+        return ErrorCode_InvalidParameters;
+    }
+}
+
+function error_code
+build_entry_index(entry_list *List, match_type MatchType, index *Index)
+{
+    if (List && Index)
+    {
+        *Index = BKTree_Create(MatchType);
+
+        for (entry Entry = List->Head;
+             Entry;
+             Entry = Entry->Next)
+        {
+            BKTree_Insert(Index, Entry);
+        }
+
+        return ErrorCode_Success;
+    }
+    else
+    {
+        return ErrorCode_InvalidParameters;
+    }
+}
+
+function error_code
+lookup_entry_index(char *Word, index *Index, u32 Threshold, entry_list *Result)
+{
+    if (Word && Index && Result)
+    {
+        *Result = BKTree_FindMatches(Index, Word, Threshold);
+        return ErrorCode_Success;
+    }
+    else
+    {
+        return ErrorCode_InvalidParameters;
+    }
+}
+
+function error_code
+destroy_entry_index(index *Index)
+{
+    if (Index)
+    {
+        BKTree_Destroy(Index);
         return ErrorCode_Success;
     }
     else

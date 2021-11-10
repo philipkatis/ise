@@ -1,6 +1,13 @@
 #include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
+
+// NOTE(philip): Linux decides to include 'strings.h' by default, preventing us from defining an 'index' type.
+#ifdef __USE_MISC
+    #undef __USE_MISC
+#endif
+
+#include <string.h>
+
 
 #include "ise_base.h"
 #include "ise.h"
@@ -23,7 +30,7 @@ Test_IsExactMatch(void)
         A = "";
         B = "";
 
-        Result = IsExactMatch(A, StringLength(A), B, StringLength(B));
+        Result = IsExactMatch(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
     }
 
@@ -32,7 +39,7 @@ Test_IsExactMatch(void)
         A = "hello";
         B = "hello";
 
-        Result = IsExactMatch(A, StringLength(A), B, StringLength(B));
+        Result = IsExactMatch(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
     }
 
@@ -41,7 +48,7 @@ Test_IsExactMatch(void)
         A = "hello";
         B = "world";
 
-        Result = IsExactMatch(A, StringLength(A), B, StringLength(B));
+        Result = IsExactMatch(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -50,7 +57,7 @@ Test_IsExactMatch(void)
         A = "000x00010f001";
         B = "rgjahrg";
 
-        Result = IsExactMatch(A, StringLength(A), B, StringLength(B));
+        Result = IsExactMatch(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -59,7 +66,7 @@ Test_IsExactMatch(void)
         A = "0000000000000000000000000000001";
         B = "0000000000000000000000000000002";
 
-        Result = IsExactMatch(A, StringLength(A), B, StringLength(B));
+        Result = IsExactMatch(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 }
@@ -76,7 +83,7 @@ Test_CalculateHammingDistance(void)
         A = "";
         B = "";
 
-        Result = CalculateHammingDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -85,7 +92,7 @@ Test_CalculateHammingDistance(void)
         A = "hello";
         B = "hello";
 
-        Result = CalculateHammingDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -94,7 +101,7 @@ Test_CalculateHammingDistance(void)
         A = "hello";
         B = "world";
 
-        Result = CalculateHammingDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 4);
     }
 
@@ -103,7 +110,7 @@ Test_CalculateHammingDistance(void)
         A = "1234567890";
         B = "qwertyuiop";
 
-        Result = CalculateHammingDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 10);
     }
 
@@ -112,7 +119,7 @@ Test_CalculateHammingDistance(void)
         A = "0000000000000000000000000000001";
         B = "0000000000000000000000000000002";
 
-        Result = CalculateHammingDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
     }
 }
@@ -129,7 +136,7 @@ Test_CalculateLevenshteinDistance(void)
         A = "";
         B = "";
 
-        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -138,7 +145,7 @@ Test_CalculateLevenshteinDistance(void)
         A = "hello";
         B = "hello";
 
-        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -147,7 +154,7 @@ Test_CalculateLevenshteinDistance(void)
         A = "hello";
         B = "world";
 
-        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 4);
     }
 
@@ -156,7 +163,7 @@ Test_CalculateLevenshteinDistance(void)
         A = "1234567890";
         B = "qwertyuiop";
 
-        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 10);
     }
 
@@ -166,25 +173,25 @@ Test_CalculateLevenshteinDistance(void)
         A = "kitten";
         B = "sitten";
 
-        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
 
         A = "sitten";
         B = "sittin";
 
-        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
 
         A = "sittin";
         B = "sitting";
 
-        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
 
         A = "bravo";
         B = "raven";
 
-        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 3);
     }
 
@@ -193,7 +200,7 @@ Test_CalculateLevenshteinDistance(void)
         A = "0000000000000000000000000000001";
         B = "0000000000000000000000000000002";
 
-        Result = CalculateLevenshteinDistance(A, StringLength(A), B, StringLength(B));
+        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
     }
 }
@@ -336,11 +343,112 @@ Test_EntryList(void)
     }
 }
 
+function void
+Test_Index(void)
+{
+    error_code ErrorCode = ErrorCode_Success;
+
+    char *Words[10] =
+    {
+        "halt", "oouch", "pop", "oops", "felt", "fell", "smell", "shell", "help", "hell"
+    };
+
+    entry_list List = { };
+    create_entry_list(&List);
+
+    for (u64 Index = 0;
+         Index < 10;
+         ++Index)
+    {
+        entry Entry = 0;
+        create_entry(Words[Index], &Entry);
+        add_entry(&List, &Entry);
+    }
+
+    index Index = { };
+
+    // NOTE(philip): BK-Tree creation.
+    {
+        ErrorCode = build_entry_index(0, 0, 0);
+        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
+
+        ErrorCode = build_entry_index(&List, MatchType_Levenshtein, &Index);
+        TEST_CHECK(ErrorCode == ErrorCode_Success);
+        TEST_CHECK(Index.Root != 0);
+    }
+
+    // NOTE(philip): BK-Tree search.
+    {
+        ErrorCode = lookup_entry_index(0, 0, 0, 0);
+        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
+
+        entry_list Result = { };
+        ErrorCode = lookup_entry_index("helt", &Index, 2, &Result);
+        TEST_CHECK(ErrorCode == ErrorCode_Success);
+        TEST_CHECK(Result.Count == 6);
+
+        entry CurrentEntry = Result.Head;
+        TEST_CHECK(CurrentEntry->Word == Words[0]);
+        CurrentEntry = CurrentEntry->Next;
+
+        TEST_CHECK(CurrentEntry->Word == Words[4]);
+        CurrentEntry = CurrentEntry->Next;
+
+        TEST_CHECK(CurrentEntry->Word == Words[5]);
+        CurrentEntry = CurrentEntry->Next;
+
+        TEST_CHECK(CurrentEntry->Word == Words[7]);
+        CurrentEntry = CurrentEntry->Next;
+
+        TEST_CHECK(CurrentEntry->Word == Words[8]);
+        CurrentEntry = CurrentEntry->Next;
+
+        TEST_CHECK(CurrentEntry->Word == Words[9]);
+        CurrentEntry = CurrentEntry->Next;
+
+        TEST_CHECK(CurrentEntry == 0);
+
+        destroy_entry_list(&Result);
+    }
+
+    // NOTE(philip): BK-Tree search.
+    {
+        entry_list Result = { };
+        ErrorCode = lookup_entry_index("ops", &Index, 2, &Result);
+        TEST_CHECK(ErrorCode == ErrorCode_Success);
+        TEST_CHECK(Result.Count == 2);
+
+        entry CurrentEntry = Result.Head;
+        TEST_CHECK(CurrentEntry->Word == Words[2]);
+        CurrentEntry = CurrentEntry->Next;
+
+        TEST_CHECK(CurrentEntry->Word == Words[3]);
+        CurrentEntry = CurrentEntry->Next;
+
+        TEST_CHECK(CurrentEntry == 0);
+
+        destroy_entry_list(&Result);
+    }
+
+    // NOTE(philip): BK-Tree destruction.
+    {
+        ErrorCode = destroy_entry_index(0);
+        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
+
+        ErrorCode = destroy_entry_index(&Index);
+        TEST_CHECK(ErrorCode == ErrorCode_Success);
+        TEST_CHECK(Index.Root == 0);
+    }
+
+    destroy_entry_list(&List);
+}
+
 TEST_LIST =
 {
     { "Exact Keyword Matching",           Test_IsExactMatch                 },
     { "Hamming Distance Calculation",     Test_CalculateHammingDistance     },
     { "Levenshtein Distance Calculation", Test_CalculateLevenshteinDistance },
     { "Entry List",                       Test_EntryList                    },
+    { "Index",                            Test_Index                        },
     { 0, 0 }
 };
