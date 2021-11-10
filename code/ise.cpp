@@ -1,15 +1,3 @@
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-
-#include "ise_base.h"
-// #include "ise_parser.h"
-#include "ise.h"
-
-#include "ise_base.cpp"
-#include "ise_match.cpp"
-// #include "ise_parser.cpp"
-
 /*
 
   NOTE(philip): This function is used only for debugging. It prints the specified number of tabs to the
@@ -47,17 +35,43 @@ KeywordList_Create()
 
 /*
 
-  NOTE(philip): This function inserts a new keyword to the keyword list. The new word will be at the head of the
-  list. This is done to improve insertion speed. This function does not ensure that there are no duplicates. It is
-  up to the client to use KeywordList_Find() to implement that functionality.
+  NOTE(philip): This function allocates a new keyword and sets the data it stores.
+
+*/
+
+function keyword *
+KeywordList_AllocateKeyword(char *Word)
+{
+    keyword *Result = (keyword *)calloc(1, sizeof(keyword));
+    Result->Word = Word;
+
+    return Result;
+}
+
+/*
+
+  NOTE(philip): This function deallocates a keyword.
+
+*/
+
+function void
+KeywordList_DeallocateKeyword(keyword *Keyword)
+{
+    free(Keyword);
+}
+
+/*
+
+  NOTE(philip): This function creates a new keyword and inserts it the keyword list. The new word will be at the
+  head of the list. This is done to improve insertion speed. This function does not ensure that there are no
+  duplicates. It is up to the client to use KeywordList_Find() to implement that functionality.
 
 */
 
 function keyword *
 KeywordList_Insert(keyword_list *List, char *Word)
 {
-    keyword *Keyword = (keyword *)calloc(1, sizeof(keyword));
-    Keyword->Word = Word;
+    keyword *Keyword = KeywordList_AllocateKeyword(Word);
 
     if (List->Head)
     {
@@ -65,6 +79,29 @@ KeywordList_Insert(keyword_list *List, char *Word)
     }
 
     List->Head = Keyword;
+    ++List->Count;
+
+    return Keyword;
+}
+
+/*
+
+  NOTE(philip): This function inserts a keyword to the keyword list. The new word will be at the head of the list.
+  This is done to improve insertion speed. This function does not ensure that there are no duplicates. It is up to
+  the client to use KeywordList_Find() to implement that functionality.
+
+*/
+
+function keyword *
+KeywordList_Insert(keyword_list *List, keyword *Keyword)
+{
+    if (List->Head)
+    {
+        Keyword->Next = List->Head;
+    }
+
+    List->Head = Keyword;
+    ++List->Count;
 
     return Keyword;
 }
@@ -140,11 +177,12 @@ KeywordList_Destroy(keyword_list *List)
     while (Keyword)
     {
         keyword *NextKeyword = Keyword->Next;
-        free(Keyword);
+        KeywordList_DeallocateKeyword(Keyword);
         Keyword = NextKeyword;
     }
 
     List->Head = 0;
+    List->Count = 0;
 }
 
 /*
@@ -195,8 +233,8 @@ BKTree_Insert(bk_tree *Tree, keyword *Keyword)
         while (true)
         {
             u64 DistanceFromCurrentNode = CalculateLevenshteinDistance(CurrentNode->Keyword->Word,
-                                                                       StringLength(CurrentNode->Keyword->Word),
-                                                                       Keyword->Word, StringLength(Keyword->Word));
+                                                                       strlen(CurrentNode->Keyword->Word),
+                                                                       Keyword->Word, strlen(Keyword->Word));
             b32 FoundNodeWithSameDistance = false;
 
             for (bk_tree_node *ChildNode = CurrentNode->FirstChild;
@@ -259,9 +297,8 @@ BKTree_FindMatches(bk_tree *Tree, char *Word, u64 DistanceThreshold)
         --CandidateCount;
 
         u64 DistanceFromCurrentCandidate = CalculateLevenshteinDistance(CurrentCandidate->Keyword->Word,
-                                                                        StringLength(CurrentCandidate->Keyword->Word),
-                                                                        Word,
-                                                                        StringLength(Word));
+                                                                        strlen(CurrentCandidate->Keyword->Word),
+                                                                        Word, strlen(Word));
 
         if (DistanceFromCurrentCandidate <= DistanceThreshold)
         {
@@ -397,6 +434,147 @@ BKTree_Destroy(bk_tree *Tree)
 
     Tree->Root = 0;
 }
+
+/*
+
+  NOTE(philip): These functions implement the required interface from the assignment. They are just a wrapper of
+  the above functions so refer to those for implementation details.
+
+*/
+
+function error_code
+create_entry(char *Word, entry *Entry)
+{
+    if (Entry)
+    {
+        *Entry = KeywordList_AllocateKeyword(Word);
+
+        if (*Entry)
+        {
+            return ErrorCode_Success;
+        }
+        else
+        {
+            return ErrorCode_FailedAllocation;
+        }
+    }
+    else
+    {
+        return ErrorCode_InvalidParameters;
+    }
+}
+
+function error_code
+destroy_entry(entry *Entry)
+{
+    if (Entry)
+    {
+        KeywordList_DeallocateKeyword(*Entry);
+        *Entry = 0;
+
+        return ErrorCode_Success;
+    }
+    else
+    {
+        return ErrorCode_InvalidParameters;
+    }
+}
+
+function error_code
+create_entry_list(entry_list *List)
+{
+    if (List)
+    {
+        *List = KeywordList_Create();
+        return ErrorCode_Success;
+    }
+    else
+    {
+        return ErrorCode_InvalidParameters;
+    }
+}
+
+function error_code
+add_entry(entry_list *List, entry *Entry)
+{
+    if (List && Entry && *Entry)
+    {
+        if (!KeywordList_Find(List, (*Entry)->Word))
+        {
+            KeywordList_Insert(List, *Entry);
+            return ErrorCode_Success;
+        }
+        else
+        {
+            KeywordList_DeallocateKeyword(*Entry);
+            *Entry = 0;
+
+            return ErrorCode_DuplicateEntry;
+        }
+    }
+    else
+    {
+        return ErrorCode_InvalidParameters;
+    }
+}
+
+function entry *
+get_first(entry_list *List)
+{
+    // NOTE(philip): That's what is needed to get this API to work. LUL.
+    static entry Storage;
+
+    Storage = 0;
+    if (List)
+    {
+        Storage = List->Head;
+    }
+
+    return &Storage;
+}
+
+function entry *
+get_next(entry_list *List, entry *Entry)
+{
+    static entry Storage;
+
+    Storage = 0;
+    if (List && Entry && *Entry)
+    {
+        Storage = (*Entry)->Next;
+    }
+
+    return &Storage;
+}
+
+function u32
+get_number_entries(entry_list *List)
+{
+    u32 Result = 0;
+
+    if (List)
+    {
+        Result = List->Count;
+    }
+
+    return Result;
+}
+
+function error_code
+destroy_entry_list(entry_list *List)
+{
+    if (List)
+    {
+        KeywordList_Destroy(List);
+        return ErrorCode_Success;
+    }
+    else
+    {
+        return ErrorCode_InvalidParameters;
+    }
+}
+
+#if 0
 
 function entry *
 Entry_Allocate(char* Word)
@@ -551,63 +729,6 @@ s32 main()
 
     BKTree_Destroy(&Tree);
     KeywordList_Destroy(&List);
-
-    return 0;
-}
-
-#if 0
-
-s32 main()
-{
-#if 0
-    char *CommandFilePath = "data/commands.txt";
-
-    buffer CommandFileContents = { };
-    if (LoadTextFile(CommandFilePath, &CommandFileContents))
-    {
-        ParseCommandFile(CommandFileContents);
-        DeallocateBuffer(CommandFileContents);
-    }
-    else
-    {
-        printf("[Error]: Could not open command file! (Path: \"%s\")\n", CommandFilePath);
-    }
-#endif
-
-#if 1
-    char *Words[] = { "hell", "help", "fall", "felt", "fell", "small", "melt" };
-
-    keyword_list List = KeywordList_Create();
-    for (u64 Index = 0;
-         Index < ArrayCount(Words);
-         ++Index)
-    {
-        keyword_list_node *Node = KeywordList_AllocateNode(Words[Index], 123, MatchType_Levenshtein, 2);
-        KeywordList_Insert(&List, Node);
-    }
-
-    // KeywordList_Visualize(&List);
-    // printf("\n\n");
-
-    bk_tree_node *Tree = BKTree_Create(List.Tail);
-
-    for (keyword_list_node *Node = List.Tail->Previous;
-         Node;
-         Node = Node->Previous)
-    {
-        BKTree_Insert(Tree, Node);
-    }
-
-    // BKTree_Visualize(Tree);
-
-    keyword_list SearchResult = BKTree_Search(Tree, "henn");
-
-    KeywordList_Visualize(&SearchResult);
-    KeywordList_Destroy(&SearchResult);
-
-    BKTree_Destroy(Tree);
-    KeywordList_Destroy(&List);
-#endif
 
     return 0;
 }

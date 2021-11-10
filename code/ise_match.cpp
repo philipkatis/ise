@@ -83,7 +83,7 @@ global u32 LevenshteinDistanceCache[LEVENSHTEIN_CACHE_MATRIX_SIZE * LEVENSHTEIN_
 function u32
 CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 LengthB)
 {
-    ZeroMemory(LevenshteinDistanceCache, LEVENSHTEIN_CACHE_MATRIX_SIZE * LEVENSHTEIN_CACHE_MATRIX_SIZE * sizeof(u32));
+    memset(LevenshteinDistanceCache, 0, LEVENSHTEIN_CACHE_MATRIX_SIZE * LEVENSHTEIN_CACHE_MATRIX_SIZE * sizeof(u32));
 
     for (u64 Index = 1;
          Index <= LengthA;
@@ -122,6 +122,10 @@ CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 LengthB)
     return LevenshteinDistanceCache[LEVENSHTEIN_CACHE_MATRIX_SIZE * LengthB + LengthA];
 }
 
+#if 0
+
 // NOTE(philip): This array stores all the different keyword matching functions in such a way that the match_type
 // can be used to index into it.
 global match_function MatchFunctions[3] = { IsExactMatch, CalculateHammingDistance, CalculateLevenshteinDistance };
+
+#endif

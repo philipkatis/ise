@@ -8,7 +8,13 @@
 
 */
 
-#define MAX_KEYWORD_LENGTH           31
+#define MAX_KEYWORD_LENGTH 31
+
+function u32 IsExactMatch(char *A, u64 LengthA, char *B, u64 LengthB);
+function u32 CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB);
+function u32 CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 LengthB);
+
+#if 0
 #define MAX_KEYWORD_COUNT_PER_QUERY  5
 #define MAX_QUERIES_PER_ENTRY        64
 
@@ -33,6 +39,7 @@ struct query_data
     u32 MatchDistance;
     u32 KeywordCount;
 };
+#endif
 
 /*
 
@@ -59,6 +66,7 @@ struct keyword
 struct keyword_list
 {
     keyword *Head;
+    u64 Count;
 };
 
 /*
@@ -88,6 +96,37 @@ struct bk_tree
     bk_tree_node *Root;
 };
 
+/*
+
+  NOTE(philip): These types and function prototypes are used for the interface the assignment requires.
+
+*/
+
+typedef u32 error_code;
+enum
+{
+    ErrorCode_Success,
+    ErrorCode_InvalidParameters,
+    ErrorCode_FailedAllocation,
+    ErrorCode_DuplicateEntry
+};
+
+typedef keyword *entry;
+
+function error_code create_entry(char *Word, entry *Entry);
+function error_code destroy_entry(entry *Entry);
+
+typedef keyword_list entry_list;
+
+function error_code create_entry_list(entry_list *List);
+function error_code add_entry(entry_list *List, entry *Entry);
+function entry *get_first(entry_list *List);
+function entry *get_next(entry_list *List, entry *Entry);
+function u32 get_number_entries(entry_list *List);
+function error_code destroy_entry_list(entry_list *List);
+
+#if 0
+
 struct entry
 {
     char Word[MAX_KEYWORD_LENGTH + 1];
@@ -113,5 +152,7 @@ struct entry_list
     entry_list_node* Tail;
     u64 Count;
 };
+
+#endif
 
 #endif
