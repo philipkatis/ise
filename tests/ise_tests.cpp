@@ -2,12 +2,12 @@
 #include <stdio.h>
 
 // NOTE(philip): Linux decides to include 'strings.h' by default, preventing us from defining an 'index' type.
+// This undefine prevents this from happening.
 #ifdef __USE_MISC
     #undef __USE_MISC
 #endif
 
 #include <string.h>
-
 
 #include "ise_base.h"
 #include "ise.h"

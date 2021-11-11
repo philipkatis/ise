@@ -2,10 +2,10 @@
 .PHONY: clean
 
 OutputDirectory = build
-CommonCompilerFlags = -DISE_DEBUG -g -Wno-write-strings -Icode
+CompilerFlags = -DISE_DEBUG=1 -g -Wno-write-strings -Ithird_party/acutest/include -Icode
 
-first: code/ise.cpp tests/ise_tests.cpp | SetupOutputDirectory
-	g++ $(CommonCompilerFlags) -Ithird_party/acutest/include tests/ise_tests.cpp -o $(OutputDirectory)/tests
+compile: tests/ise_tests.cpp | SetupOutputDirectory
+	g++ $(CompilerFlags) tests/ise_tests.cpp -o $(OutputDirectory)/tests
 
 tests: $(OutputDirectory)/tests
 	./$(OutputDirectory)/tests

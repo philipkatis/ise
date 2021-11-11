@@ -1,6 +1,10 @@
 #ifndef ISE_BASE_H
 #define ISE_BASE_H
 
+#ifndef ISE_DEBUG
+#define ISE_DEBUG 0
+#endif
+
 #define global   static
 #define function static
 
@@ -36,6 +40,8 @@ static_assert(sizeof(b32) == 4);
 static_assert(sizeof(f32) == 4);
 static_assert(sizeof(f64) == 8);
 
+#if ISE_DEBUG
+
 #define DebugBreak() __builtin_trap()
 
 #define Assert(Condition) \
@@ -52,6 +58,13 @@ static_assert(sizeof(f64) == 8);
         printf("\n"); \
         DebugBreak(); \
     }
+
+#else
+
+#define DebugBreak()
+#define Assert(Condition)
+
+#endif
 
 #define Min(A, B) (((A) < (B)) ? (A) : (B))
 #define Max(A, B) (((A) > (B)) ? (A) : (B))

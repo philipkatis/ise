@@ -1,3 +1,25 @@
+/*
+
+  NOTE(philip): This function is used only for debugging. It prints the specified number of tabs to the
+  command-line. It is mostly used for visualization.
+
+*/
+
+#if ISE_DEBUG
+
+function void
+PrintTabs(u64 Count)
+{
+    for (u64 Index = 0;
+         Index < Count;
+         ++Index)
+    {
+        printf("    ");
+    }
+}
+
+#endif
+
 function b32
 IsWhitespace(char Character)
 {

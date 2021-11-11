@@ -138,34 +138,4 @@ function error_code build_entry_index(entry_list *List, match_type MatchType, in
 function error_code lookup_entry_index(char *Word, index *Index, u32 Threshold, entry_list *Result);
 function error_code destroy_entry_index(index *Index);
 
-#if 0
-
-struct entry
-{
-    char Word[MAX_KEYWORD_LENGTH + 1];
-    u64 Payload[MAX_QUERIES_PER_ENTRY];
-    /*
-
-    NOTE(Alex): The payload could potentially point to an array of numbers, the numbers of which will indicate
-    the corresponding queries in which the word exists.
-
-    */
-};
-
-struct entry_list_node
-{
-    entry *Entry;
-    entry_list_node* Previous;
-    entry_list_node* Next;
-};
-
-struct entry_list
-{
-    entry_list_node* Head;
-    entry_list_node* Tail;
-    u64 Count;
-};
-
-#endif
-
 #endif
