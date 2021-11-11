@@ -5,9 +5,11 @@
 This repository has the code for the Inverted Search Engine project. It is comprised of the
 core codebase as well as a few unit tests.
 
+***
+
 ## Instructions
 
-1. Download the repository:
+<ins>**1. Download the repository:**</ins>
 
 To download the repository you can use `git clone --recursive https://github.com/philipkatis/ise`.
 This ensures that both the repository and all of the required git submodules are downloaded together.
@@ -15,14 +17,16 @@ This ensures that both the repository and all of the required git submodules are
 In case you used `git clone https://github.com/philipkatis/ise` you can use `git submodule update --init`
 to download all the required submodules.
 
-2. Compile:
+<ins>**2. Compile:**</ins>
 
 In order to compile the application, you can use `make`. This creates an output directory and places all
 of the executables in it.
 
-3. Run the tests:
+<ins>**3. Run the tests:**</ins>
 
 You can run the available unit tests using the command `make tests`.
+
+***
 
 ## Third Party Code
 
