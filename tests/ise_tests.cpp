@@ -10,11 +10,14 @@
 #include <string.h>
 
 #include "ise_base.h"
-#include "ise.h"
+#include "ise_keyword_list.h"
+#include "ise_bk_tree.h"
+#include "ise_interface.h"
 
-#include "ise_base.cpp"
 #include "ise_match.cpp"
-#include "ise.cpp"
+#include "ise_keyword_list.cpp"
+#include "ise_bk_tree.cpp"
+#include "ise_interface.cpp"
 
 #include "acutest.h"
 
@@ -344,7 +347,7 @@ Test_EntryList(void)
 }
 
 function void
-Test_Index(void)
+Test_IndexLevenshtein(void)
 {
     error_code ErrorCode = ErrorCode_Success;
 
@@ -449,6 +452,6 @@ TEST_LIST =
     { "Hamming Distance Calculation",     Test_CalculateHammingDistance     },
     { "Levenshtein Distance Calculation", Test_CalculateLevenshteinDistance },
     { "Entry List",                       Test_EntryList                    },
-    { "Index",                            Test_Index                        },
+    { "Index - Levenshtein",              Test_IndexLevenshtein             },
     { 0, 0 }
 };

@@ -2,7 +2,7 @@
 #define ISE_BASE_H
 
 #ifndef ISE_DEBUG
-#define ISE_DEBUG 0
+    #define ISE_DEBUG 0
 #endif
 
 #define global   static
@@ -41,29 +41,25 @@ static_assert(sizeof(f32) == 4);
 static_assert(sizeof(f64) == 8);
 
 #if ISE_DEBUG
+    #define DebugBreak() __builtin_trap()
 
-#define DebugBreak() __builtin_trap()
-
-#define Assert(Condition) \
-    if (!(Condition)) \
-    { \
-        printf("\n"); \
-        printf("*** Assertion Failed ***\n"); \
-        printf("\n"); \
-        printf("  File: %s\n", __FILE__); \
-        printf("  Line: %d\n", __LINE__); \
-        printf("  Condition: %s\n", #Condition); \
-        printf("\n"); \
-        printf("************************\n"); \
-        printf("\n"); \
-        DebugBreak(); \
-    }
-
+    #define Assert(Condition) \
+        if (!(Condition)) \
+        { \
+            printf("\n"); \
+            printf("*** Assertion Failed ***\n"); \
+            printf("\n"); \
+            printf("  File: %s\n", __FILE__); \
+            printf("  Line: %d\n", __LINE__); \
+            printf("  Condition: %s\n", #Condition); \
+            printf("\n"); \
+            printf("************************\n"); \
+            printf("\n"); \
+            DebugBreak(); \
+        }
 #else
-
-#define DebugBreak()
-#define Assert(Condition)
-
+    #define DebugBreak()
+    #define Assert(Condition)
 #endif
 
 #define Min(A, B) (((A) < (B)) ? (A) : (B))
@@ -71,10 +67,27 @@ static_assert(sizeof(f64) == 8);
 
 #define ArrayCount(Array) (sizeof((Array)) / sizeof(*(Array)))
 
-struct buffer
+/*
+
+  NOTE(philip): These limits are based on the SIGMOD 2013 Programming Contest referenced by the
+  project assignment. We assume string length limits, do not include the zero termination character.
+
+*/
+
+#define MAX_KEYWORD_LENGTH 31
+
+/*
+
+  NOTE(philip): These are the different types of keyword matching that we support.
+
+*/
+
+typedef u32 match_type;
+enum
 {
-    u64 Size;
-    u8 *Data;
+    MatchType_Exact       = 0,
+    MatchType_Hamming     = 1,
+    MatchType_Levenshtein = 2
 };
 
 #endif
