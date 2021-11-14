@@ -2,6 +2,7 @@
 #define ISE_BK_TREE_H
 
 #include "ise_keyword_list.h"
+#include "ise_match.h"
 
 /*
 
@@ -28,7 +29,7 @@ struct bk_tree_node
 struct bk_tree
 {
     bk_tree_node *Root;
-    match_type MatchType;
+    match_function_type MatchFunction;
 };
 
 /*

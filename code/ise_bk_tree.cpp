@@ -1,5 +1,4 @@
 #include "ise_bk_tree.h"
-#include "ise_match.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -8,7 +7,10 @@ bk_tree
 BKTree_Create(match_type MatchType)
 {
     bk_tree Result = { };
-    Result.MatchType = MatchType;
+
+    // TODO(philip): Not supported yet.
+    Assert(MatchType != MatchType_Exact);
+    Result.MatchFunction = MatchFunctions[MatchType];
 
     return Result;
 }
@@ -36,12 +38,13 @@ BKTree_Insert(bk_tree *Tree, keyword *Keyword)
 
     if (Tree->Root)
     {
+        u64 KeywordLength = strlen(Keyword->Word);
         bk_tree_node *CurrentNode = Tree->Root;
         while (true)
         {
             u64 DistanceFromCurrentNode = CalculateLevenshteinDistance(CurrentNode->Keyword->Word,
                                                                        strlen(CurrentNode->Keyword->Word),
-                                                                       Keyword->Word, strlen(Keyword->Word));
+                                                                       Keyword->Word, KeywordLength);
             b32 FoundNodeWithSameDistance = false;
 
             for (bk_tree_node *ChildNode = CurrentNode->FirstChild;
@@ -82,6 +85,8 @@ BKTree_FindMatches(bk_tree *Tree, char *Word, u64 DistanceThreshold)
 {
     keyword_list Matches = KeywordList_Create();
 
+    u64 WordLength = strlen(Word);
+
     // TODO(philip): Implement this using a stack.
     bk_tree_node *Candidates[1024];
     u64 CandidateCount = 0;
@@ -96,9 +101,9 @@ BKTree_FindMatches(bk_tree *Tree, char *Word, u64 DistanceThreshold)
         bk_tree_node *CurrentCandidate = Candidates[CandidateCount - 1];
         --CandidateCount;
 
-        u64 DistanceFromCurrentCandidate = CalculateLevenshteinDistance(CurrentCandidate->Keyword->Word,
-                                                                        strlen(CurrentCandidate->Keyword->Word),
-                                                                        Word, strlen(Word));
+        u64 DistanceFromCurrentCandidate = Tree->MatchFunction(CurrentCandidate->Keyword->Word,
+                                                               strlen(CurrentCandidate->Keyword->Word), Word,
+                                                               WordLength);
 
         if (DistanceFromCurrentCandidate <= DistanceThreshold)
         {

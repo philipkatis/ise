@@ -347,6 +347,94 @@ Test_EntryList(void)
 }
 
 function void
+Test_IndexHamming(void)
+{
+    error_code ErrorCode = ErrorCode_Success;
+
+    char *Words[10] =
+    {
+        "halt", "oouc", "pops", "oops", "felt", "fell", "smel", "shel", "help", "hell"
+    };
+
+    entry_list List = { };
+    create_entry_list(&List);
+
+    for (u64 Index = 0;
+         Index < 10;
+         ++Index)
+    {
+        entry Entry = 0;
+        create_entry(Words[Index], &Entry);
+        add_entry(&List, &Entry);
+    }
+
+    index Index = { };
+
+    // NOTE(philip): BK-Tree creation.
+    {
+        ErrorCode = build_entry_index(0, 0, 0);
+        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
+
+        ErrorCode = build_entry_index(&List, MatchType_Hamming, &Index);
+        TEST_CHECK(ErrorCode == ErrorCode_Success);
+        TEST_CHECK(Index.Root != 0);
+    }
+
+    // NOTE(philip): BK-Tree search.
+    {
+        ErrorCode = lookup_entry_index(0, 0, 0, 0);
+        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
+
+        entry_list Result = { };
+        ErrorCode = lookup_entry_index("helt", &Index, 1, &Result);
+        TEST_CHECK(ErrorCode == ErrorCode_Success);
+        TEST_CHECK(Result.Count == 4);
+
+        entry CurrentEntry = Result.Head;
+        TEST_CHECK(CurrentEntry->Word == Words[0]);
+        CurrentEntry = CurrentEntry->Next;
+
+        TEST_CHECK(CurrentEntry->Word == Words[4]);
+        CurrentEntry = CurrentEntry->Next;
+
+        TEST_CHECK(CurrentEntry->Word == Words[8]);
+        CurrentEntry = CurrentEntry->Next;
+
+        TEST_CHECK(CurrentEntry->Word == Words[9]);
+        CurrentEntry = CurrentEntry->Next;
+
+        TEST_CHECK(CurrentEntry == 0);
+
+        destroy_entry_list(&Result);
+    }
+
+    // NOTE(philip): BK-Tree search.
+    {
+        entry_list Result = { };
+        ErrorCode = lookup_entry_index("opsy", &Index, 2, &Result);
+        TEST_CHECK(ErrorCode == ErrorCode_Success);
+        TEST_CHECK(Result.Count == 0);
+
+        entry CurrentEntry = Result.Head;
+        TEST_CHECK(CurrentEntry == 0);
+
+        destroy_entry_list(&Result);
+    }
+
+    // NOTE(philip): BK-Tree destruction.
+    {
+        ErrorCode = destroy_entry_index(0);
+        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
+
+        ErrorCode = destroy_entry_index(&Index);
+        TEST_CHECK(ErrorCode == ErrorCode_Success);
+        TEST_CHECK(Index.Root == 0);
+    }
+
+    destroy_entry_list(&List);
+}
+
+function void
 Test_IndexLevenshtein(void)
 {
     error_code ErrorCode = ErrorCode_Success;
@@ -452,6 +540,7 @@ TEST_LIST =
     { "Hamming Distance Calculation",     Test_CalculateHammingDistance     },
     { "Levenshtein Distance Calculation", Test_CalculateLevenshteinDistance },
     { "Entry List",                       Test_EntryList                    },
+    { "Index - Hamming",                  Test_IndexHamming                 },
     { "Index - Levenshtein",              Test_IndexLevenshtein             },
     { 0, 0 }
 };

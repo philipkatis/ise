@@ -42,4 +42,21 @@ u32 CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB);
 
 u32 CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 LengthB);
 
+/*
+
+  NOTE(philip): This function pointer type is common for all of the above keyword matching functions. It is then
+  used to define an array where it's elements are the keyword matching functions. The elements are stored in such
+  a way to allow for indexing into the array using the match_type enum values.
+
+*/
+
+typedef u32 (*match_function_type)(char *A, u64 LengthA, char *B, u64 LengthB);
+
+global match_function_type MatchFunctions[3] =
+{
+    IsExactMatch,
+    CalculateHammingDistance,
+    CalculateLevenshteinDistance
+};
+
 #endif
