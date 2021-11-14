@@ -1,6 +1,8 @@
 #ifndef ISE_KEYWORD_LIST_H
 #define ISE_KEYWORD_LIST_H
 
+#include "ise_base.h"
+
 /*
 
   NOTE(philip): A 'keyword' is a word from a static query. These words are stored somewhere in memory and this
@@ -35,7 +37,7 @@ struct keyword_list
 
 */
 
-function keyword_list KeywordList_Create();
+keyword_list KeywordList_Create();
 
 /*
 
@@ -43,7 +45,7 @@ function keyword_list KeywordList_Create();
 
 */
 
-function keyword *KeywordList_AllocateKeyword(char *Word);
+keyword *KeywordList_AllocateKeyword(char *Word);
 
 /*
 
@@ -51,7 +53,7 @@ function keyword *KeywordList_AllocateKeyword(char *Word);
 
 */
 
-function void KeywordList_DeallocateKeyword(keyword *Keyword);
+void KeywordList_DeallocateKeyword(keyword *Keyword);
 
 /*
 
@@ -61,7 +63,7 @@ function void KeywordList_DeallocateKeyword(keyword *Keyword);
 
 */
 
-function keyword *KeywordList_Insert(keyword_list *List, char *Word);
+keyword *KeywordList_Insert(keyword_list *List, char *Word);
 
 /*
 
@@ -71,7 +73,7 @@ function keyword *KeywordList_Insert(keyword_list *List, char *Word);
 
 */
 
-function keyword *KeywordList_Insert(keyword_list *List, keyword *Keyword);
+keyword *KeywordList_Insert(keyword_list *List, keyword *Keyword);
 
 /*
 
@@ -80,7 +82,7 @@ function keyword *KeywordList_Insert(keyword_list *List, keyword *Keyword);
 
 */
 
-function keyword *KeywordList_Find(keyword_list *List, char *Word);
+keyword *KeywordList_Find(keyword_list *List, char *Word);
 
 /*
 
@@ -89,7 +91,7 @@ function keyword *KeywordList_Find(keyword_list *List, char *Word);
 
 */
 
-function void KeywordList_Destroy(keyword_list *List);
+void KeywordList_Destroy(keyword_list *List);
 
 /*
 
@@ -99,7 +101,7 @@ function void KeywordList_Destroy(keyword_list *List);
 */
 
 #if ISE_DEBUG
-    function void _KeywordList_Visualize(keyword_list *List);
+    void _KeywordList_Visualize(keyword_list *List);
     #define KeywordList_Visualize(List) _KeywordList_Visualize((List))
 #else
     #define KeywordList_Visualize(List)

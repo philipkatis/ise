@@ -1,6 +1,8 @@
 #ifndef ISE_BK_TREE_H
 #define ISE_BK_TREE_H
 
+#include "ise_keyword_list.h"
+
 /*
 
   NOTE(philip): A 'bk_tree_node' is the building block of a BK-Tree. It stores a reference to a keyword, that the
@@ -35,7 +37,7 @@ struct bk_tree
 
 */
 
-function bk_tree BKTree_Create(match_type MatchType);
+bk_tree BKTree_Create(match_type MatchType);
 
 /*
 
@@ -45,7 +47,7 @@ function bk_tree BKTree_Create(match_type MatchType);
 
 */
 
-function bk_tree_node *BKTree_Insert(bk_tree *Tree, keyword *Keyword);
+bk_tree_node *BKTree_Insert(bk_tree *Tree, keyword *Keyword);
 
 /*
 
@@ -54,7 +56,7 @@ function bk_tree_node *BKTree_Insert(bk_tree *Tree, keyword *Keyword);
 
 */
 
-function keyword_list BKTree_FindMatches(bk_tree *Tree, char *Word, u64 DistanceThreshold);
+keyword_list BKTree_FindMatches(bk_tree *Tree, char *Word, u64 DistanceThreshold);
 
 /*
 
@@ -63,7 +65,7 @@ function keyword_list BKTree_FindMatches(bk_tree *Tree, char *Word, u64 Distance
 
 */
 
-function void BKTree_Destroy(bk_tree *Tree);
+void BKTree_Destroy(bk_tree *Tree);
 
 /*
 
@@ -73,7 +75,7 @@ function void BKTree_Destroy(bk_tree *Tree);
 */
 
 #if ISE_DEBUG
-    function void _BKTree_Visualize(bk_tree *Tree);
+    void _BKTree_Visualize(bk_tree *Tree);
     #define BKTree_Visualize(Tree) _BKTree_Visualize((Tree))
 #else
     #define BKTree_Visualize(Tree)

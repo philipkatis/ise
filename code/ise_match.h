@@ -1,6 +1,8 @@
 #ifndef ISE_MATCH_H
 #define ISE_MATCH_H
 
+#include "ise_base.h"
+
 /*
 
   NOTE(philip): This is the first of the keyword matching functions. It returns 0 if the two words do not match and
@@ -8,7 +10,7 @@
 
 */
 
-function u32 IsExactMatch(char *A, u64 LengthA, char *B, u64 LengthB);
+u32 IsExactMatch(char *A, u64 LengthA, char *B, u64 LengthB);
 
 /*
 
@@ -19,7 +21,7 @@ function u32 IsExactMatch(char *A, u64 LengthA, char *B, u64 LengthB);
 
 */
 
-function u32 CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB);
+u32 CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB);
 
 /*
 
@@ -38,6 +40,6 @@ function u32 CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB
 
 */
 
-function u32 CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 LengthB);
+u32 CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 LengthB);
 
 #endif

@@ -1,4 +1,8 @@
-function u32
+#include "ise_match.h"
+
+#include <string.h>
+
+u32
 IsExactMatch(char *A, u64 LengthA, char *B, u64 LengthB)
 {
     u32 Result = 1;
@@ -24,7 +28,7 @@ IsExactMatch(char *A, u64 LengthA, char *B, u64 LengthB)
     return Result;
 }
 
-function u32
+u32
 CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB)
 {
     s32 Result = 0;
@@ -46,7 +50,7 @@ CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB)
 #define LEVENSHTEIN_CACHE_MATRIX_SIZE (MAX_KEYWORD_LENGTH + 1)
 global u32 LevenshteinCacheMatrix[LEVENSHTEIN_CACHE_MATRIX_SIZE * LEVENSHTEIN_CACHE_MATRIX_SIZE];
 
-function u32
+u32
 CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 LengthB)
 {
     memset(LevenshteinCacheMatrix, 0, LEVENSHTEIN_CACHE_MATRIX_SIZE * LEVENSHTEIN_CACHE_MATRIX_SIZE * sizeof(u32));

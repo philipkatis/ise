@@ -9,15 +9,15 @@
 
 #include <string.h>
 
-#include "ise_base.h"
-#include "ise_keyword_list.h"
-#include "ise_bk_tree.h"
+#include "ise_match.h"
 #include "ise_interface.h"
 
+#if 0
 #include "ise_match.cpp"
 #include "ise_keyword_list.cpp"
 #include "ise_bk_tree.cpp"
 #include "ise_interface.cpp"
+#endif
 
 #include "acutest.h"
 

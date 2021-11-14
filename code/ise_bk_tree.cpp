@@ -1,4 +1,10 @@
-function bk_tree
+#include "ise_bk_tree.h"
+#include "ise_match.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+bk_tree
 BKTree_Create(match_type MatchType)
 {
     bk_tree Result = { };
@@ -23,7 +29,7 @@ BKTree_AllocateNode(keyword *Keyword, u64 DistanceFromParent)
     return Result;
 }
 
-function bk_tree_node *
+bk_tree_node *
 BKTree_Insert(bk_tree *Tree, keyword *Keyword)
 {
     bk_tree_node *Node = 0;
@@ -71,7 +77,7 @@ BKTree_Insert(bk_tree *Tree, keyword *Keyword)
     return Node;
 }
 
-function keyword_list
+keyword_list
 BKTree_FindMatches(bk_tree *Tree, char *Word, u64 DistanceThreshold)
 {
     keyword_list Matches = KeywordList_Create();
@@ -146,7 +152,7 @@ BKTree_DestroyNode(bk_tree_node *Node)
     free(Node);
 }
 
-function void
+void
 BKTree_Destroy(bk_tree *Tree)
 {
     if (Tree->Root)
@@ -210,7 +216,7 @@ BKTree_Destroy(bk_tree *Tree)
         }
     }
 
-    function void
+    void
     _BKTree_Visualize(bk_tree *Tree)
     {
         if (Tree->Root)

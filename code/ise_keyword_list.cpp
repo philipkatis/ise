@@ -1,11 +1,16 @@
-function keyword_list
+#include "ise_keyword_list.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+keyword_list
 KeywordList_Create()
 {
     keyword_list Result = { };
     return Result;
 }
 
-function keyword *
+keyword *
 KeywordList_AllocateKeyword(char *Word)
 {
     keyword *Result = (keyword *)calloc(1, sizeof(keyword));
@@ -14,13 +19,13 @@ KeywordList_AllocateKeyword(char *Word)
     return Result;
 }
 
-function void
+void
 KeywordList_DeallocateKeyword(keyword *Keyword)
 {
     free(Keyword);
 }
 
-function keyword *
+keyword *
 KeywordList_Insert(keyword_list *List, char *Word)
 {
     keyword *Keyword = KeywordList_AllocateKeyword(Word);
@@ -36,7 +41,7 @@ KeywordList_Insert(keyword_list *List, char *Word)
     return Keyword;
 }
 
-function keyword *
+keyword *
 KeywordList_Insert(keyword_list *List, keyword *Keyword)
 {
     if (List->Head)
@@ -50,7 +55,7 @@ KeywordList_Insert(keyword_list *List, keyword *Keyword)
     return Keyword;
 }
 
-function keyword *
+keyword *
 KeywordList_Find(keyword_list *List, char *Word)
 {
     keyword *Result = 0;
@@ -69,7 +74,7 @@ KeywordList_Find(keyword_list *List, char *Word)
     return Result;
 }
 
-function void
+void
 KeywordList_Destroy(keyword_list *List)
 {
     keyword *Keyword = List->Head;
@@ -86,7 +91,7 @@ KeywordList_Destroy(keyword_list *List)
 
 
 #if ISE_DEBUG
-    function void
+    void
     _KeywordList_Visualize(keyword_list *List)
     {
         u64 Index = 0;
