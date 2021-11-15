@@ -14,9 +14,9 @@
 struct bk_tree_node
 {
     keyword *Keyword;
-    u64 DistanceFromParent;
     bk_tree_node *FirstChild;
     bk_tree_node *NextSibling;
+    s32 DistanceFromParent;
 };
 
 /*
@@ -57,7 +57,7 @@ bk_tree_node *BKTree_Insert(bk_tree *Tree, keyword *Keyword);
 
 */
 
-keyword_list BKTree_FindMatches(bk_tree *Tree, char *Word, u64 DistanceThreshold);
+keyword_list BKTree_FindMatches(bk_tree *Tree, char *Word, u32 DistanceThreshold);
 
 /*
 

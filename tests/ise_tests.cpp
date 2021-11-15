@@ -7,17 +7,8 @@
     #undef __USE_MISC
 #endif
 
-#include <string.h>
-
 #include "ise_match.h"
 #include "ise_interface.h"
-
-#if 0
-#include "ise_match.cpp"
-#include "ise_keyword_list.cpp"
-#include "ise_bk_tree.cpp"
-#include "ise_interface.cpp"
-#endif
 
 #include "acutest.h"
 

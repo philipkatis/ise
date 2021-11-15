@@ -3,6 +3,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*
+
+  NOTE(philip): This array stores all the keyword matching functions. The elements are stored in such
+  a way to allow for indexing into the array using the match_type enum values.
+
+*/
+
+global match_function_type MatchFunctions[3] =
+{
+    IsExactMatch,
+    CalculateHammingDistance,
+    CalculateLevenshteinDistance
+};
+
 bk_tree
 BKTree_Create(match_type MatchType)
 {
@@ -42,7 +56,7 @@ BKTree_Insert(bk_tree *Tree, keyword *Keyword)
         bk_tree_node *CurrentNode = Tree->Root;
         while (true)
         {
-            u64 DistanceFromCurrentNode = CalculateLevenshteinDistance(CurrentNode->Keyword->Word,
+            s32 DistanceFromCurrentNode = CalculateLevenshteinDistance(CurrentNode->Keyword->Word,
                                                                        strlen(CurrentNode->Keyword->Word),
                                                                        Keyword->Word, KeywordLength);
             b32 FoundNodeWithSameDistance = false;
@@ -141,7 +155,7 @@ PopCandidate(candidate_stack *Stack)
 }
 
 keyword_list
-BKTree_FindMatches(bk_tree *Tree, char *Word, u64 DistanceThreshold)
+BKTree_FindMatches(bk_tree *Tree, char *Word, u32 DistanceThreshold)
 {
     keyword_list Matches = KeywordList_Create();
     candidate_stack Candidates = CreateCandidateStack();
@@ -151,7 +165,7 @@ BKTree_FindMatches(bk_tree *Tree, char *Word, u64 DistanceThreshold)
     bk_tree_node *CurrentCandidate = Tree->Root;
     while (CurrentCandidate)
     {
-        u64 DistanceFromCurrentCandidate = Tree->MatchFunction(CurrentCandidate->Keyword->Word,
+        u32 DistanceFromCurrentCandidate = Tree->MatchFunction(CurrentCandidate->Keyword->Word,
                                                                strlen(CurrentCandidate->Keyword->Word), Word,
                                                                WordLength);
 
@@ -251,7 +265,7 @@ BKTree_Destroy(bk_tree *Tree)
     BKTree_VisualizeNode(bk_tree_node *Node, u64 Depth)
     {
         PrintTabs(Depth);
-        printf("Word: %s, DistanceFromParent: %llu, Depth: %llu\n", Node->Keyword->Word, Node->DistanceFromParent,
+        printf("Word: %s, DistanceFromParent: %d, Depth: %llu\n", Node->Keyword->Word, Node->DistanceFromParent,
                Depth);
 
         if (Node->FirstChild)
