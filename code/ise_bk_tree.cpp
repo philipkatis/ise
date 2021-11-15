@@ -80,27 +80,77 @@ BKTree_Insert(bk_tree *Tree, keyword *Keyword)
     return Node;
 }
 
+/*
+
+  NOTE(philip): This small data structure is a utility to help with the implementation of the BK-Tree search
+  function.
+
+*/
+
+struct candidate_stack_node
+{
+    bk_tree_node *Data;
+    candidate_stack_node *Next;
+};
+
+struct candidate_stack
+{
+    candidate_stack_node *Head;
+    u64 Count;
+};
+
+function candidate_stack
+CreateCandidateStack()
+{
+    candidate_stack Result = { };
+    return Result;
+}
+
+function void
+PushCandidate(candidate_stack *Stack, bk_tree_node *Data)
+{
+    candidate_stack_node *Node = (candidate_stack_node *)calloc(1, sizeof(candidate_stack_node));
+    Node->Data = Data;
+    Node->Next = Stack->Head;
+
+    Stack->Head = Node;
+    ++Stack->Count;
+}
+
+function bk_tree_node *
+PopCandidate(candidate_stack *Stack)
+{
+    if (Stack->Count)
+    {
+        candidate_stack_node *Node = Stack->Head;
+
+        bk_tree_node *Data = Node->Data;
+        candidate_stack_node *Head = Node->Next;
+
+        free(Node);
+
+        Stack->Head = Head;
+        --Stack->Count;
+
+        return Data;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 keyword_list
 BKTree_FindMatches(bk_tree *Tree, char *Word, u64 DistanceThreshold)
 {
     keyword_list Matches = KeywordList_Create();
+    candidate_stack Candidates = CreateCandidateStack();
 
     u64 WordLength = strlen(Word);
 
-    // TODO(philip): Implement this using a stack.
-    bk_tree_node *Candidates[1024];
-    u64 CandidateCount = 0;
-
-    // TODO(philip): Change this to a push operation.
-    Candidates[CandidateCount] = Tree->Root;
-    ++CandidateCount;
-
-    while (CandidateCount)
+    bk_tree_node *CurrentCandidate = Tree->Root;
+    while (CurrentCandidate)
     {
-        // TODO(philip): Change this to a pop operation.
-        bk_tree_node *CurrentCandidate = Candidates[CandidateCount - 1];
-        --CandidateCount;
-
         u64 DistanceFromCurrentCandidate = Tree->MatchFunction(CurrentCandidate->Keyword->Word,
                                                                strlen(CurrentCandidate->Keyword->Word), Word,
                                                                WordLength);
@@ -124,10 +174,11 @@ BKTree_FindMatches(bk_tree *Tree, char *Word, u64 DistanceThreshold)
         {
             if (Child->DistanceFromParent >= ChildrenRangeStart && Child->DistanceFromParent <= ChildrenRangeEnd)
             {
-                Candidates[CandidateCount] = Child;
-                ++CandidateCount;
+                PushCandidate(&Candidates, Child);
             }
         }
+
+        CurrentCandidate = PopCandidate(&Candidates);
     }
 
     return Matches;
