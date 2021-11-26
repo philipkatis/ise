@@ -25,6 +25,8 @@ of the executables in it.
 <ins>**3. Run the tests:**</ins>
 
 You can run the available unit tests using the command `make tests`.
+There is also the ability to run a valgrind memory test to ensure no memory leaks are present,
+using `make valgrind`.
 
 ***
 
