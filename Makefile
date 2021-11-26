@@ -37,12 +37,9 @@ ise_keyword_list: code/ise_keyword_list.cpp | setup
 ise_bk_tree: code/ise_bk_tree.cpp | setup
 	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
 
-ise_interface: code/ise_interface.cpp | setup
-	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
-
 ise_tests: tests/ise_tests.cpp | setup
 	g++ $(CompileFlags) -c tests/$@.cpp -o build/$@.o
 
 # This target builds the unit tests application.
-build_tests: ise_match ise_keyword_list ise_bk_tree ise_interface ise_tests | setup
-	g++ $(CompileFlags) build/ise_match.o build/ise_keyword_list.o build/ise_bk_tree.o build/ise_interface.o build/ise_tests.o -o build/tests
+build_tests: ise_match ise_keyword_list ise_bk_tree ise_tests | setup
+	g++ $(CompileFlags) build/ise_match.o build/ise_keyword_list.o build/ise_bk_tree.o build/ise_tests.o -o build/tests

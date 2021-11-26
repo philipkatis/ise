@@ -1,14 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// NOTE(philip): Linux decides to include 'strings.h' by default, preventing us from defining an 'index' type.
-// This undefine prevents this from happening.
-#ifdef __USE_MISC
-    #undef __USE_MISC
-#endif
-
 #include "ise_match.h"
-#include "ise_interface.h"
+#include "ise_keyword_list.h"
+#include "ise_bk_tree.h"
 
 #include "acutest.h"
 
@@ -200,14 +195,10 @@ Test_CalculateLevenshteinDistance(void)
 }
 
 function void
-Test_EntryList(void)
+Test_KeywordList(void)
 {
-    error_code ErrorCode = ErrorCode_Success;
-
 #define KEYWORD_COUNT 100
     char Words[KEYWORD_COUNT][MAX_KEYWORD_LENGTH + 1];
-    entry Entries[KEYWORD_COUNT];
-    entry_list List = { };
 
     // NOTE(philip): Initialize the word array.
     for (u64 Index = 0;
@@ -217,312 +208,240 @@ Test_EntryList(void)
         sprintf(Words[Index], "Word%llu", Index + 1);
     }
 
+    keyword_list List = KeywordList_Create();
+
     // NOTE(philip): List creation.
     {
-        ErrorCode = create_entry_list(0);
-        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
-
-        ErrorCode = create_entry_list(&List);
-        TEST_CHECK(ErrorCode == ErrorCode_Success);
         TEST_CHECK(List.Head == 0);
         TEST_CHECK(List.Count == 0);
     }
 
-    // NOTE(philip): Entry creation.
+    // NOTE(philip): Keyword insertion.
     {
-        ErrorCode = create_entry(0, 0);
-        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
+        keyword *PreviousKeyword = 0;
 
         for (u64 Index = 0;
              Index < KEYWORD_COUNT;
              ++Index)
         {
-            ErrorCode = create_entry(Words[Index], &Entries[Index]);
-            TEST_CHECK(ErrorCode == ErrorCode_Success);
-            TEST_CHECK(Entries[Index] != 0);
-            TEST_CHECK(Entries[Index]->Word == Words[Index]);
-            TEST_CHECK(Entries[Index]->Next == 0);
-        }
-    }
-
-    // NOTE(philip): Entry insertion.
-    {
-        ErrorCode = add_entry(0, 0);
-        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
-
-        for (u64 Index = 0;
-             Index < KEYWORD_COUNT;
-             ++Index)
-        {
-            ErrorCode = add_entry(&List, &Entries[Index]);
-            TEST_CHECK(ErrorCode == ErrorCode_Success);
-            TEST_CHECK(List.Head == Entries[Index]);
+            keyword *Keyword = KeywordList_Insert(&List, Words[Index]);
+            TEST_CHECK(Keyword != 0);
+            TEST_CHECK(List.Head == Keyword);
             TEST_CHECK(List.Count == Index + 1);
 
             if (Index > 0)
             {
-                TEST_CHECK(Entries[Index]->Next == Entries[Index - 1]);
-            }
-        }
-
-        entry TestEntry1 = 0;
-        entry TestEntry67 = 0;
-        entry TestEntry100 = 0;
-
-        create_entry(Words[0], &TestEntry1);
-        create_entry(Words[66], &TestEntry67);
-        create_entry(Words[99], &TestEntry100);
-
-        ErrorCode = add_entry(&List, &TestEntry1);
-        TEST_CHECK(ErrorCode == ErrorCode_DuplicateEntry);
-        TEST_CHECK(TestEntry1 == 0);
-
-        ErrorCode = add_entry(&List, &TestEntry67);
-        TEST_CHECK(ErrorCode == ErrorCode_DuplicateEntry);
-        TEST_CHECK(TestEntry67 == 0);
-
-        ErrorCode = add_entry(&List, &TestEntry100);
-        TEST_CHECK(ErrorCode == ErrorCode_DuplicateEntry);
-        TEST_CHECK(TestEntry100 == 0);
-    }
-
-    // NOTE(philip): get_first()
-    {
-        entry *FirstEntry = get_first(0);
-        TEST_CHECK(*FirstEntry == 0);
-
-        FirstEntry = get_first(&List);
-        TEST_CHECK(*FirstEntry == Entries[99]);
-    }
-
-    // NOTE(philip): get_next()
-    {
-        entry *NextEntry = get_next(0, 0);
-        TEST_CHECK(*NextEntry == 0);
-
-        entry PreviousEntry = 0;
-
-        for (entry *Entry = get_first(&List);
-             *Entry;
-             Entry = get_next(&List, Entry))
-        {
-            if (PreviousEntry)
-            {
-                TEST_CHECK(PreviousEntry->Next == *Entry);
+                TEST_CHECK(PreviousKeyword == PreviousKeyword);
             }
 
-            PreviousEntry = *Entry;
+            PreviousKeyword = Keyword;
         }
     }
 
-    // NOTE(philip): get_number_entries()
+    // NOTE(philip): Keyword search.
     {
-        u32 EntryCount = get_number_entries(0);
-        TEST_CHECK(EntryCount == 0);
+        keyword *Keyword = KeywordList_Find(&List, "RandomWord");
+        TEST_CHECK(Keyword == 0);
 
-        EntryCount = get_number_entries(&List);
-        TEST_CHECK(KEYWORD_COUNT);
+        Keyword = KeywordList_Find(&List, Words[0]);
+        TEST_CHECK(Keyword != 0);
+        TEST_CHECK(Keyword->Word == Words[0]);
+
+        Keyword = KeywordList_Find(&List, Words[66]);
+        TEST_CHECK(Keyword != 0);
+        TEST_CHECK(Keyword->Word == Words[66]);
+
+        Keyword = KeywordList_Find(&List, Words[99]);
+        TEST_CHECK(Keyword != 0);
+        TEST_CHECK(Keyword->Word == Words[99]);
+    }
+
+    // NOTE(philip): List count.
+    {
+        TEST_CHECK(List.Count == KEYWORD_COUNT);
     }
 #undef KEYWORD_COUNT
 
-    // NOTE(philip): Entry list destruction.
+    // NOTE(philip): List destruction.
     {
-        ErrorCode = destroy_entry_list(0);
-        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
-
-        ErrorCode = destroy_entry_list(&List);
-        TEST_CHECK(ErrorCode == ErrorCode_Success);
+        KeywordList_Destroy(&List);
         TEST_CHECK(List.Head == 0);
         TEST_CHECK(List.Count == 0);
     }
 }
 
 function void
-Test_IndexHamming(void)
+Test_HammingBKTree(void)
 {
-    error_code ErrorCode = ErrorCode_Success;
-
     char *Words[10] =
     {
         "halt", "oouc", "pops", "oops", "felt", "fell", "smel", "shel", "help", "hell"
     };
 
-    entry_list List = { };
-    create_entry_list(&List);
+    keyword_list List = KeywordList_Create();
 
     for (u64 Index = 0;
          Index < 10;
          ++Index)
     {
-        entry Entry = 0;
-        create_entry(Words[Index], &Entry);
-        add_entry(&List, &Entry);
+        KeywordList_Insert(&List, Words[Index]);
     }
 
-    index Index = { };
+    bk_tree Tree = BKTree_Create(MatchType_Hamming);
 
     // NOTE(philip): BK-Tree creation.
     {
-        ErrorCode = build_entry_index(0, 0, 0);
-        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
+        TEST_CHECK(Tree.Root == 0);
+        TEST_CHECK(Tree.MatchFunction == CalculateHammingDistance);
+    }
 
-        ErrorCode = build_entry_index(&List, MatchType_Hamming, &Index);
-        TEST_CHECK(ErrorCode == ErrorCode_Success);
-        TEST_CHECK(Index.Root != 0);
+    // NOTE(philip): BK-Tree insertion.
+    {
+        for (keyword *Keyword = List.Head;
+             Keyword;
+             Keyword = Keyword->Next)
+        {
+            bk_tree_node *Node = BKTree_Insert(&Tree, Keyword);
+            TEST_CHECK(Node != 0);
+            TEST_CHECK(Node->Keyword == Keyword);
+            TEST_CHECK(Node->FirstChild == 0);
+        }
     }
 
     // NOTE(philip): BK-Tree search.
     {
-        ErrorCode = lookup_entry_index(0, 0, 0, 0);
-        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
+        keyword_list Matches = BKTree_FindMatches(&Tree, "helt", 1);
+        TEST_CHECK(Matches.Count == 4);
 
-        entry_list Result = { };
-        ErrorCode = lookup_entry_index("helt", &Index, 1, &Result);
-        TEST_CHECK(ErrorCode == ErrorCode_Success);
-        TEST_CHECK(Result.Count == 4);
+        keyword *Match = Matches.Head;
+        TEST_CHECK(Match->Word == Words[0]);
+        Match = Match->Next;
 
-        entry CurrentEntry = Result.Head;
-        TEST_CHECK(CurrentEntry->Word == Words[0]);
-        CurrentEntry = CurrentEntry->Next;
+        TEST_CHECK(Match->Word == Words[4]);
+        Match = Match->Next;
 
-        TEST_CHECK(CurrentEntry->Word == Words[4]);
-        CurrentEntry = CurrentEntry->Next;
+        TEST_CHECK(Match->Word == Words[8]);
+        Match = Match->Next;
 
-        TEST_CHECK(CurrentEntry->Word == Words[8]);
-        CurrentEntry = CurrentEntry->Next;
+        TEST_CHECK(Match->Word == Words[9]);
+        Match = Match->Next;
 
-        TEST_CHECK(CurrentEntry->Word == Words[9]);
-        CurrentEntry = CurrentEntry->Next;
+        TEST_CHECK(Match == 0);
 
-        TEST_CHECK(CurrentEntry == 0);
-
-        destroy_entry_list(&Result);
+        KeywordList_Destroy(&Matches);
     }
 
     // NOTE(philip): BK-Tree search.
     {
-        entry_list Result = { };
-        ErrorCode = lookup_entry_index("opsy", &Index, 2, &Result);
-        TEST_CHECK(ErrorCode == ErrorCode_Success);
-        TEST_CHECK(Result.Count == 0);
+        keyword_list Matches = BKTree_FindMatches(&Tree, "opsy", 2);
+        TEST_CHECK(Matches.Count == 0);
 
-        entry CurrentEntry = Result.Head;
-        TEST_CHECK(CurrentEntry == 0);
+        keyword *Match = Matches.Head;
+        TEST_CHECK(Match == 0);
 
-        destroy_entry_list(&Result);
+        KeywordList_Destroy(&Matches);
     }
 
     // NOTE(philip): BK-Tree destruction.
     {
-        ErrorCode = destroy_entry_index(0);
-        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
-
-        ErrorCode = destroy_entry_index(&Index);
-        TEST_CHECK(ErrorCode == ErrorCode_Success);
-        TEST_CHECK(Index.Root == 0);
+        BKTree_Destroy(&Tree);
+        TEST_CHECK(Tree.Root == 0);
     }
 
-    destroy_entry_list(&List);
+    KeywordList_Destroy(&List);
 }
 
 function void
-Test_IndexLevenshtein(void)
+Test_LevenshteinBKTree(void)
 {
-    error_code ErrorCode = ErrorCode_Success;
-
     char *Words[10] =
     {
         "halt", "oouch", "pop", "oops", "felt", "fell", "smell", "shell", "help", "hell"
     };
 
-    entry_list List = { };
-    create_entry_list(&List);
+    keyword_list List = KeywordList_Create();
 
     for (u64 Index = 0;
          Index < 10;
          ++Index)
     {
-        entry Entry = 0;
-        create_entry(Words[Index], &Entry);
-        add_entry(&List, &Entry);
+        KeywordList_Insert(&List, Words[Index]);
     }
 
-    index Index = { };
+    bk_tree Tree = BKTree_Create(MatchType_Levenshtein);
 
     // NOTE(philip): BK-Tree creation.
     {
-        ErrorCode = build_entry_index(0, 0, 0);
-        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
+        TEST_CHECK(Tree.Root == 0);
+        TEST_CHECK(Tree.MatchFunction == CalculateLevenshteinDistance);
+    }
 
-        ErrorCode = build_entry_index(&List, MatchType_Levenshtein, &Index);
-        TEST_CHECK(ErrorCode == ErrorCode_Success);
-        TEST_CHECK(Index.Root != 0);
+    // NOTE(philip): BK-Tree insertion.
+    {
+        for (keyword *Keyword = List.Head;
+             Keyword;
+             Keyword = Keyword->Next)
+        {
+            bk_tree_node *Node = BKTree_Insert(&Tree, Keyword);
+            TEST_CHECK(Node != 0);
+            TEST_CHECK(Node->Keyword == Keyword);
+            TEST_CHECK(Node->FirstChild == 0);
+        }
     }
 
     // NOTE(philip): BK-Tree search.
     {
-        ErrorCode = lookup_entry_index(0, 0, 0, 0);
-        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
+        keyword_list Matches = BKTree_FindMatches(&Tree, "helt", 2);
+        TEST_CHECK(Matches.Count == 6);
 
-        entry_list Result = { };
-        ErrorCode = lookup_entry_index("helt", &Index, 2, &Result);
-        TEST_CHECK(ErrorCode == ErrorCode_Success);
-        TEST_CHECK(Result.Count == 6);
+        keyword *Match = Matches.Head;
+        TEST_CHECK(Match->Word == Words[0]);
+        Match = Match->Next;
 
-        entry CurrentEntry = Result.Head;
-        TEST_CHECK(CurrentEntry->Word == Words[0]);
-        CurrentEntry = CurrentEntry->Next;
+        TEST_CHECK(Match->Word == Words[4]);
+        Match = Match->Next;
 
-        TEST_CHECK(CurrentEntry->Word == Words[4]);
-        CurrentEntry = CurrentEntry->Next;
+        TEST_CHECK(Match->Word == Words[5]);
+        Match = Match->Next;
 
-        TEST_CHECK(CurrentEntry->Word == Words[5]);
-        CurrentEntry = CurrentEntry->Next;
+        TEST_CHECK(Match->Word == Words[7]);
+        Match = Match->Next;
 
-        TEST_CHECK(CurrentEntry->Word == Words[7]);
-        CurrentEntry = CurrentEntry->Next;
+        TEST_CHECK(Match->Word == Words[8]);
+        Match = Match->Next;
 
-        TEST_CHECK(CurrentEntry->Word == Words[8]);
-        CurrentEntry = CurrentEntry->Next;
+        TEST_CHECK(Match->Word == Words[9]);
+        Match = Match->Next;
 
-        TEST_CHECK(CurrentEntry->Word == Words[9]);
-        CurrentEntry = CurrentEntry->Next;
+        TEST_CHECK(Match == 0);
 
-        TEST_CHECK(CurrentEntry == 0);
-
-        destroy_entry_list(&Result);
+        KeywordList_Destroy(&Matches);
     }
 
     // NOTE(philip): BK-Tree search.
     {
-        entry_list Result = { };
-        ErrorCode = lookup_entry_index("ops", &Index, 2, &Result);
-        TEST_CHECK(ErrorCode == ErrorCode_Success);
-        TEST_CHECK(Result.Count == 2);
+        keyword_list Matches = BKTree_FindMatches(&Tree, "ops", 2);
+        TEST_CHECK(Matches.Count == 2);
 
-        entry CurrentEntry = Result.Head;
-        TEST_CHECK(CurrentEntry->Word == Words[2]);
-        CurrentEntry = CurrentEntry->Next;
+        keyword *Match = Matches.Head;
+        TEST_CHECK(Match->Word == Words[2]);
+        Match = Match->Next;
 
-        TEST_CHECK(CurrentEntry->Word == Words[3]);
-        CurrentEntry = CurrentEntry->Next;
+        TEST_CHECK(Match->Word == Words[3]);
+        Match = Match->Next;
 
-        TEST_CHECK(CurrentEntry == 0);
+        TEST_CHECK(Match == 0);
 
-        destroy_entry_list(&Result);
+        KeywordList_Destroy(&Matches);
     }
 
     // NOTE(philip): BK-Tree destruction.
     {
-        ErrorCode = destroy_entry_index(0);
-        TEST_CHECK(ErrorCode == ErrorCode_InvalidParameters);
-
-        ErrorCode = destroy_entry_index(&Index);
-        TEST_CHECK(ErrorCode == ErrorCode_Success);
-        TEST_CHECK(Index.Root == 0);
+        BKTree_Destroy(&Tree);
+        TEST_CHECK(Tree.Root == 0);
     }
 
-    destroy_entry_list(&List);
+    KeywordList_Destroy(&List);
 }
 
 TEST_LIST =
@@ -530,8 +449,8 @@ TEST_LIST =
     { "Exact Keyword Matching",           Test_IsExactMatch                 },
     { "Hamming Distance Calculation",     Test_CalculateHammingDistance     },
     { "Levenshtein Distance Calculation", Test_CalculateLevenshteinDistance },
-    { "Entry List",                       Test_EntryList                    },
-    { "Index - Hamming",                  Test_IndexHamming                 },
-    { "Index - Levenshtein",              Test_IndexLevenshtein             },
+    { "Keyword List",                     Test_KeywordList                  },
+    { "Hamming BK-Tree",                  Test_HammingBKTree                },
+    { "Levenshtein BK-Tree",              Test_LevenshteinBKTree            },
     { 0, 0 }
 };

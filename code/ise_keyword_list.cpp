@@ -11,39 +11,11 @@ KeywordList_Create()
 }
 
 keyword *
-KeywordList_AllocateKeyword(char *Word)
-{
-    keyword *Result = (keyword *)calloc(1, sizeof(keyword));
-    Result->Word = Word;
-
-    return Result;
-}
-
-void
-KeywordList_DeallocateKeyword(keyword *Keyword)
-{
-    free(Keyword);
-}
-
-keyword *
 KeywordList_Insert(keyword_list *List, char *Word)
 {
-    keyword *Keyword = KeywordList_AllocateKeyword(Word);
+    keyword *Keyword = (keyword *)calloc(1, sizeof(keyword));
+    Keyword->Word = Word;
 
-    if (List->Head)
-    {
-        Keyword->Next = List->Head;
-    }
-
-    List->Head = Keyword;
-    ++List->Count;
-
-    return Keyword;
-}
-
-keyword *
-KeywordList_Insert(keyword_list *List, keyword *Keyword)
-{
     if (List->Head)
     {
         Keyword->Next = List->Head;
@@ -81,7 +53,7 @@ KeywordList_Destroy(keyword_list *List)
     while (Keyword)
     {
         keyword *NextKeyword = Keyword->Next;
-        KeywordList_DeallocateKeyword(Keyword);
+        free(Keyword);
         Keyword = NextKeyword;
     }
 

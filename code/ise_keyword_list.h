@@ -41,22 +41,6 @@ keyword_list KeywordList_Create();
 
 /*
 
-  NOTE(philip): This function allocates a new keyword and sets the data it stores.
-
-*/
-
-keyword *KeywordList_AllocateKeyword(char *Word);
-
-/*
-
-  NOTE(philip): This function deallocates a keyword.
-
-*/
-
-void KeywordList_DeallocateKeyword(keyword *Keyword);
-
-/*
-
   NOTE(philip): This function creates a new keyword and inserts it the keyword list. The new word will be at the
   head of the list. This is done to improve insertion speed. This function does not ensure that there are no
   duplicates. It is up to the client to use KeywordList_Find() to implement that functionality.
@@ -64,16 +48,6 @@ void KeywordList_DeallocateKeyword(keyword *Keyword);
 */
 
 keyword *KeywordList_Insert(keyword_list *List, char *Word);
-
-/*
-
-  NOTE(philip): This function inserts a keyword to the keyword list. The new word will be at the head of the list.
-  This is done to improve insertion speed. This function does not ensure that there are no duplicates. It is up to
-  the client to use KeywordList_Find() to implement that functionality.
-
-*/
-
-keyword *KeywordList_Insert(keyword_list *List, keyword *Keyword);
 
 /*
 
