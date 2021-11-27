@@ -1,8 +1,9 @@
 #ifndef ISE_BK_TREE_H
 #define ISE_BK_TREE_H
 
-#include "ise_keyword_list.h"
 #include "ise_match.h"
+#include "ise_keyword_list.h"
+#include "ise.h"
 
 /*
 
@@ -38,11 +39,11 @@ struct bk_tree
 
 */
 
-bk_tree BKTree_Create(match_type MatchType);
+bk_tree BKTree_Create(MatchType MatchType);
 
 /*
 
-  NOTE(philip): This functions inserts a new keyword into the BK-Tree at the correct location using the Levenshtein
+  NOTE(philip): This functions inserts a new keyword into the BK-Tree at the correct location using the edit
   distance calculation algorithm. In case the keyword we try to insert is already in the BK-Tree, this function will
   return a reference to it.
 

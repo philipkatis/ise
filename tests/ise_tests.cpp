@@ -114,7 +114,7 @@ Test_CalculateHammingDistance(void)
 }
 
 function void
-Test_CalculateLevenshteinDistance(void)
+Test_CalculateEditDistance(void)
 {
     u32 Result = 0;
     char *A = 0;
@@ -125,7 +125,7 @@ Test_CalculateLevenshteinDistance(void)
         A = "";
         B = "";
 
-        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
+        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -134,7 +134,7 @@ Test_CalculateLevenshteinDistance(void)
         A = "hello";
         B = "hello";
 
-        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
+        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -143,7 +143,7 @@ Test_CalculateLevenshteinDistance(void)
         A = "hello";
         B = "world";
 
-        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
+        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 4);
     }
 
@@ -152,7 +152,7 @@ Test_CalculateLevenshteinDistance(void)
         A = "1234567890";
         B = "qwertyuiop";
 
-        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
+        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 10);
     }
 
@@ -162,25 +162,25 @@ Test_CalculateLevenshteinDistance(void)
         A = "kitten";
         B = "sitten";
 
-        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
+        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
 
         A = "sitten";
         B = "sittin";
 
-        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
+        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
 
         A = "sittin";
         B = "sitting";
 
-        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
+        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
 
         A = "bravo";
         B = "raven";
 
-        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
+        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 3);
     }
 
@@ -189,7 +189,7 @@ Test_CalculateLevenshteinDistance(void)
         A = "0000000000000000000000000000001";
         B = "0000000000000000000000000000002";
 
-        Result = CalculateLevenshteinDistance(A, strlen(A), B, strlen(B));
+        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
     }
 }
@@ -287,7 +287,7 @@ Test_HammingBKTree(void)
         KeywordList_Insert(&List, Words[Index]);
     }
 
-    bk_tree Tree = BKTree_Create(MatchType_Hamming);
+    bk_tree Tree = BKTree_Create(MT_HAMMING_DIST);
 
     // NOTE(philip): BK-Tree creation.
     {
@@ -352,7 +352,7 @@ Test_HammingBKTree(void)
 }
 
 function void
-Test_LevenshteinBKTree(void)
+Test_EditBKTree(void)
 {
     char *Words[10] =
     {
@@ -368,12 +368,12 @@ Test_LevenshteinBKTree(void)
         KeywordList_Insert(&List, Words[Index]);
     }
 
-    bk_tree Tree = BKTree_Create(MatchType_Levenshtein);
+    bk_tree Tree = BKTree_Create(MT_EDIT_DIST);
 
     // NOTE(philip): BK-Tree creation.
     {
         TEST_CHECK(Tree.Root == 0);
-        TEST_CHECK(Tree.MatchFunction == CalculateLevenshteinDistance);
+        TEST_CHECK(Tree.MatchFunction == CalculateEditDistance);
     }
 
     // NOTE(philip): BK-Tree insertion.
@@ -446,11 +446,11 @@ Test_LevenshteinBKTree(void)
 
 TEST_LIST =
 {
-    { "Exact Keyword Matching",           Test_IsExactMatch                 },
-    { "Hamming Distance Calculation",     Test_CalculateHammingDistance     },
-    { "Levenshtein Distance Calculation", Test_CalculateLevenshteinDistance },
-    { "Keyword List",                     Test_KeywordList                  },
-    { "Hamming BK-Tree",                  Test_HammingBKTree                },
-    { "Levenshtein BK-Tree",              Test_LevenshteinBKTree            },
+    { "Exact Keyword Matching",       Test_IsExactMatch             },
+    { "Hamming Distance Calculation", Test_CalculateHammingDistance },
+    { "Edit Distance Calculation",    Test_CalculateEditDistance    },
+    { "Keyword List",                 Test_KeywordList              },
+    { "Hamming BK-Tree",              Test_HammingBKTree            },
+    { "Edit BK-Tree",                 Test_EditBKTree               },
     { 0, 0 }
 };

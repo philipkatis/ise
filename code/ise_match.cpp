@@ -1,5 +1,7 @@
 #include "ise_match.h"
 
+#include "ise.h"
+
 #include <string.h>
 
 s32
@@ -47,26 +49,27 @@ CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB)
     return Result;
 }
 
-#define LEVENSHTEIN_CACHE_MATRIX_SIZE (MAX_KEYWORD_LENGTH + 1)
-global s32 LevenshteinCacheMatrix[LEVENSHTEIN_CACHE_MATRIX_SIZE * LEVENSHTEIN_CACHE_MATRIX_SIZE];
+#define EDIT_DISTANCE_CACHE_MATRIX_SIZE (MAX_KEYWORD_LENGTH + 1)
+global s32 EditDistanceCacheMatrix[EDIT_DISTANCE_CACHE_MATRIX_SIZE * EDIT_DISTANCE_CACHE_MATRIX_SIZE];
 
 s32
-CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 LengthB)
+CalculateEditDistance(char *A, u64 LengthA, char *B, u64 LengthB)
 {
-    memset(LevenshteinCacheMatrix, 0, LEVENSHTEIN_CACHE_MATRIX_SIZE * LEVENSHTEIN_CACHE_MATRIX_SIZE * sizeof(u32));
+    memset(EditDistanceCacheMatrix,
+           0, EDIT_DISTANCE_CACHE_MATRIX_SIZE * EDIT_DISTANCE_CACHE_MATRIX_SIZE * sizeof(u32));
 
     for (u64 Index = 1;
          Index <= LengthA;
          ++Index)
     {
-        LevenshteinCacheMatrix[LEVENSHTEIN_CACHE_MATRIX_SIZE * 0 + Index] = Index;
+        EditDistanceCacheMatrix[EDIT_DISTANCE_CACHE_MATRIX_SIZE * 0 + Index] = Index;
     }
 
     for (u64 Index = 1;
          Index <= LengthB;
          ++Index)
     {
-        LevenshteinCacheMatrix[LEVENSHTEIN_CACHE_MATRIX_SIZE * Index + 0] = Index;
+        EditDistanceCacheMatrix[EDIT_DISTANCE_CACHE_MATRIX_SIZE * Index + 0] = Index;
     }
 
     for (u64 IndexB = 1;
@@ -77,19 +80,21 @@ CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 LengthB)
              IndexA <= LengthA;
              ++IndexA)
         {
-            s32 DeletionDistance  = LevenshteinCacheMatrix[LEVENSHTEIN_CACHE_MATRIX_SIZE * IndexB + (IndexA - 1)] + 1;
-            s32 InsertionDistance = LevenshteinCacheMatrix[LEVENSHTEIN_CACHE_MATRIX_SIZE * (IndexB - 1) + IndexA] + 1;
+            s32 DeletionDistance  = EditDistanceCacheMatrix[EDIT_DISTANCE_CACHE_MATRIX_SIZE * IndexB +
+                                                            (IndexA - 1)] + 1;
+            s32 InsertionDistance = EditDistanceCacheMatrix[EDIT_DISTANCE_CACHE_MATRIX_SIZE * (IndexB - 1) +
+                                                            IndexA] + 1;
 
             b32 RequiresSubstitution = (A[IndexA - 1] != B[IndexB - 1]);
-            s32 SubstitutionDistance = LevenshteinCacheMatrix[LEVENSHTEIN_CACHE_MATRIX_SIZE * (IndexB - 1) + (IndexA - 1)] +
-                RequiresSubstitution;
+            s32 SubstitutionDistance = EditDistanceCacheMatrix[EDIT_DISTANCE_CACHE_MATRIX_SIZE * (IndexB - 1) +
+                (IndexA - 1)] + RequiresSubstitution;
 
-            s32 *Distance = &LevenshteinCacheMatrix[LEVENSHTEIN_CACHE_MATRIX_SIZE * IndexB + IndexA];
+            s32 *Distance = &EditDistanceCacheMatrix[EDIT_DISTANCE_CACHE_MATRIX_SIZE * IndexB + IndexA];
             *Distance = Min(Min(DeletionDistance, InsertionDistance), SubstitutionDistance);
         }
     }
 
-    return LevenshteinCacheMatrix[LEVENSHTEIN_CACHE_MATRIX_SIZE * LengthB + LengthA];
+    return EditDistanceCacheMatrix[EDIT_DISTANCE_CACHE_MATRIX_SIZE * LengthB + LengthA];
 }
 
-#undef LEVENSHTEIN_CACHE_MATRIX_SIZE
+#undef EDIT_DISTANCE_CACHE_MATRIX_SIZE

@@ -6,7 +6,7 @@
 /*
 
   NOTE(philip): This array stores all the keyword matching functions. The elements are stored in such
-  a way to allow for indexing into the array using the match_type enum values.
+  a way to allow for indexing into the array using the MatchType enum values.
 
 */
 
@@ -14,16 +14,16 @@ global match_function_type MatchFunctions[3] =
 {
     IsExactMatch,
     CalculateHammingDistance,
-    CalculateLevenshteinDistance
+    CalculateEditDistance
 };
 
 bk_tree
-BKTree_Create(match_type MatchType)
+BKTree_Create(MatchType MatchType)
 {
     bk_tree Result = { };
 
     // TODO(philip): Not supported yet.
-    Assert(MatchType != MatchType_Exact);
+    Assert(MatchType != MT_EXACT_MATCH);
     Result.MatchFunction = MatchFunctions[MatchType];
 
     return Result;
@@ -56,9 +56,9 @@ BKTree_Insert(bk_tree *Tree, keyword *Keyword)
         bk_tree_node *CurrentNode = Tree->Root;
         while (true)
         {
-            s32 DistanceFromCurrentNode = CalculateLevenshteinDistance(CurrentNode->Keyword->Word,
-                                                                       strlen(CurrentNode->Keyword->Word),
-                                                                       Keyword->Word, KeywordLength);
+            s32 DistanceFromCurrentNode = CalculateEditDistance(CurrentNode->Keyword->Word,
+                                                                strlen(CurrentNode->Keyword->Word),
+                                                                Keyword->Word, KeywordLength);
             b32 FoundNodeWithSameDistance = false;
 
             for (bk_tree_node *ChildNode = CurrentNode->FirstChild;

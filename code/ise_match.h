@@ -25,9 +25,9 @@ s32 CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB);
 
 /*
 
-  NOTE(philip): This is the third and last keyword matching function. It returns the Levenshtein distance between
+  NOTE(philip): This is the third and last keyword matching function. It returns the edit distance between
   two words. It only returns 0 if the words are exactly the same. There are several algorithm implementations for
-  calculating the Levenshtein distance between two strings, but here we are using the one with the matrix cache.
+  calculating the edit distance between two strings, but here we are using the one with the matrix cache.
   The regular implementation uses 3 recursive function calls. Appart from the fact that function calls are
   expensive for a function called so many times, that specific implementation recalculates the length between two
   substrings multiple times, thus wasting CPU time. The version used here is not recursive and uses a 2D matrix to
@@ -40,7 +40,7 @@ s32 CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB);
 
 */
 
-s32 CalculateLevenshteinDistance(char *A, u64 LengthA, char *B, u64 LengthB);
+s32 CalculateEditDistance(char *A, u64 LengthA, char *B, u64 LengthB);
 
 /*
 

@@ -67,27 +67,4 @@ static_assert(sizeof(f64) == 8);
 
 #define ArrayCount(Array) (sizeof((Array)) / sizeof(*(Array)))
 
-/*
-
-  NOTE(philip): These limits are based on the SIGMOD 2013 Programming Contest referenced by the
-  project assignment. We assume string length limits, do not include the zero termination character.
-
-*/
-
-#define MAX_KEYWORD_LENGTH 31
-
-/*
-
-  NOTE(philip): These are the different types of keyword matching that we support.
-
-*/
-
-typedef u32 match_type;
-enum
-{
-    MatchType_Exact       = 0,
-    MatchType_Hamming     = 1,
-    MatchType_Levenshtein = 2
-};
-
 #endif
