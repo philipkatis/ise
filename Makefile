@@ -11,7 +11,11 @@ IncludeDirectories=-Icode -Ithird_party/acutest/include
 CompileFlags=-g -Wall -Wno-write-strings -DISE_DEBUG=1 $(IncludeDirectories)
 
 # The default target that builds all the executables.
-all: build_lib build_tests | setup
+all: build_lib build_tests build_test_application | setup
+
+# This command runs the test application.
+run: build/test_application
+	./build/test_application
 
 #  This command runs the unit tests.
 tests: build/tests
@@ -46,6 +50,9 @@ ise: code/ise.cpp | setup
 ise_tests: tests/ise_tests.cpp | setup
 	g++ $(CompileFlags) -c tests/$@.cpp -o build/$@.o
 
+ise_test_application: tests/ise_test_application.cpp | setup
+	g++ $(CompileFlags) -c tests/$@.cpp -o build/$@.o
+
 # This target builds the core library.
 build_lib: ise_match ise_keyword_list ise_bk_tree ise | setup
 	g++ $(CompileFlags) -shared build/ise_match.o build/ise_keyword_list.o build/ise_bk_tree.o build/ise.o -o build/libcore.so
@@ -53,3 +60,7 @@ build_lib: ise_match ise_keyword_list ise_bk_tree ise | setup
 # This target builds the unit tests application.
 build_tests: ise_tests | setup
 	g++ $(CompileFlags) build/ise_tests.o -Lbuild -lcore -o build/tests
+
+# This target builds the test application.
+build_test_application: ise_test_application | setup
+	g++ $(CompileFlags) build/ise_test_application.o -Lbuild -lcore -o build/test_application
