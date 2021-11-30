@@ -35,7 +35,7 @@ PrintFormattedTime(s32 Time)
 
     s32 Milliseconds = RemainingTime;
 
-    printf("[%d:%d:%d:%d] - %d ms", Hours, Minutes, Seconds, Milliseconds, Time);
+    printf("[%.2d:%.2d:%.2d:%.3d] - %d ms", Hours, Minutes, Seconds, Milliseconds, Time);
 }
 
 global char TempStorage[MAX_DOCUMENT_LENGTH];

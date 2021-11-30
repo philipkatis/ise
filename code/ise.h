@@ -3,8 +3,9 @@
 
 #include "ise_base.h"
 
-#define MAX_KEYWORD_LENGTH  31
-#define MAX_DOCUMENT_LENGTH (1 << 22)
+#define MAX_KEYWORD_LENGTH     31
+#define MAX_KEYWORDS_PER_QUERY 5
+#define MAX_DOCUMENT_LENGTH    (1 << 22)
 
 typedef u32 QueryID;
 typedef u32 DocID;

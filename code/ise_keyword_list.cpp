@@ -61,7 +61,6 @@ KeywordList_Destroy(keyword_list *List)
     List->Count = 0;
 }
 
-
 #if ISE_DEBUG
     void
     _KeywordList_Visualize(keyword_list *List)
