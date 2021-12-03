@@ -1,6 +1,3 @@
-# We want the executable to find libcore.so, so we output the location of the library.
-export LD_LIBRARY_PATH=./build
-
 # Suppress the output of all commands.
 .SILENT:
 
@@ -38,6 +35,9 @@ setup:
 ise_match: code/ise_match.cpp | setup
 	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
 
+ise_query_list: code/ise_query_list.cpp | setup
+	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
+
 ise_keyword_list: code/ise_keyword_list.cpp | setup
 	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
 
@@ -57,13 +57,13 @@ ise_test_application: tests/ise_test_application.cpp | setup
 	g++ $(CompileFlags) -c tests/$@.cpp -o build/$@.o
 
 # This target builds the core library.
-build_lib: ise_match ise_keyword_list ise_keyword_table ise_bk_tree ise | setup
-	g++ $(CompileFlags) -shared build/ise_match.o build/ise_keyword_list.o build/ise_keyword_table.o build/ise_bk_tree.o build/ise.o -o build/libcore.so
+build_lib: ise_match ise_query_list ise_keyword_list ise_keyword_table ise_bk_tree ise | setup
+	g++ $(CompileFlags) -shared build/ise_match.o build/ise_query_list.o build/ise_keyword_list.o build/ise_keyword_table.o build/ise_bk_tree.o build/ise.o -o build/libcore.so
 
 # This target builds the unit tests application.
 build_tests: ise_tests | setup
-	g++ $(CompileFlags) build/ise_tests.o -Lbuild -lcore -o build/tests
+	g++ $(CompileFlags) build/ise_tests.o -Lbuild -lcore -o build/tests -Wl,-rpath=build
 
 # This target builds the test application.
 build_test_application: ise_test_application | setup
-	g++ $(CompileFlags) build/ise_test_application.o -Lbuild -lcore -o build/test_application
+	g++ $(CompileFlags) build/ise_test_application.o -Lbuild -lcore -o build/test_application -Wl,-rpath=build

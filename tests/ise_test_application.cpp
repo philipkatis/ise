@@ -164,14 +164,12 @@ Run(const char *FilePath)
         }
         else if (CommandType == 'e')
         {
-#if TODO
             ErrorCode Result = EndQuery(ID);
             if (Result != EC_SUCCESS)
             {
                 printf("[Error]: EndQuery() has failed!\n");
                 return;
             }
-#endif
         }
         else if (CommandType == 'm')
         {

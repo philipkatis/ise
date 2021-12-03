@@ -20,34 +20,10 @@ HashKeyword(char *Word)
     return Result;
 }
 
-keyword_table_node *
-KeywordTable_Insert(keyword_table *Table, char *Word)
-{
-    if (KeywordTable_Find(Table, Word))
-    {
-        return 0;
-    }
-
-    u64 Hash = HashKeyword(Word);
-    u64 Index = Hash % KEYWORD_TABLE_BUCKET_COUNT;
-
-    keyword_table_node *Node = (keyword_table_node *)calloc(1, sizeof(keyword_table_node));
-    strcpy(Node->Word, Word);
-    Node->Hash = Hash;
-
-    Node->Next = Table->Buckets[Index];
-    Table->Buckets[Index] = Node;
-
-    return Node;
-}
-
-keyword_table_node *
-KeywordTable_Find(keyword_table *Table, char *Word)
+function keyword_table_node *
+KeywordTable_Find(keyword_table *Table, char *Word, u64 Hash, u64 Index)
 {
     keyword_table_node *Result = 0;
-
-    u64 Hash = HashKeyword(Word);
-    u64 Index = Hash % KEYWORD_TABLE_BUCKET_COUNT;
 
     for (keyword_table_node *Node = Table->Buckets[Index];
          Node;
@@ -63,6 +39,36 @@ KeywordTable_Find(keyword_table *Table, char *Word)
     return Result;
 }
 
+keyword_table_node *
+KeywordTable_Find(keyword_table *Table, char *Word)
+{
+    u64 Hash = HashKeyword(Word);
+    u64 Index = Hash % KEYWORD_TABLE_BUCKET_COUNT;
+
+    keyword_table_node *Result = KeywordTable_Find(Table, Word, Hash, Index);
+    return Result;
+}
+
+keyword_table_node *
+KeywordTable_Insert(keyword_table *Table, char *Word)
+{
+    u64 Hash = HashKeyword(Word);
+    u64 Index = Hash % KEYWORD_TABLE_BUCKET_COUNT;
+
+    keyword_table_node *Node = KeywordTable_Find(Table, Word, Hash, Index);
+    if (!Node)
+    {
+        Node = (keyword_table_node *)calloc(1, sizeof(keyword_table_node));
+        strcpy(Node->Word, Word);
+        Node->Hash = Hash;
+
+        Node->Next = Table->Buckets[Index];
+        Table->Buckets[Index] = Node;
+    }
+
+    return Node;
+}
+
 void KeywordTable_Destroy(keyword_table *Table)
 {
     for (u64 Index = 0;
@@ -73,7 +79,10 @@ void KeywordTable_Destroy(keyword_table *Table)
         while (Node)
         {
             keyword_table_node *Next = Node->Next;
+
+            QueryList_Destroy(&Node->Queries);
             free(Node);
+
             Node = Next;
         }
     }
@@ -102,7 +111,17 @@ void KeywordTable_Destroy(keyword_table *Table)
                         printf("} -> { ");
                     }
 
-                    printf("%llu, %s ", NodeIndex, Node->Word);
+                    printf("%llu, %s (", NodeIndex, Node->Word);
+
+                    for (query *Query = Node->Queries.Head;
+                         Query;
+                         Query = Query->Next)
+                    {
+                        printf("%d, ", Query->ID);
+                    }
+
+                    printf(") ");
+
                     ++NodeIndex;
                 }
 

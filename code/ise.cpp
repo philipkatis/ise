@@ -5,18 +5,23 @@
 
 global keyword_table KeywordTable = { };
 
-ErrorCode InitializeIndex()
+ErrorCode
+InitializeIndex()
 {
     return EC_SUCCESS;
 }
 
-ErrorCode DestroyIndex()
+ErrorCode
+DestroyIndex()
 {
+    // KeywordTable_Visualize(&KeywordTable);
+
     KeywordTable_Destroy(&KeywordTable);
     return EC_SUCCESS;
 }
 
-ErrorCode StartQuery(QueryID ID, const char *String, MatchType MatchType, u32 MatchDistance)
+ErrorCode
+StartQuery(QueryID ID, const char *String, MatchType MatchType, u32 MatchDistance)
 {
     char *Keywords[MAX_KEYWORDS_PER_QUERY];
     u32 KeywordCount = 0;
@@ -40,25 +45,47 @@ ErrorCode StartQuery(QueryID ID, const char *String, MatchType MatchType, u32 Ma
          Index < KeywordCount;
          ++Index)
     {
-        KeywordTable_Insert(&KeywordTable, Keywords[Index]);
+        keyword_table_node *Keyword = KeywordTable_Insert(&KeywordTable, Keywords[Index]);
+
+        query *Query = QueryList_Find(&Keyword->Queries, ID);
+        if (!Query)
+        {
+            Query = QueryList_Insert(&Keyword->Queries, ID, (u16)MatchType, (u16)MatchDistance);
+        }
     }
 
-    // KeywordTable_Visualize(&KeywordTable);
+    return EC_SUCCESS;
+}
+
+ErrorCode
+EndQuery(QueryID ID)
+{
+    for (u64 BucketIndex = 0;
+         BucketIndex < KEYWORD_TABLE_BUCKET_COUNT;
+         ++BucketIndex)
+    {
+        if (KeywordTable.Buckets[BucketIndex])
+        {
+            for (keyword_table_node *Node = KeywordTable.Buckets[BucketIndex];
+                 Node;
+                 Node = Node->Next)
+            {
+                QueryList_Remove(&Node->Queries, ID);
+            }
+        }
+    }
 
     return EC_SUCCESS;
 }
 
-ErrorCode EndQuery(QueryID ID)
+ErrorCode
+MatchDocument(DocID ID, const char *String)
 {
     return EC_SUCCESS;
 }
 
-ErrorCode MatchDocument(DocID ID, const char *String)
-{
-    return EC_SUCCESS;
-}
-
-ErrorCode GetNextAvailRes(DocID *DocumentIDs, u32 *QueryCount, QueryID **QueryIDs)
+ErrorCode
+GetNextAvailRes(DocID *DocumentIDs, u32 *QueryCount, QueryID **QueryIDs)
 {
     return EC_SUCCESS;
 }

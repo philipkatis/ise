@@ -1,0 +1,84 @@
+#include "ise_query_list.h"
+
+#include <stdlib.h>
+
+query *
+QueryList_Find(query_list *List, u32 ID)
+{
+    query *Result = 0;
+
+    for (query *Query = List->Head;
+         Query;
+         Query = Query->Next)
+    {
+        if (Query->ID == ID)
+        {
+            Result = Query;
+            break;
+        }
+    }
+
+    return Result;
+}
+
+query *
+QueryList_Insert(query_list *List, u32 ID, u16 Type, u16 Distance)
+{
+    query *Query = (query *)calloc(1, sizeof(query));
+    Query->ID = ID;
+    Query->Next = List->Head;
+
+    List->Head = Query;
+
+    return Query;
+}
+
+void
+QueryList_Remove(query_list *List, u32 ID)
+{
+    query *Query = 0;
+    query *Previous = 0;
+    query *Next = 0;
+
+    for (query *CurrentQuery = List->Head;
+         CurrentQuery;
+         CurrentQuery = CurrentQuery->Next)
+    {
+        Next = CurrentQuery->Next;
+
+        if (CurrentQuery->ID == ID)
+        {
+            break;
+        }
+
+        Previous = CurrentQuery;
+    }
+
+    if (Query)
+    {
+        if (Previous)
+        {
+            Previous->Next = Next;
+        }
+        else
+        {
+            List->Head = Next;
+        }
+
+        free(Query);
+    }
+}
+
+void
+QueryList_Destroy(query_list *List)
+{
+    query *Query = List->Head;
+    while (Query)
+    {
+        query *Next = Query->Next;
+        free(Query);
+        Query = Next;
+    }
+
+    List->Head = 0;
+}
