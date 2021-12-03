@@ -20,10 +20,12 @@ HashKeyword(char *Word)
     return Result;
 }
 
-function keyword_table_node *
-KeywordTable_Find(keyword_table *Table, char *Word, u64 Hash, u64 Index)
+keyword_table_node *
+KeywordTable_Find(keyword_table *Table, char *Word, u64 Hash)
 {
     keyword_table_node *Result = 0;
+
+    u64 Index = Hash % KEYWORD_TABLE_BUCKET_COUNT;
 
     for (keyword_table_node *Node = Table->Buckets[Index];
          Node;
@@ -43,9 +45,7 @@ keyword_table_node *
 KeywordTable_Find(keyword_table *Table, char *Word)
 {
     u64 Hash = HashKeyword(Word);
-    u64 Index = Hash % KEYWORD_TABLE_BUCKET_COUNT;
-
-    keyword_table_node *Result = KeywordTable_Find(Table, Word, Hash, Index);
+    keyword_table_node *Result = KeywordTable_Find(Table, Word, Hash);
     return Result;
 }
 
@@ -53,11 +53,11 @@ keyword_table_node *
 KeywordTable_Insert(keyword_table *Table, char *Word)
 {
     u64 Hash = HashKeyword(Word);
-    u64 Index = Hash % KEYWORD_TABLE_BUCKET_COUNT;
-
-    keyword_table_node *Node = KeywordTable_Find(Table, Word, Hash, Index);
+    keyword_table_node *Node = KeywordTable_Find(Table, Word, Hash);
     if (!Node)
     {
+        u64 Index = Hash % KEYWORD_TABLE_BUCKET_COUNT;
+
         Node = (keyword_table_node *)calloc(1, sizeof(keyword_table_node));
         strcpy(Node->Word, Word);
         Node->Hash = Hash;

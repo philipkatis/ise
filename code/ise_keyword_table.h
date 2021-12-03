@@ -18,6 +18,7 @@ struct keyword_table
     keyword_table_node *Buckets[KEYWORD_TABLE_BUCKET_COUNT];
 };
 
+keyword_table_node *KeywordTable_Find(keyword_table *Table, char *Word, u64 Hash);
 keyword_table_node *KeywordTable_Find(keyword_table *Table, char *Word);
 keyword_table_node *KeywordTable_Insert(keyword_table *Table, char *Word);
 void KeywordTable_Destroy(keyword_table *Table);

@@ -178,7 +178,6 @@ Run(const char *FilePath)
                 printf("[Error]: File contains corrupted data! (Path: %s)\n", FilePath);
                 return;
             }
-#if TODO
 
             ErrorCode Result = MatchDocument(ID, TempStorage);
             if (Result != EC_SUCCESS)
@@ -186,7 +185,6 @@ Run(const char *FilePath)
                 printf("[Error]: MatchDocument() has failed!\n");
                 return;
             }
-#endif
         }
         else if (CommandType == 'r')
         {

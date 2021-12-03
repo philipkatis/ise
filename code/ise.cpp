@@ -50,7 +50,7 @@ StartQuery(QueryID ID, const char *String, MatchType MatchType, u32 MatchDistanc
         query *Query = QueryList_Find(&Keyword->Queries, ID);
         if (!Query)
         {
-            Query = QueryList_Insert(&Keyword->Queries, ID, (u16)MatchType, (u16)MatchDistance);
+            Query = QueryList_Insert(&Keyword->Queries, ID, KeywordCount, (u8)MatchType, (u16)MatchDistance);
         }
     }
 
@@ -81,6 +81,86 @@ EndQuery(QueryID ID)
 ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
+    u64 WordCount = 1;
+
+    for (char *Character = (char *)String;
+         *Character;
+         ++Character)
+    {
+        if (*Character == ' ')
+        {
+            *Character = 0;
+            ++WordCount;
+        }
+    }
+
+    keyword_table DocumentWords = { };
+    char *Word = (char *)String;
+
+    for (u64 WordIndex = 0;
+         WordIndex < WordCount;
+         ++WordIndex)
+    {
+        KeywordTable_Insert(&DocumentWords, Word);
+
+        while (*Word)
+        {
+            ++Word;
+        }
+
+        if (WordIndex < WordCount - 1)
+        {
+            ++Word;
+        }
+    }
+
+    query_list AnsweredQueries = { };
+
+    for (u64 BucketIndex = 0;
+         BucketIndex < KEYWORD_TABLE_BUCKET_COUNT;
+         ++BucketIndex)
+    {
+        for (keyword_table_node *Node = DocumentWords.Buckets[BucketIndex];
+             Node;
+             Node = Node->Next)
+        {
+            keyword_table_node *Keyword = KeywordTable_Find(&KeywordTable, Node->Word, Node->Hash);
+            if (Keyword)
+            {
+                for (query *Query = Keyword->Queries.Head;
+                     Query;
+                     Query = Query->Next)
+                {
+                    if (Query->Type == 0)
+                    {
+                        query *ResultingQuery = QueryList_Find(&AnsweredQueries, Query->ID);
+                        if (!ResultingQuery)
+                        {
+                            ResultingQuery = QueryList_Insert(&AnsweredQueries, Query->ID, Query->WordCount, Query->Type, 1);
+                        }
+                        else
+                        {
+                            ++ResultingQuery->WordsFound;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (query *Query = AnsweredQueries.Head;
+         Query;
+         Query = Query->Next)
+    {
+        if (Query->WordCount == Query->WordsFound)
+        {
+//            printf("ID: %d, WordCount: %d, Type: %d, Words Found: %d\n", Query->ID, Query->WordCount, Query->Type, Query->WordsFound);
+        }
+    }
+
+    KeywordTable_Destroy(&DocumentWords);
+    QueryList_Destroy(&AnsweredQueries);
+
     return EC_SUCCESS;
 }
 

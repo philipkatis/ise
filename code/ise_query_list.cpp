@@ -22,12 +22,15 @@ QueryList_Find(query_list *List, u32 ID)
 }
 
 query *
-QueryList_Insert(query_list *List, u32 ID, u16 Type, u16 Distance)
+QueryList_Insert(query_list *List, u32 ID, u8 WordCount, u8 Type, u16 Distance)
 {
     query *Query = (query *)calloc(1, sizeof(query));
     Query->ID = ID;
-    Query->Next = List->Head;
+    Query->WordCount = WordCount;
+    Query->Type = Type;
+    Query->Distance = Distance;
 
+    Query->Next = List->Head;
     List->Head = Query;
 
     return Query;
