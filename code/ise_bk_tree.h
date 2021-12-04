@@ -2,8 +2,15 @@
 #define ISE_BK_TREE_H
 
 #include "ise_match.h"
+#include "ise_keyword_table.h"
 #include "ise_keyword_list.h"
-#include "ise.h"
+
+typedef u32 bk_tree_type;
+enum
+{
+    BKTreeType_Hamming,
+    BKTreeType_Edit
+};
 
 /*
 
@@ -14,7 +21,7 @@
 
 struct bk_tree_node
 {
-    keyword *Keyword;
+    keyword_table_node *Keyword;
     bk_tree_node *FirstChild;
     bk_tree_node *NextSibling;
     s32 DistanceFromParent;
@@ -39,7 +46,7 @@ struct bk_tree
 
 */
 
-bk_tree BKTree_Create(MatchType MatchType);
+bk_tree BKTree_Create(bk_tree_type Type);
 
 /*
 
@@ -49,7 +56,7 @@ bk_tree BKTree_Create(MatchType MatchType);
 
 */
 
-bk_tree_node *BKTree_Insert(bk_tree *Tree, keyword *Keyword);
+bk_tree_node *BKTree_Insert(bk_tree *Tree, keyword_table_node *Keyword);
 
 /*
 

@@ -6,25 +6,21 @@
 /*
 
   NOTE(philip): This array stores all the keyword matching functions. The elements are stored in such
-  a way to allow for indexing into the array using the MatchType enum values.
+  a way to allow for indexing into the array using the bk_tree_type enum values.
 
 */
 
-global match_function_type MatchFunctions[3] =
+global match_function_type MatchFunctions[2] =
 {
-    IsExactMatch,
     CalculateHammingDistance,
     CalculateEditDistance
 };
 
 bk_tree
-BKTree_Create(MatchType MatchType)
+BKTree_Create(bk_tree_type Type)
 {
     bk_tree Result = { };
-
-    // TODO(philip): Not supported yet.
-    Assert(MatchType != MT_EXACT_MATCH);
-    Result.MatchFunction = MatchFunctions[MatchType];
+    Result.MatchFunction = MatchFunctions[Type];
 
     return Result;
 }
@@ -36,7 +32,7 @@ BKTree_Create(MatchType MatchType)
 */
 
 function bk_tree_node *
-BKTree_AllocateNode(keyword *Keyword, u64 DistanceFromParent)
+BKTree_AllocateNode(keyword_table_node *Keyword, u64 DistanceFromParent)
 {
     bk_tree_node *Result = (bk_tree_node *)calloc(1, sizeof(bk_tree_node));
     Result->Keyword = Keyword;
@@ -46,7 +42,7 @@ BKTree_AllocateNode(keyword *Keyword, u64 DistanceFromParent)
 }
 
 bk_tree_node *
-BKTree_Insert(bk_tree *Tree, keyword *Keyword)
+BKTree_Insert(bk_tree *Tree, keyword_table_node *Keyword)
 {
     bk_tree_node *Node = 0;
 

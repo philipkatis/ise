@@ -4,6 +4,7 @@
 #include "ise_match.h"
 #include "ise_keyword_list.h"
 #include "ise_bk_tree.h"
+#include "ise.h"
 
 #include "acutest.h"
 
@@ -278,16 +279,16 @@ Test_HammingBKTree(void)
         "halt", "oouc", "pops", "oops", "felt", "fell", "smel", "shel", "help", "hell"
     };
 
-    keyword_list List = KeywordList_Create();
+    keyword_table Table = { };
 
     for (u64 Index = 0;
          Index < 10;
          ++Index)
     {
-        KeywordList_Insert(&List, Words[Index]);
+        KeywordTable_Insert(&Table, Words[Index]);
     }
 
-    bk_tree Tree = BKTree_Create(MT_HAMMING_DIST);
+    bk_tree Tree = BKTree_Create(BKTreeType_Hamming);
 
     // NOTE(philip): BK-Tree creation.
     {
@@ -297,36 +298,43 @@ Test_HammingBKTree(void)
 
     // NOTE(philip): BK-Tree insertion.
     {
-        for (keyword *Keyword = List.Head;
-             Keyword;
-             Keyword = Keyword->Next)
+        // TODO(philip): Make an iterator for this.
+        for (u64 BucketIndex = 0;
+             BucketIndex < KEYWORD_TABLE_BUCKET_COUNT;
+             ++BucketIndex)
         {
-            bk_tree_node *Node = BKTree_Insert(&Tree, Keyword);
-            TEST_CHECK(Node != 0);
-            TEST_CHECK(Node->Keyword == Keyword);
-            TEST_CHECK(Node->FirstChild == 0);
+            if (Table.Buckets[BucketIndex])
+            {
+                for (keyword_table_node *Keyword = Table.Buckets[BucketIndex];
+                     Keyword;
+                     Keyword = Keyword->Next)
+                {
+                    bk_tree_node *Node = BKTree_Insert(&Tree, Keyword);
+                    TEST_CHECK(Node != 0);
+                    TEST_CHECK(Node->Keyword == Keyword);
+                    TEST_CHECK(Node->FirstChild == 0);
+                }
+            }
         }
     }
 
     // NOTE(philip): BK-Tree search.
     {
+        char *Solutions[4] =
+        {
+            Words[0], Words[4], Words[8], Words[9]
+        };
+
         keyword_list Matches = BKTree_FindMatches(&Tree, "helt", 1);
         TEST_CHECK(Matches.Count == 4);
 
-        keyword *Match = Matches.Head;
-        TEST_CHECK(Match->Word == Words[0]);
-        Match = Match->Next;
-
-        TEST_CHECK(Match->Word == Words[4]);
-        Match = Match->Next;
-
-        TEST_CHECK(Match->Word == Words[8]);
-        Match = Match->Next;
-
-        TEST_CHECK(Match->Word == Words[9]);
-        Match = Match->Next;
-
-        TEST_CHECK(Match == 0);
+        for (u64 Index = 0;
+             Index < 4;
+             ++Index)
+        {
+            keyword* Match = KeywordList_Find(&Matches, Solutions[Index]);
+            TEST_CHECK(Match != 0);
+        }
 
         KeywordList_Destroy(&Matches);
     }
@@ -348,7 +356,7 @@ Test_HammingBKTree(void)
         TEST_CHECK(Tree.Root == 0);
     }
 
-    KeywordList_Destroy(&List);
+    KeywordTable_Destroy(&Table);
 }
 
 function void
@@ -359,16 +367,16 @@ Test_EditBKTree(void)
         "halt", "oouch", "pop", "oops", "felt", "fell", "smell", "shell", "help", "hell"
     };
 
-    keyword_list List = KeywordList_Create();
+    keyword_table Table = { };
 
     for (u64 Index = 0;
          Index < 10;
          ++Index)
     {
-        KeywordList_Insert(&List, Words[Index]);
+        KeywordTable_Insert(&Table, Words[Index]);
     }
 
-    bk_tree Tree = BKTree_Create(MT_EDIT_DIST);
+    bk_tree Tree = BKTree_Create(BKTreeType_Edit);
 
     // NOTE(philip): BK-Tree creation.
     {
@@ -378,59 +386,64 @@ Test_EditBKTree(void)
 
     // NOTE(philip): BK-Tree insertion.
     {
-        for (keyword *Keyword = List.Head;
-             Keyword;
-             Keyword = Keyword->Next)
+        // TODO(philip): Make an iterator for this.
+        for (u64 BucketIndex = 0;
+             BucketIndex < KEYWORD_TABLE_BUCKET_COUNT;
+             ++BucketIndex)
         {
-            bk_tree_node *Node = BKTree_Insert(&Tree, Keyword);
-            TEST_CHECK(Node != 0);
-            TEST_CHECK(Node->Keyword == Keyword);
-            TEST_CHECK(Node->FirstChild == 0);
+            if (Table.Buckets[BucketIndex])
+            {
+                for (keyword_table_node *Keyword = Table.Buckets[BucketIndex];
+                     Keyword;
+                     Keyword = Keyword->Next)
+                {
+                    bk_tree_node *Node = BKTree_Insert(&Tree, Keyword);
+                    TEST_CHECK(Node != 0);
+                    TEST_CHECK(Node->Keyword == Keyword);
+                    TEST_CHECK(Node->FirstChild == 0);
+                }
+            }
         }
     }
 
     // NOTE(philip): BK-Tree search.
     {
+        char *Solutions[6] =
+        {
+            Words[0], Words[4], Words[5], Words[7], Words[8], Words[9]
+        };
+
         keyword_list Matches = BKTree_FindMatches(&Tree, "helt", 2);
         TEST_CHECK(Matches.Count == 6);
 
-        keyword *Match = Matches.Head;
-        TEST_CHECK(Match->Word == Words[0]);
-        Match = Match->Next;
-
-        TEST_CHECK(Match->Word == Words[4]);
-        Match = Match->Next;
-
-        TEST_CHECK(Match->Word == Words[5]);
-        Match = Match->Next;
-
-        TEST_CHECK(Match->Word == Words[7]);
-        Match = Match->Next;
-
-        TEST_CHECK(Match->Word == Words[8]);
-        Match = Match->Next;
-
-        TEST_CHECK(Match->Word == Words[9]);
-        Match = Match->Next;
-
-        TEST_CHECK(Match == 0);
+        for (u64 Index = 0;
+             Index < 6;
+             ++Index)
+        {
+            keyword* Match = KeywordList_Find(&Matches, Solutions[Index]);
+            TEST_CHECK(Match != 0);
+        }
 
         KeywordList_Destroy(&Matches);
     }
 
     // NOTE(philip): BK-Tree search.
     {
+        char *Solutions[2] =
+        {
+            Words[2], Words[3]
+        };
+
         keyword_list Matches = BKTree_FindMatches(&Tree, "ops", 2);
         TEST_CHECK(Matches.Count == 2);
 
-        keyword *Match = Matches.Head;
-        TEST_CHECK(Match->Word == Words[2]);
-        Match = Match->Next;
-
-        TEST_CHECK(Match->Word == Words[3]);
-        Match = Match->Next;
-
-        TEST_CHECK(Match == 0);
+        for (u64 Index = 0;
+             Index < 2;
+             ++Index)
+        {
+            keyword* Match = KeywordList_Find(&Matches, Solutions[Index]);
+            TEST_CHECK(Match != 0);
+        }
 
         KeywordList_Destroy(&Matches);
     }
@@ -441,7 +454,7 @@ Test_EditBKTree(void)
         TEST_CHECK(Tree.Root == 0);
     }
 
-    KeywordList_Destroy(&List);
+    KeywordTable_Destroy(&Table);
 }
 
 TEST_LIST =

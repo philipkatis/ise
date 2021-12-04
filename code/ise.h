@@ -3,6 +3,7 @@
 
 #include "ise_base.h"
 
+#define MIN_KEYWORD_LENGTH     4
 #define MAX_KEYWORD_LENGTH     31
 #define MAX_KEYWORDS_PER_QUERY 5
 #define MAX_DOCUMENT_LENGTH    (1 << 22)
@@ -29,7 +30,7 @@ enum
 ErrorCode InitializeIndex();
 ErrorCode DestroyIndex();
 
-ErrorCode StartQuery(QueryID ID, const char *String, MatchType MatchType, u32 MatchDistance);
+ErrorCode StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance);
 ErrorCode EndQuery(QueryID ID);
 
 ErrorCode MatchDocument(DocID ID, const char *String);

@@ -1,13 +1,36 @@
 #include "ise.h"
 #include "ise_keyword_table.h"
+#include "ise_bk_tree.h"
 
+#include <string.h>
 #include <ctype.h>
 
-global keyword_table KeywordTable = { };
+#define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH + 1)
+
+struct application
+{
+    keyword_table KeywordTable;
+    bk_tree HammingTrees[HAMMING_TREE_COUNT];
+};
+
+global application Application = { };
+
+function u64
+HammingTreeIndex(u64 Length)
+{
+    return Length - MIN_KEYWORD_LENGTH;
+}
 
 ErrorCode
 InitializeIndex()
 {
+    for (u32 Index = 0;
+         Index < HAMMING_TREE_COUNT;
+         ++Index)
+    {
+        Application.HammingTrees[Index] = BKTree_Create(BKTreeType_Hamming);
+    }
+
     return EC_SUCCESS;
 }
 
@@ -16,18 +39,18 @@ DestroyIndex()
 {
     // KeywordTable_Visualize(&KeywordTable);
 
-    KeywordTable_Destroy(&KeywordTable);
+    KeywordTable_Destroy(&Application.KeywordTable);
     return EC_SUCCESS;
 }
 
 ErrorCode
-StartQuery(QueryID ID, const char *String, MatchType MatchType, u32 MatchDistance)
+StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 {
-    char *Keywords[MAX_KEYWORDS_PER_QUERY];
-    u32 KeywordCount = 0;
+    char *Words[MAX_KEYWORDS_PER_QUERY];
+    u32 WordCount = 0;
 
-    Keywords[KeywordCount] = (char*)String;
-    ++KeywordCount;
+    Words[WordCount] = (char*)String;
+    ++WordCount;
 
     for (char *Character = (char *)String;
          *Character;
@@ -36,22 +59,26 @@ StartQuery(QueryID ID, const char *String, MatchType MatchType, u32 MatchDistanc
         if (*Character == ' ')
         {
             *Character = 0;
-            Keywords[KeywordCount] = Character + 1;
-            ++KeywordCount;
+            Words[WordCount] = Character + 1;
+            ++WordCount;
         }
     }
 
     for (u32 Index = 0;
-         Index < KeywordCount;
+         Index < WordCount;
          ++Index)
     {
-        keyword_table_node *Keyword = KeywordTable_Insert(&KeywordTable, Keywords[Index]);
+        // TODO(philip): Maybe store the length in the keyword.
+        u64 WordLength = strlen(Words[Index]);
+        keyword_table_node *Keyword = KeywordTable_Insert(&Application.KeywordTable, Words[Index]);
 
         query *Query = QueryList_Find(&Keyword->Queries, ID);
         if (!Query)
         {
-            Query = QueryList_Insert(&Keyword->Queries, ID, KeywordCount, (u8)MatchType, (u16)MatchDistance);
+            Query = QueryList_Insert(&Keyword->Queries, ID, WordCount, (u8)Type, (u16)Distance);
         }
+
+        BKTree_Insert(&Application.HammingTrees[HammingTreeIndex(WordLength)], Keyword);
     }
 
     return EC_SUCCESS;
@@ -60,13 +87,14 @@ StartQuery(QueryID ID, const char *String, MatchType MatchType, u32 MatchDistanc
 ErrorCode
 EndQuery(QueryID ID)
 {
+    // TODO(philip): Make an iterator for this.
     for (u64 BucketIndex = 0;
          BucketIndex < KEYWORD_TABLE_BUCKET_COUNT;
          ++BucketIndex)
     {
-        if (KeywordTable.Buckets[BucketIndex])
+        if (Application.KeywordTable.Buckets[BucketIndex])
         {
-            for (keyword_table_node *Node = KeywordTable.Buckets[BucketIndex];
+            for (keyword_table_node *Node = Application.KeywordTable.Buckets[BucketIndex];
                  Node;
                  Node = Node->Next)
             {
@@ -124,7 +152,7 @@ MatchDocument(DocID ID, const char *String)
              Node;
              Node = Node->Next)
         {
-            keyword_table_node *Keyword = KeywordTable_Find(&KeywordTable, Node->Word, Node->Hash);
+            keyword_table_node *Keyword = KeywordTable_Find(&Application.KeywordTable, Node->Word, Node->Hash);
             if (Keyword)
             {
                 for (query *Query = Keyword->Queries.Head;
