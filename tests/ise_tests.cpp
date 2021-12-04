@@ -285,7 +285,10 @@ Test_HammingBKTree(void)
          Index < 10;
          ++Index)
     {
-        KeywordTable_Insert(&Table, Words[Index]);
+        if (!KeywordTable_Find(&Table, Words[Index]))
+        {
+            KeywordTable_Insert(&Table, Words[Index]);
+        }
     }
 
     bk_tree Tree = BKTree_Create(BKTreeType_Hamming);
@@ -373,7 +376,10 @@ Test_EditBKTree(void)
          Index < 10;
          ++Index)
     {
-        KeywordTable_Insert(&Table, Words[Index]);
+        if (!KeywordTable_Find(&Table, Words[Index]))
+        {
+            KeywordTable_Insert(&Table, Words[Index]);
+        }
     }
 
     bk_tree Tree = BKTree_Create(BKTreeType_Edit);

@@ -37,10 +37,35 @@ InitializeIndex()
 ErrorCode
 DestroyIndex()
 {
-    // KeywordTable_Visualize(&KeywordTable);
+    for (u32 Index = 0;
+         Index < HAMMING_TREE_COUNT;
+         ++Index)
+    {
+        BKTree_Visualize(&Application.HammingTrees[Index]);
+        BKTree_Destroy(&Application.HammingTrees[Index]);
+    }
 
     KeywordTable_Destroy(&Application.KeywordTable);
     return EC_SUCCESS;
+}
+
+function b32
+IsInQueryOfType(keyword_table_node *Keyword, u32 Type)
+{
+    b32 Result = false;
+
+    for (query *Query = Keyword->Queries.Head;
+         Query;
+         Query = Query->Next)
+    {
+        if (Query->Type == Type)
+        {
+            Result = true;
+            break;
+        }
+    }
+
+    return Result;
 }
 
 ErrorCode
@@ -70,15 +95,44 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
     {
         // TODO(philip): Maybe store the length in the keyword.
         u64 WordLength = strlen(Words[Index]);
-        keyword_table_node *Keyword = KeywordTable_Insert(&Application.KeywordTable, Words[Index]);
+
+        keyword_table_node *Keyword = KeywordTable_Find(&Application.KeywordTable, Words[Index]);
+        if (!Keyword)
+        {
+            Keyword = KeywordTable_Insert(&Application.KeywordTable, Words[Index]);
+
+            if (Type == MT_HAMMING_DIST)
+            {
+                BKTree_Insert(&Application.HammingTrees[HammingTreeIndex(WordLength)], Keyword);
+            }
+            else if (Type == MT_EDIT_DIST)
+            {
+
+            }
+        }
+        else
+        {
+            if (Type != MT_EXACT_MATCH)
+            {
+                if (!IsInQueryOfType(Keyword, Type))
+                {
+                    if (Type == MT_HAMMING_DIST)
+                    {
+                        BKTree_Insert(&Application.HammingTrees[HammingTreeIndex(WordLength)], Keyword);
+                    }
+                    else if (Type == MT_EDIT_DIST)
+                    {
+
+                    }
+                }
+            }
+        }
 
         query *Query = QueryList_Find(&Keyword->Queries, ID);
         if (!Query)
         {
             Query = QueryList_Insert(&Keyword->Queries, ID, WordCount, (u8)Type, (u16)Distance);
         }
-
-        BKTree_Insert(&Application.HammingTrees[HammingTreeIndex(WordLength)], Keyword);
     }
 
     return EC_SUCCESS;
@@ -123,22 +177,29 @@ MatchDocument(DocID ID, const char *String)
     }
 
     keyword_table DocumentWords = { };
-    char *Word = (char *)String;
 
-    for (u64 WordIndex = 0;
-         WordIndex < WordCount;
-         ++WordIndex)
+    // NOTE(philip): Put the document words in the hash table.
     {
-        KeywordTable_Insert(&DocumentWords, Word);
+        char *Word = (char *)String;
 
-        while (*Word)
+        for (u64 WordIndex = 0;
+             WordIndex < WordCount;
+             ++WordIndex)
         {
-            ++Word;
-        }
+            if (!KeywordTable_Find(&DocumentWords, Word))
+            {
+                KeywordTable_Insert(&DocumentWords, Word);
+            }
 
-        if (WordIndex < WordCount - 1)
-        {
-            ++Word;
+            while (*Word)
+            {
+                ++Word;
+            }
+
+            if (WordIndex < WordCount - 1)
+            {
+                ++Word;
+            }
         }
     }
 
@@ -152,39 +213,58 @@ MatchDocument(DocID ID, const char *String)
              Node;
              Node = Node->Next)
         {
-            keyword_table_node *Keyword = KeywordTable_Find(&Application.KeywordTable, Node->Word, Node->Hash);
-            if (Keyword)
+            // NOTE(philip): Exact Matching.
             {
-                for (query *Query = Keyword->Queries.Head;
-                     Query;
-                     Query = Query->Next)
+                keyword_table_node *Keyword = KeywordTable_Find(&Application.KeywordTable, Node->Word, Node->Hash);
+                if (Keyword)
                 {
-                    if (Query->Type == 0)
+                    for (query *Query = Keyword->Queries.Head;
+                         Query;
+                         Query = Query->Next)
                     {
-                        query *ResultingQuery = QueryList_Find(&AnsweredQueries, Query->ID);
-                        if (!ResultingQuery)
+                        if (Query->Type == 0)
                         {
-                            ResultingQuery = QueryList_Insert(&AnsweredQueries, Query->ID, Query->WordCount, Query->Type, 1);
-                        }
-                        else
-                        {
-                            ++ResultingQuery->WordsFound;
+                            query *ResultingQuery = QueryList_Find(&AnsweredQueries, Query->ID);
+                            if (!ResultingQuery)
+                            {
+                                ResultingQuery = QueryList_Insert(&AnsweredQueries, Query->ID, Query->WordCount, Query->Type, 1);
+                            }
+                            else
+                            {
+                                ++ResultingQuery->WordsFound;
+                            }
                         }
                     }
                 }
             }
+
+            // NOTE(philip): Hamming Matching.
+            {
+                u64 WordLength = strlen(Node->Word);
+                u64 TreeIndex = HammingTreeIndex(WordLength);
+
+                for (u32 Distance = 1;
+                     Distance <= 4;
+                     ++Distance)
+                {
+                    BKTree_FindMatches(&Application.HammingTrees[TreeIndex], Node->Word, Distance);
+
+                    // TODO(philip): Do stuff.
+                }
+            }
         }
     }
-
+#if 0
     for (query *Query = AnsweredQueries.Head;
          Query;
          Query = Query->Next)
     {
         if (Query->WordCount == Query->WordsFound)
         {
-//            printf("ID: %d, WordCount: %d, Type: %d, Words Found: %d\n", Query->ID, Query->WordCount, Query->Type, Query->WordsFound);
+            //            printf("ID: %d, WordCount: %d, Type: %d, Words Found: %d\n", Query->ID, Query->WordCount, Query->Type, Query->WordsFound);
         }
     }
+#endif
 
     KeywordTable_Destroy(&DocumentWords);
     QueryList_Destroy(&AnsweredQueries);

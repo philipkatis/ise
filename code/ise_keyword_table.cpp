@@ -53,18 +53,14 @@ keyword_table_node *
 KeywordTable_Insert(keyword_table *Table, char *Word)
 {
     u64 Hash = HashKeyword(Word);
-    keyword_table_node *Node = KeywordTable_Find(Table, Word, Hash);
-    if (!Node)
-    {
-        u64 Index = Hash % KEYWORD_TABLE_BUCKET_COUNT;
+    u64 Index = Hash % KEYWORD_TABLE_BUCKET_COUNT;
 
-        Node = (keyword_table_node *)calloc(1, sizeof(keyword_table_node));
-        strcpy(Node->Word, Word);
-        Node->Hash = Hash;
+    keyword_table_node *Node = (keyword_table_node *)calloc(1, sizeof(keyword_table_node));
+    strcpy(Node->Word, Word);
+    Node->Hash = Hash;
 
-        Node->Next = Table->Buckets[Index];
-        Table->Buckets[Index] = Node;
-    }
+    Node->Next = Table->Buckets[Index];
+    Table->Buckets[Index] = Node;
 
     return Node;
 }
