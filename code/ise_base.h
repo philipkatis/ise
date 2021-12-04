@@ -67,4 +67,11 @@ static_assert(sizeof(f64) == 8);
 
 #define ArrayCount(Array) (sizeof((Array)) / sizeof(*(Array)))
 
+typedef u32 direction;
+enum
+{
+    Direction_Left  = 0,
+    Direction_Right = 1
+};
+
 #endif

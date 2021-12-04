@@ -1,6 +1,7 @@
 #include "ise.h"
 #include "ise_keyword_table.h"
 #include "ise_bk_tree.h"
+#include "ise_query_metadata.h"
 
 #include <string.h>
 #include <ctype.h>
