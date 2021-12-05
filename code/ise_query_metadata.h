@@ -9,11 +9,20 @@ struct query_metadata
     u32 Padding;
 };
 
-struct node;
+struct query_metadata_tree_node
+{
+    query_metadata Data;
+
+    query_metadata_tree_node *Parent;
+    u64 Height;
+
+    query_metadata_tree_node *Left;
+    query_metadata_tree_node *Right;
+};
 
 struct query_metadata_tree
 {
-    node *Root;
+    query_metadata_tree_node *Root;
     u64 Count;
 };
 

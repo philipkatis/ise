@@ -6,6 +6,7 @@
 #endif
 
 #define global   static
+#define local    static
 #define function static
 
 typedef unsigned char       u8;
