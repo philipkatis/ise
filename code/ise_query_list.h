@@ -1,6 +1,8 @@
 #ifndef ISE_QUERY_LIST_H
 #define ISE_QUERY_LIST_H
 
+#if 0
+
 #include "ise.h"
 
 struct query
@@ -29,5 +31,7 @@ query *QueryList_Find(query_list *List, u32 ID);
 query *QueryList_Insert(query_list *List, u32 ID, u8 WordCount, u8 Type, u16 Distance);
 void QueryList_Remove(query_list *List, u32 ID);
 void QueryList_Destroy(query_list *List);
+
+#endif
 
 #endif

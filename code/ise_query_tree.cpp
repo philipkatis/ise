@@ -1,11 +1,11 @@
-#include "ise_query_metadata.h"
+#include "ise_query_tree.h"
 
 #include <stdlib.h>
 
-function query_metadata_tree_node *
-AllocateNode(u32 ID, query_metadata_tree_node *Parent)
+function query_tree_node *
+AllocateNode(u32 ID, query_tree_node *Parent)
 {
-    query_metadata_tree_node *Node = (query_metadata_tree_node *)calloc(1, sizeof(query_metadata_tree_node));
+    query_tree_node *Node = (query_tree_node *)calloc(1, sizeof(query_tree_node));
 
     Node->Data.ID = ID;
 
@@ -16,14 +16,14 @@ AllocateNode(u32 ID, query_metadata_tree_node *Parent)
 }
 
 function u64
-GetNodeHeight(query_metadata_tree_node *Node)
+GetNodeHeight(query_tree_node *Node)
 {
     u64 Height = (Node ? Node->Height : 0);
     return Height;
 }
 
 function void
-UpdateNodeHeight(query_metadata_tree_node *Node)
+UpdateNodeHeight(query_tree_node *Node)
 {
     u64 LeftHeight = GetNodeHeight(Node->Left);
     u64 RightHeight = GetNodeHeight(Node->Right);
@@ -32,7 +32,7 @@ UpdateNodeHeight(query_metadata_tree_node *Node)
 }
 
 function s64
-GetNodeBalance(query_metadata_tree_node *Node)
+GetNodeBalance(query_tree_node *Node)
 {
     s64 Balance = 0;
 
@@ -47,24 +47,11 @@ GetNodeBalance(query_metadata_tree_node *Node)
     return Balance;
 }
 
-function query_metadata_tree_node *
-RotateTree(query_metadata_tree_node *Root, direction Direction)
+function query_tree_node *
+RotateLeft(query_tree_node *Root)
 {
-    query_metadata_tree_node *OldRoot = Root;
-    query_metadata_tree_node *NewRoot = 0;
-
-    switch (Direction)
-    {
-        case Direction_Left:
-        {
-            NewRoot = OldRoot->Right;
-        } break;
-
-        case Direction_Right:
-        {
-            NewRoot = OldRoot->Left;
-        } break;
-    }
+    query_tree_node *OldRoot = Root;
+    query_tree_node *NewRoot = OldRoot->Right;
 
     if (OldRoot->Parent)
     {
@@ -81,31 +68,15 @@ RotateTree(query_metadata_tree_node *Root, direction Direction)
     NewRoot->Parent = OldRoot->Parent;
     OldRoot->Parent = NewRoot;
 
-    query_metadata_tree_node *MovingChild = 0;
-
-    switch (Direction)
-    {
-        case Direction_Left:
-        {
-            MovingChild = NewRoot->Left;
-
-            OldRoot->Right = MovingChild;
-            NewRoot->Left = OldRoot;
-        } break;
-
-        case Direction_Right:
-        {
-            MovingChild = NewRoot->Right;
-
-            OldRoot->Left = MovingChild;
-            NewRoot->Right = OldRoot;
-        } break;
-    }
+    query_tree_node *MovingChild = NewRoot->Left;
 
     if (MovingChild)
     {
         MovingChild->Parent = OldRoot;
     }
+
+    OldRoot->Right = MovingChild;
+    NewRoot->Left = OldRoot;
 
     UpdateNodeHeight(OldRoot);
     UpdateNodeHeight(NewRoot);
@@ -113,15 +84,52 @@ RotateTree(query_metadata_tree_node *Root, direction Direction)
     return NewRoot;
 }
 
-query_metadata *
-FindOrInsertQueryMetadata(query_metadata_tree *Tree, u32 ID)
+function query_tree_node *
+RotateRight(query_tree_node *Root)
 {
-    query_metadata_tree_node *NewNode = 0;
+    query_tree_node *OldRoot = Root;
+    query_tree_node *NewRoot = OldRoot->Left;
+
+    if (OldRoot->Parent)
+    {
+        if (OldRoot->Parent->Right == OldRoot)
+        {
+            OldRoot->Parent->Right = NewRoot;
+        }
+        else if (OldRoot->Parent->Left == OldRoot)
+        {
+            OldRoot->Parent->Left = NewRoot;
+        }
+    }
+
+    NewRoot->Parent = OldRoot->Parent;
+    OldRoot->Parent = NewRoot;
+
+    query_tree_node *MovingChild = NewRoot->Right;
+
+    if (MovingChild)
+    {
+        MovingChild->Parent = OldRoot;
+    }
+
+    OldRoot->Left = MovingChild;
+    NewRoot->Right = OldRoot;
+
+    UpdateNodeHeight(OldRoot);
+    UpdateNodeHeight(NewRoot);
+
+    return NewRoot;
+}
+
+query *
+QueryTree_FindOrInsert(query_tree *Tree, u32 ID)
+{
+    query_tree_node *NewNode = 0;
 
     if (Tree->Root)
     {
-        query_metadata_tree_node *LastValidNode = 0;
-        query_metadata_tree_node *CurrentNode = Tree->Root;
+        query_tree_node *LastValidNode = 0;
+        query_tree_node *CurrentNode = Tree->Root;
 
         while (CurrentNode)
         {
@@ -153,7 +161,7 @@ FindOrInsertQueryMetadata(query_metadata_tree *Tree, u32 ID)
         }
 
         CurrentNode = NewNode->Parent;
-        query_metadata_tree_node *PotentialNewRoot = 0;
+        query_tree_node *PotentialNewRoot = 0;
 
         while (CurrentNode)
         {
@@ -169,19 +177,19 @@ FindOrInsertQueryMetadata(query_metadata_tree *Tree, u32 ID)
             {
                 if (CurrentNode->Left->Data.ID < ID)
                 {
-                    CurrentNode->Left = RotateTree(CurrentNode->Left, Direction_Left);
+                    CurrentNode->Left = RotateLeft(CurrentNode->Left);
                 }
 
-                CurrentNode = RotateTree(CurrentNode, Direction_Right);
+                CurrentNode = RotateRight(CurrentNode);
             }
             else if (Balance > 1)
             {
                 if (CurrentNode->Right->Data.ID > ID)
                 {
-                    CurrentNode->Right = RotateTree(CurrentNode->Right, Direction_Right);
+                    CurrentNode->Right = RotateRight(CurrentNode->Right);
                 }
 
-                CurrentNode = RotateTree(CurrentNode, Direction_Left);
+                CurrentNode = RotateLeft(CurrentNode);
             }
             else
             {
@@ -203,11 +211,11 @@ FindOrInsertQueryMetadata(query_metadata_tree *Tree, u32 ID)
 }
 
 void
-RemoveQueryMetadata(query_metadata_tree *Tree, u32 ID)
+QueryTree_RemoveIfExists(query_tree *Tree, u32 ID)
 {
     b32 Found = false;
-    query_metadata_tree_node *ParentOfRemovedNode = 0;
-    query_metadata_tree_node *CurrentNode = Tree->Root;
+    query_tree_node *ParentOfRemovedNode = 0;
+    query_tree_node *CurrentNode = Tree->Root;
 
     while (CurrentNode)
     {
@@ -223,13 +231,13 @@ RemoveQueryMetadata(query_metadata_tree *Tree, u32 ID)
         {
             if (CurrentNode->Left && CurrentNode->Right)
             {
-                query_metadata_tree_node *MovingChild = CurrentNode->Left;
+                query_tree_node *MovingChild = CurrentNode->Left;
                 while (MovingChild->Right)
                 {
                     MovingChild = MovingChild->Right;
                 }
 
-                query_metadata_tree_node *Parent = MovingChild->Parent;
+                query_tree_node *Parent = MovingChild->Parent;
 
                 if (Parent)
                 {
@@ -250,8 +258,8 @@ RemoveQueryMetadata(query_metadata_tree *Tree, u32 ID)
             }
             else
             {
-                query_metadata_tree_node *Child = CurrentNode->Left ? CurrentNode->Left : CurrentNode->Right;
-                query_metadata_tree_node *Parent = CurrentNode->Parent;
+                query_tree_node *Child = CurrentNode->Left ? CurrentNode->Left : CurrentNode->Right;
+                query_tree_node *Parent = CurrentNode->Parent;
 
                 if (Child)
                 {
@@ -291,7 +299,7 @@ RemoveQueryMetadata(query_metadata_tree *Tree, u32 ID)
     }
 
     CurrentNode = ParentOfRemovedNode;
-    query_metadata_tree_node *PotentialNewRoot = 0;
+    query_tree_node *PotentialNewRoot = 0;
 
     while (CurrentNode)
     {
@@ -308,20 +316,20 @@ RemoveQueryMetadata(query_metadata_tree *Tree, u32 ID)
             s64 LeftBalance = GetNodeBalance(CurrentNode->Left);
             if (LeftBalance >= 0)
             {
-                CurrentNode->Left = RotateTree(CurrentNode->Left, Direction_Left);
+                CurrentNode->Left = RotateLeft(CurrentNode->Left);
             }
 
-            CurrentNode = RotateTree(CurrentNode, Direction_Right);
+            CurrentNode = RotateRight(CurrentNode);
         }
         else if (Balance > 1)
         {
             s64 RightBalance = GetNodeBalance(CurrentNode->Right);
             if (RightBalance <= 0)
             {
-                CurrentNode->Right = RotateTree(CurrentNode->Right, Direction_Right);
+                CurrentNode->Right = RotateRight(CurrentNode->Right);
             }
 
-            CurrentNode = RotateTree(CurrentNode, Direction_Left);
+            CurrentNode = RotateLeft(CurrentNode);
         }
         else
         {
@@ -334,7 +342,7 @@ RemoveQueryMetadata(query_metadata_tree *Tree, u32 ID)
 }
 
 function void
-DestroyNode(query_metadata_tree_node *Node)
+DestroyNode(query_tree_node *Node)
 {
     if (Node->Left)
     {
@@ -350,7 +358,7 @@ DestroyNode(query_metadata_tree_node *Node)
 }
 
 void
-DestroyQueryMetadataTree(query_metadata_tree *Tree)
+QueryTree_Destroy(query_tree *Tree)
 {
     if (Tree->Root)
     {
@@ -374,9 +382,9 @@ DestroyQueryMetadataTree(query_metadata_tree *Tree)
     }
 
     function void
-    VisualizeNode(query_metadata_tree_node *Node, u64 Depth = 0)
+    VisualizeNode(query_tree_node *Node, u64 Depth = 0)
     {
-        query_metadata *Data = &Node->Data;
+        query *Data = &Node->Data;
 
         PrintTabs(Depth);
         printf("{\n");
@@ -424,7 +432,7 @@ DestroyQueryMetadataTree(query_metadata_tree *Tree)
     }
 
     void
-    VisualizeQueryMetadataTree_(query_metadata_tree *Tree)
+    VisualizeQueryMetadataTree_(query_tree *Tree)
     {
         if (Tree->Root)
         {

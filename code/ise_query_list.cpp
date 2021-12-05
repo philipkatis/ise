@@ -1,5 +1,7 @@
 #include "ise_query_list.h"
 
+#if 0
+
 #include <stdlib.h>
 
 query *
@@ -85,3 +87,5 @@ QueryList_Destroy(query_list *List)
 
     List->Head = 0;
 }
+
+#endif

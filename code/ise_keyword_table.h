@@ -2,6 +2,7 @@
 #define ISE_KEYWORD_TABLE_H
 
 #include "ise_query_list.h"
+#include "ise.h"
 
 #define KEYWORD_TABLE_BUCKET_COUNT 4096
 
@@ -9,7 +10,7 @@ struct keyword_table_node
 {
     char Word[MAX_KEYWORD_LENGTH + 1];
     u64 Hash;
-    query_list Queries;
+//    query_list Queries;
     keyword_table_node *Next;
 };
 

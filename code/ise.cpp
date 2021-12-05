@@ -1,7 +1,6 @@
 #include "ise.h"
 #include "ise_keyword_table.h"
 #include "ise_bk_tree.h"
-#include "ise_query_metadata.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -25,54 +24,6 @@ HammingTreeIndex(u64 Length)
 ErrorCode
 InitializeIndex()
 {
-    query_metadata_tree Tree = { };
-
-    FindOrInsertQueryMetadata(&Tree, 10);
-    VisualizeQueryMetadataTree(&Tree);
-
-    printf("===========\n");
-
-    FindOrInsertQueryMetadata(&Tree, 10);
-    VisualizeQueryMetadataTree(&Tree);
-
-    printf("===========\n");
-
-    FindOrInsertQueryMetadata(&Tree, 20);
-    VisualizeQueryMetadataTree(&Tree);
-
-    printf("===========\n");
-
-    FindOrInsertQueryMetadata(&Tree, 30);
-    VisualizeQueryMetadataTree(&Tree);
-
-    printf("===========\n");
-
-    FindOrInsertQueryMetadata(&Tree, 40);
-    VisualizeQueryMetadataTree(&Tree);
-
-    printf("===========\n");
-
-    FindOrInsertQueryMetadata(&Tree, 50);
-    VisualizeQueryMetadataTree(&Tree);
-
-    printf("===========\n");
-
-    FindOrInsertQueryMetadata(&Tree, 25);
-    VisualizeQueryMetadataTree(&Tree);
-
-    printf("===========\n");
-
-    RemoveQueryMetadata(&Tree, 20);
-    VisualizeQueryMetadataTree(&Tree);
-
-
-    printf("===========\n");
-
-    RemoveQueryMetadata(&Tree, 30);
-    VisualizeQueryMetadataTree(&Tree);
-
-    Assert(false);
-
     for (u32 Index = 0;
          Index < HAMMING_TREE_COUNT;
          ++Index)
@@ -98,6 +49,7 @@ DestroyIndex()
     return EC_SUCCESS;
 }
 
+/*
 function b32
 IsInQueryOfType(keyword_table_node *Keyword, u32 Type)
 {
@@ -116,6 +68,7 @@ IsInQueryOfType(keyword_table_node *Keyword, u32 Type)
 
     return Result;
 }
+*/
 
 ErrorCode
 StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
@@ -163,6 +116,7 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
         {
             if (Type != MT_EXACT_MATCH)
             {
+/*
                 if (!IsInQueryOfType(Keyword, Type))
                 {
                     if (Type == MT_HAMMING_DIST)
@@ -174,14 +128,16 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 
                     }
                 }
+*/
             }
         }
-
+/*
         query *Query = QueryList_Find(&Keyword->Queries, ID);
         if (!Query)
         {
             Query = QueryList_Insert(&Keyword->Queries, ID, WordCount, (u8)Type, (u16)Distance);
         }
+    */
     }
 
     return EC_SUCCESS;
@@ -201,7 +157,7 @@ EndQuery(QueryID ID)
                  Node;
                  Node = Node->Next)
             {
-                QueryList_Remove(&Node->Queries, ID);
+//                QueryList_Remove(&Node->Queries, ID);
             }
         }
     }
@@ -252,7 +208,7 @@ MatchDocument(DocID ID, const char *String)
         }
     }
 
-    query_list AnsweredQueries = { };
+//    query_list AnsweredQueries = { };
 
     for (u64 BucketIndex = 0;
          BucketIndex < KEYWORD_TABLE_BUCKET_COUNT;
@@ -267,6 +223,7 @@ MatchDocument(DocID ID, const char *String)
                 keyword_table_node *Keyword = KeywordTable_Find(&Application.KeywordTable, Node->Word, Node->Hash);
                 if (Keyword)
                 {
+                    /*
                     for (query *Query = Keyword->Queries.Head;
                          Query;
                          Query = Query->Next)
@@ -284,6 +241,7 @@ MatchDocument(DocID ID, const char *String)
                             }
                         }
                     }
+*/
                 }
             }
 
@@ -316,7 +274,7 @@ MatchDocument(DocID ID, const char *String)
 #endif
 
     KeywordTable_Destroy(&DocumentWords);
-    QueryList_Destroy(&AnsweredQueries);
+//    QueryList_Destroy(&AnsweredQueries);
 
     return EC_SUCCESS;
 }

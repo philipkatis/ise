@@ -76,7 +76,7 @@ void KeywordTable_Destroy(keyword_table *Table)
         {
             keyword_table_node *Next = Node->Next;
 
-            QueryList_Destroy(&Node->Queries);
+            // QueryList_Destroy(&Node->Queries);
             free(Node);
 
             Node = Next;
@@ -108,14 +108,14 @@ void KeywordTable_Destroy(keyword_table *Table)
                     }
 
                     printf("%llu, %s (", NodeIndex, Node->Word);
-
+/*
                     for (query *Query = Node->Queries.Head;
                          Query;
                          Query = Query->Next)
                     {
                         printf("%d, ", Query->ID);
                     }
-
+*/
                     printf(") ");
 
                     ++NodeIndex;

@@ -8,7 +8,7 @@
 
 #include "acutest.h"
 
-#include "tests_query_metadata.cpp"
+#include "tests_query_tree.cpp"
 
 function void
 Test_IsExactMatch(void)
@@ -467,7 +467,7 @@ Test_EditBKTree(void)
 
 TEST_LIST =
 {
-    { "Query Metadata",               QueryMetadata                 },
+    { "Query Tree",                   QueryTree                     },
     { "Exact Keyword Matching",       Test_IsExactMatch             },
     { "Hamming Distance Calculation", Test_CalculateHammingDistance },
     { "Edit Distance Calculation",    Test_CalculateEditDistance    },
