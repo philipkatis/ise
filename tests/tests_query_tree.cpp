@@ -39,9 +39,9 @@ QueryTree(void)
         TEST_CHECK(Tree.Root == 0);
         TEST_CHECK(Tree.Count == 0);
 
-        QueryTree_FindOrInsert(&Tree, 100);
-        QueryTree_FindOrInsert(&Tree, 25);
-        QueryTree_FindOrInsert(&Tree, 50);
+        QueryTree_Insert(&Tree, 100);
+        QueryTree_Insert(&Tree, 25);
+        QueryTree_Insert(&Tree, 50);
 
         TEST_CHECK(Tree.Count == 3);
 
@@ -73,16 +73,23 @@ QueryTree(void)
         TEST_CHECK(Tree.Count == 0);
     }
 
-    // NOTE(philip): High level test of multiple insertions with rebalancing.
+    // NOTE(philip): High level test of multiple insertions with rebalancing. Duplicate query insertion.
     {
         query_tree Tree = { };
 
-        QueryTree_FindOrInsert(&Tree, 50);
-        QueryTree_FindOrInsert(&Tree, 10);
-        QueryTree_FindOrInsert(&Tree, 100);
-        QueryTree_FindOrInsert(&Tree, 5);
-        QueryTree_FindOrInsert(&Tree, 15);
-        QueryTree_FindOrInsert(&Tree, 25);
+        QueryTree_Insert(&Tree, 50);
+        QueryTree_Insert(&Tree, 10);
+        QueryTree_Insert(&Tree, 100);
+        QueryTree_Insert(&Tree, 5);
+        QueryTree_Insert(&Tree, 15);
+
+        query_tree_insert_result InsertResult = QueryTree_Insert(&Tree, 25);
+        TEST_CHECK(InsertResult.Query->ID == 25);
+        TEST_CHECK(InsertResult.Exists == false);
+
+        InsertResult = QueryTree_Insert(&Tree, 25);
+        TEST_CHECK(InsertResult.Query->ID == 25);
+        TEST_CHECK(InsertResult.Exists == true);
 
         u32 Solutions[6] = { 15, 10, 5, 50, 25, 100 };
         ValidateTreePreOrder(&Tree, Solutions, ArrayCount(Solutions));
@@ -94,17 +101,17 @@ QueryTree(void)
     {
         query_tree Tree = { };
 
-        QueryTree_FindOrInsert(&Tree, 50);
-        QueryTree_FindOrInsert(&Tree, 10);
-        QueryTree_FindOrInsert(&Tree, 100);
-        QueryTree_FindOrInsert(&Tree, 5);
-        QueryTree_FindOrInsert(&Tree, 15);
-        QueryTree_FindOrInsert(&Tree, 75);
-        QueryTree_FindOrInsert(&Tree, 150);
-        QueryTree_FindOrInsert(&Tree, 0);
-        QueryTree_FindOrInsert(&Tree, 12);
-        QueryTree_FindOrInsert(&Tree, 20);
-        QueryTree_FindOrInsert(&Tree, 25);
+        QueryTree_Insert(&Tree, 50);
+        QueryTree_Insert(&Tree, 10);
+        QueryTree_Insert(&Tree, 100);
+        QueryTree_Insert(&Tree, 5);
+        QueryTree_Insert(&Tree, 15);
+        QueryTree_Insert(&Tree, 75);
+        QueryTree_Insert(&Tree, 150);
+        QueryTree_Insert(&Tree, 0);
+        QueryTree_Insert(&Tree, 12);
+        QueryTree_Insert(&Tree, 20);
+        QueryTree_Insert(&Tree, 25);
 
         u32 Solutions[11] = { 15, 10, 5, 0, 12, 50, 20, 25, 100, 75, 150 };
         ValidateTreePreOrder(&Tree, Solutions, ArrayCount(Solutions));
@@ -116,12 +123,12 @@ QueryTree(void)
     {
         query_tree Tree = { };
 
-        QueryTree_FindOrInsert(&Tree, 10);
-        QueryTree_FindOrInsert(&Tree, 5);
-        QueryTree_FindOrInsert(&Tree, 20);
-        QueryTree_FindOrInsert(&Tree, 25);
+        QueryTree_Insert(&Tree, 10);
+        QueryTree_Insert(&Tree, 5);
+        QueryTree_Insert(&Tree, 20);
+        QueryTree_Insert(&Tree, 25);
 
-        QueryTree_RemoveIfExists(&Tree, 5);
+        QueryTree_Remove(&Tree, 5);
 
         TEST_CHECK(Tree.Count == 3);
 
@@ -150,16 +157,17 @@ QueryTree(void)
         QueryTree_Destroy(&Tree);
     }
 
-    // NOTE(philip): High level test of a node removal with two children.
+    // NOTE(philip): High level test of a node removal with two children. Removal of query that does not exist.
     {
         query_tree Tree = { };
 
-        QueryTree_FindOrInsert(&Tree, 10);
-        QueryTree_FindOrInsert(&Tree, 5);
-        QueryTree_FindOrInsert(&Tree, 20);
-        QueryTree_FindOrInsert(&Tree, 25);
+        QueryTree_Insert(&Tree, 10);
+        QueryTree_Insert(&Tree, 5);
+        QueryTree_Insert(&Tree, 20);
+        QueryTree_Insert(&Tree, 25);
 
-        QueryTree_RemoveIfExists(&Tree, 10);
+        QueryTree_Remove(&Tree, 10);
+        QueryTree_Remove(&Tree, 100);
 
         u32 Solutions[3] = { 20, 5, 25 };
         ValidateTreePreOrder(&Tree, Solutions, ArrayCount(Solutions));
@@ -171,23 +179,23 @@ QueryTree(void)
     {
         query_tree Tree = { };
 
-        QueryTree_FindOrInsert(&Tree, 50);
+        QueryTree_Insert(&Tree, 50);
 
-        QueryTree_FindOrInsert(&Tree, 25);
-        QueryTree_FindOrInsert(&Tree, 75);
+        QueryTree_Insert(&Tree, 25);
+        QueryTree_Insert(&Tree, 75);
 
-        QueryTree_FindOrInsert(&Tree, 15);
-        QueryTree_FindOrInsert(&Tree, 35);
-        QueryTree_FindOrInsert(&Tree, 65);
-        QueryTree_FindOrInsert(&Tree, 85);
+        QueryTree_Insert(&Tree, 15);
+        QueryTree_Insert(&Tree, 35);
+        QueryTree_Insert(&Tree, 65);
+        QueryTree_Insert(&Tree, 85);
 
-        QueryTree_FindOrInsert(&Tree, 40);
-        QueryTree_FindOrInsert(&Tree, 60);
-        QueryTree_FindOrInsert(&Tree, 80);
-        QueryTree_FindOrInsert(&Tree, 90);
-        QueryTree_FindOrInsert(&Tree, 100);
+        QueryTree_Insert(&Tree, 40);
+        QueryTree_Insert(&Tree, 60);
+        QueryTree_Insert(&Tree, 80);
+        QueryTree_Insert(&Tree, 90);
+        QueryTree_Insert(&Tree, 100);
 
-        QueryTree_RemoveIfExists(&Tree, 15);
+        QueryTree_Remove(&Tree, 15);
 
         u32 Solutions[11] = { 75, 50, 35, 25, 40, 65, 60, 85, 80, 90, 100  };
         ValidateTreePreOrder(&Tree, Solutions, ArrayCount(Solutions));

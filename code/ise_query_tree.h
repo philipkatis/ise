@@ -26,8 +26,35 @@ struct query_tree
     u64 Count;
 };
 
-query *QueryTree_FindOrInsert(query_tree *Tree, u32 ID);
-void QueryTree_RemoveIfExists(query_tree *Tree, u32 ID);
+struct query_tree_insert_result
+{
+    query *Query;
+    b32 Exists;
+};
+
+/*
+
+  NOTE(philip): Finds the query with ID in the tree and returns it if it exists. Otherwise, craetes a new query and
+  returns that.
+
+*/
+
+query_tree_insert_result QueryTree_Insert(query_tree *Tree, u32 ID);
+
+/*
+
+  NOTE(philip): Finds the query with ID in the tree and removes it if it exists.
+
+*/
+
+void QueryTree_Remove(query_tree *Tree, u32 ID);
+
+/*
+
+  NOTE(philip): Deallocates all the memory allocated by the tree.
+
+*/
+
 void QueryTree_Destroy(query_tree *Tree);
 
 #if ISE_DEBUG

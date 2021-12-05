@@ -121,9 +121,10 @@ RotateRight(query_tree_node *Root)
     return NewRoot;
 }
 
-query *
-QueryTree_FindOrInsert(query_tree *Tree, u32 ID)
+query_tree_insert_result
+QueryTree_Insert(query_tree *Tree, u32 ID)
 {
+    query_tree_insert_result Result = { };
     query_tree_node *NewNode = 0;
 
     if (Tree->Root)
@@ -145,7 +146,10 @@ QueryTree_FindOrInsert(query_tree *Tree, u32 ID)
             }
             else
             {
-                return &CurrentNode->Data;
+                Result.Query = &CurrentNode->Data;
+                Result.Exists = true;
+
+                return Result;
             }
         }
 
@@ -207,11 +211,12 @@ QueryTree_FindOrInsert(query_tree *Tree, u32 ID)
 
     ++Tree->Count;
 
-    return &NewNode->Data;
+    Result.Query = &NewNode->Data;
+    return Result;
 }
 
 void
-QueryTree_RemoveIfExists(query_tree *Tree, u32 ID)
+QueryTree_Remove(query_tree *Tree, u32 ID)
 {
     b32 Found = false;
     query_tree_node *ParentOfRemovedNode = 0;
