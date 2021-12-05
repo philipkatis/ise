@@ -25,6 +25,54 @@ HammingTreeIndex(u64 Length)
 ErrorCode
 InitializeIndex()
 {
+    query_metadata_tree Tree = { };
+
+    FindOrInsertQueryMetadata(&Tree, 10);
+    VisualizeQueryMetadataTree(&Tree);
+
+    printf("===========\n");
+
+    FindOrInsertQueryMetadata(&Tree, 10);
+    VisualizeQueryMetadataTree(&Tree);
+
+    printf("===========\n");
+
+    FindOrInsertQueryMetadata(&Tree, 20);
+    VisualizeQueryMetadataTree(&Tree);
+
+    printf("===========\n");
+
+    FindOrInsertQueryMetadata(&Tree, 30);
+    VisualizeQueryMetadataTree(&Tree);
+
+    printf("===========\n");
+
+    FindOrInsertQueryMetadata(&Tree, 40);
+    VisualizeQueryMetadataTree(&Tree);
+
+    printf("===========\n");
+
+    FindOrInsertQueryMetadata(&Tree, 50);
+    VisualizeQueryMetadataTree(&Tree);
+
+    printf("===========\n");
+
+    FindOrInsertQueryMetadata(&Tree, 25);
+    VisualizeQueryMetadataTree(&Tree);
+
+    printf("===========\n");
+
+    RemoveQueryMetadata(&Tree, 20);
+    VisualizeQueryMetadataTree(&Tree);
+
+
+    printf("===========\n");
+
+    RemoveQueryMetadata(&Tree, 30);
+    VisualizeQueryMetadataTree(&Tree);
+
+    Assert(false);
+
     for (u32 Index = 0;
          Index < HAMMING_TREE_COUNT;
          ++Index)

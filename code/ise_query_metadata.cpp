@@ -42,17 +42,17 @@ UpdateNodeHeight(node *Node)
     Node->Height = Max(LeftHeight, RightHeight) + 1;
 }
 
-function u64
+function s64
 GetNodeBalance(node *Node)
 {
-    u64 Balance = 0;
+    s64 Balance = 0;
 
     if (Node)
     {
         u64 LeftHeight = GetNodeHeight(Node->Left);
         u64 RightHeight = GetNodeHeight(Node->Right);
 
-        Balance = LeftHeight - RightHeight;
+        Balance = RightHeight - LeftHeight;
     }
 
     return Balance;
@@ -174,9 +174,9 @@ FindOrInsertQueryMetadata(query_metadata_tree *Tree, u32 ID)
             u64 RightHeight = GetNodeHeight(CurrentNode->Right);
 
             CurrentNode->Height = Max(LeftHeight, RightHeight) + 1;
-            s64 Balance = LeftHeight - RightHeight;
+            s64 Balance = RightHeight - LeftHeight;
 
-            if (Balance > 1)
+            if (Balance < -1)
             {
                 if (CurrentNode->Left->Data.ID < ID)
                 {
@@ -185,7 +185,7 @@ FindOrInsertQueryMetadata(query_metadata_tree *Tree, u32 ID)
 
                 CurrentNode = RotateTree(CurrentNode, Direction_Right);
             }
-            else if (Balance < -1)
+            else if (Balance > 1)
             {
                 if (CurrentNode->Right->Data.ID > ID)
                 {
@@ -234,16 +234,29 @@ RemoveQueryMetadata(query_metadata_tree *Tree, u32 ID)
         {
             if (CurrentNode->Left && CurrentNode->Right)
             {
-                node *MovingChild = CurrentNode->Right;
+                node *MovingChild = CurrentNode->Left;
                 while (MovingChild->Right)
                 {
                     MovingChild = MovingChild->Right;
                 }
 
-                CurrentNode->Data = MovingChild->Data;
-                MovingChild->Parent->Right = 0;
+                node *Parent = MovingChild->Parent;
 
+                if (Parent)
+                {
+                    if (Parent->Left == MovingChild)
+                    {
+                        Parent->Left = 0;
+                    }
+                    else if (Parent->Right == MovingChild)
+                    {
+                        Parent->Right = 0;
+                    }
+                }
+
+                CurrentNode->Data = MovingChild->Data;
                 ParentOfRemovedNode = MovingChild->Parent;
+
                 free(MovingChild);
             }
             else
@@ -299,22 +312,22 @@ RemoveQueryMetadata(query_metadata_tree *Tree, u32 ID)
         u64 RightHeight = GetNodeHeight(CurrentNode->Right);
 
         CurrentNode->Height = Max(LeftHeight, RightHeight) + 1;
-        s64 Balance = LeftHeight - RightHeight;
+        s64 Balance = RightHeight - LeftHeight;
 
-        if (Balance > 1)
+        if (Balance < -1)
         {
-            u64 LeftBalance = GetNodeBalance(CurrentNode->Left);
-            if (LeftBalance < 0)
+            s64 LeftBalance = GetNodeBalance(CurrentNode->Left);
+            if (LeftBalance >= 0)
             {
                 CurrentNode->Left = RotateTree(CurrentNode->Left, Direction_Left);
             }
 
             CurrentNode = RotateTree(CurrentNode, Direction_Right);
         }
-        else if (Balance < -1)
+        else if (Balance > 1)
         {
-            u64 RightBalance = GetNodeBalance(CurrentNode->Left);
-            if (RightBalance < 0)
+            s64 RightBalance = GetNodeBalance(CurrentNode->Left);
+            if (RightBalance >= 0)
             {
                 CurrentNode->Right = RotateTree(CurrentNode->Right, Direction_Right);
             }
@@ -328,31 +341,106 @@ RemoveQueryMetadata(query_metadata_tree *Tree, u32 ID)
     }
 
     Tree->Root = PotentialNewRoot;
-
     --Tree->Count;
 }
 
 function void
-Test(node *Node)
+DestroyNode(node *Node)
 {
-    printf("%d ", Node->Data.ID);
-
     if (Node->Left)
     {
-        Test(Node->Left);
+        DestroyNode(Node->Left);
     }
 
     if (Node->Right)
     {
-        Test(Node->Right);
+        DestroyNode(Node->Right);
     }
+
+    free(Node);
 }
 
 void
-TestQueryMetadata(query_metadata_tree *Tree)
+DestroyQueryMetadataTree(query_metadata_tree *Tree)
 {
     if (Tree->Root)
     {
-        Test(Tree->Root);
+        DestroyNode(Tree->Root);
     }
+
+    Tree->Root = 0;
+    Tree->Count = 0;
 }
+
+#if ISE_DEBUG
+    function void
+    PrintTabs(u64 Count)
+    {
+        for (u64 Index = 0;
+             Index < Count;
+             ++Index)
+        {
+            printf("    ");
+        }
+    }
+
+    function void
+    VisualizeNode(node *Node, u64 Depth = 0)
+    {
+        query_metadata *Data = &Node->Data;
+
+        PrintTabs(Depth);
+        printf("{\n");
+
+        PrintTabs(Depth + 1);
+        printf("Height: %llu\n", GetNodeHeight(Node));
+
+        PrintTabs(Depth + 1);
+        printf("Balance: %lld\n\n", GetNodeBalance(Node));
+
+        PrintTabs(Depth + 1);
+        printf("Data:\n");
+
+        PrintTabs(Depth + 1);
+        printf("{\n");
+
+        PrintTabs(Depth + 2);
+        printf("ID: %d\n", Data->ID);
+
+        PrintTabs(Depth + 1);
+        printf("}\n");
+
+        if (Node->Left)
+        {
+            printf("\n");
+
+            PrintTabs(Depth + 1);
+            printf("Left Child:\n");
+
+            VisualizeNode(Node->Left, Depth + 1);
+        }
+
+        if (Node->Right)
+        {
+            printf("\n");
+
+            PrintTabs(Depth + 1);
+            printf("Right Child:\n");
+
+            VisualizeNode(Node->Right, Depth + 1);
+        }
+
+        PrintTabs(Depth);
+        printf("}\n");
+    }
+
+    void
+    VisualizeQueryMetadataTree_(query_metadata_tree *Tree)
+    {
+        if (Tree->Root)
+        {
+            printf("Root:\n");
+            VisualizeNode(Tree->Root);
+        }
+    }
+#endif
