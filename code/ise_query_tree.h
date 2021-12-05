@@ -1,12 +1,18 @@
 #ifndef ISE_QUERY_TREE_H
 #define ISE_QUERY_TREE_H
 
-#include "ise_base.h"
+#include "ise.h"
+
+struct keyword_table_node;
 
 struct query
 {
     u32 ID;
-    u32 Padding;
+    u16 Distance;
+    u8 Type;
+    u8 KeywordCount;
+
+    keyword_table_node *Keywords[MAX_KEYWORD_COUNT_PER_QUERY];
 };
 
 struct query_tree_node

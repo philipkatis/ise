@@ -2,6 +2,8 @@
 #include "ise_keyword_table.h"
 #include "ise_bk_tree.h"
 
+#include "ise_query_tree.h"
+
 #include <string.h>
 #include <ctype.h>
 
@@ -9,11 +11,15 @@
 
 struct application
 {
+    query_tree Queries;
+
     keyword_table KeywordTable;
     bk_tree HammingTrees[HAMMING_TREE_COUNT];
 };
 
 global application Application = { };
+
+#if 0
 
 function u64
 HammingTreeIndex(u64 Length)
@@ -21,15 +27,19 @@ HammingTreeIndex(u64 Length)
     return Length - MIN_KEYWORD_LENGTH;
 }
 
+#endif
+
 ErrorCode
 InitializeIndex()
 {
-    for (u32 Index = 0;
-         Index < HAMMING_TREE_COUNT;
-         ++Index)
-    {
-        Application.HammingTrees[Index] = BKTree_Create(BKTreeType_Hamming);
-    }
+    /*
+        for (u32 Index = 0;
+             Index < HAMMING_TREE_COUNT;
+             ++Index)
+        {
+            Application.HammingTrees[Index] = BKTree_Create(BKTreeType_Hamming);
+        }
+    */
 
     return EC_SUCCESS;
 }
@@ -37,15 +47,21 @@ InitializeIndex()
 ErrorCode
 DestroyIndex()
 {
+    // QueryTree_Visualize(&Application.Queries);
+    printf("%llu\n", Application.Queries.Count);
+
     for (u32 Index = 0;
          Index < HAMMING_TREE_COUNT;
          ++Index)
     {
-        BKTree_Visualize(&Application.HammingTrees[Index]);
-        BKTree_Destroy(&Application.HammingTrees[Index]);
+        // BKTree_Visualize(&Application.HammingTrees[Index]);
+        //BKTree_Destroy(&Application.HammingTrees[Index]);
     }
 
-    KeywordTable_Destroy(&Application.KeywordTable);
+    //KeywordTable_Destroy(&Application.KeywordTable);
+
+    QueryTree_Destroy(&Application.Queries);
+
     return EC_SUCCESS;
 }
 
@@ -73,6 +89,14 @@ IsInQueryOfType(keyword_table_node *Keyword, u32 Type)
 ErrorCode
 StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 {
+    query_tree_insert_result InsertResult = QueryTree_Insert(&Application.Queries, ID);
+    if (InsertResult.Exists)
+    {
+        printf("Duplicate!\n");
+        return EC_FAIL;
+    }
+
+#if 0
     char *Words[MAX_KEYWORDS_PER_QUERY];
     u32 WordCount = 0;
 
@@ -116,29 +140,30 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
         {
             if (Type != MT_EXACT_MATCH)
             {
-/*
-                if (!IsInQueryOfType(Keyword, Type))
-                {
-                    if (Type == MT_HAMMING_DIST)
-                    {
-                        BKTree_Insert(&Application.HammingTrees[HammingTreeIndex(WordLength)], Keyword);
-                    }
-                    else if (Type == MT_EDIT_DIST)
-                    {
+                /*
+                                if (!IsInQueryOfType(Keyword, Type))
+                                {
+                                    if (Type == MT_HAMMING_DIST)
+                                    {
+                                        BKTree_Insert(&Application.HammingTrees[HammingTreeIndex(WordLength)], Keyword);
+                                    }
+                                    else if (Type == MT_EDIT_DIST)
+                                    {
 
-                    }
-                }
-*/
+                                    }
+                                }
+                */
             }
         }
-/*
-        query *Query = QueryList_Find(&Keyword->Queries, ID);
-        if (!Query)
-        {
-            Query = QueryList_Insert(&Keyword->Queries, ID, WordCount, (u8)Type, (u16)Distance);
-        }
-    */
+        /*
+                query *Query = QueryList_Find(&Keyword->Queries, ID);
+                if (!Query)
+                {
+                    Query = QueryList_Insert(&Keyword->Queries, ID, WordCount, (u8)Type, (u16)Distance);
+                }
+            */
     }
+    #endif
 
     return EC_SUCCESS;
 }
@@ -146,6 +171,7 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 ErrorCode
 EndQuery(QueryID ID)
 {
+    #if 0
     // TODO(philip): Make an iterator for this.
     for (u64 BucketIndex = 0;
          BucketIndex < KEYWORD_TABLE_BUCKET_COUNT;
@@ -157,10 +183,11 @@ EndQuery(QueryID ID)
                  Node;
                  Node = Node->Next)
             {
-//                QueryList_Remove(&Node->Queries, ID);
+                //                QueryList_Remove(&Node->Queries, ID);
             }
         }
     }
+    #endif
 
     return EC_SUCCESS;
 }
@@ -168,6 +195,10 @@ EndQuery(QueryID ID)
 ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
+    #if 0
+    //QueryTree_Visualize(&Application.Queries);
+    //fAssert(false);
+
     u64 WordCount = 1;
 
     for (char *Character = (char *)String;
@@ -275,6 +306,7 @@ MatchDocument(DocID ID, const char *String)
 
     KeywordTable_Destroy(&DocumentWords);
 //    QueryList_Destroy(&AnsweredQueries);
+    #endif
 
     return EC_SUCCESS;
 }

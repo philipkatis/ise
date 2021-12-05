@@ -47,29 +47,38 @@ GetNodeBalance(query_tree_node *Node)
     return Balance;
 }
 
+function void
+UpdateChild(query_tree_node *OldChild, query_tree_node *NewChild)
+{
+    query_tree_node *Parent = OldChild->Parent;
+    if (Parent)
+    {
+        if (Parent->Left == OldChild)
+        {
+            Parent->Left = NewChild;
+        }
+        else if (Parent->Right == OldChild)
+        {
+            Parent->Right = NewChild;
+        }
+    }
+
+    if (NewChild)
+    {
+        NewChild->Parent = OldChild->Parent;
+    }
+}
+
 function query_tree_node *
 RotateLeft(query_tree_node *Root)
 {
     query_tree_node *OldRoot = Root;
     query_tree_node *NewRoot = OldRoot->Right;
 
-    if (OldRoot->Parent)
-    {
-        if (OldRoot->Parent->Right == OldRoot)
-        {
-            OldRoot->Parent->Right = NewRoot;
-        }
-        else if (OldRoot->Parent->Left == OldRoot)
-        {
-            OldRoot->Parent->Left = NewRoot;
-        }
-    }
-
-    NewRoot->Parent = OldRoot->Parent;
+    UpdateChild(OldRoot, NewRoot);
     OldRoot->Parent = NewRoot;
 
     query_tree_node *MovingChild = NewRoot->Left;
-
     if (MovingChild)
     {
         MovingChild->Parent = OldRoot;
@@ -90,19 +99,7 @@ RotateRight(query_tree_node *Root)
     query_tree_node *OldRoot = Root;
     query_tree_node *NewRoot = OldRoot->Left;
 
-    if (OldRoot->Parent)
-    {
-        if (OldRoot->Parent->Right == OldRoot)
-        {
-            OldRoot->Parent->Right = NewRoot;
-        }
-        else if (OldRoot->Parent->Left == OldRoot)
-        {
-            OldRoot->Parent->Left = NewRoot;
-        }
-    }
-
-    NewRoot->Parent = OldRoot->Parent;
+    UpdateChild(OldRoot, NewRoot);
     OldRoot->Parent = NewRoot;
 
     query_tree_node *MovingChild = NewRoot->Right;
@@ -164,7 +161,7 @@ QueryTree_Insert(query_tree *Tree, u32 ID)
             LastValidNode->Right = NewNode;
         }
 
-        CurrentNode = NewNode->Parent;
+        CurrentNode = LastValidNode;
         query_tree_node *PotentialNewRoot = 0;
 
         while (CurrentNode)
@@ -242,55 +239,32 @@ QueryTree_Remove(query_tree *Tree, u32 ID)
                     MovingChild = MovingChild->Right;
                 }
 
-                query_tree_node *Parent = MovingChild->Parent;
-
-                if (Parent)
-                {
-                    if (Parent->Left == MovingChild)
-                    {
-                        Parent->Left = 0;
-                    }
-                    else if (Parent->Right == MovingChild)
-                    {
-                        Parent->Right = 0;
-                    }
-                }
-
                 CurrentNode->Data = MovingChild->Data;
                 ParentOfRemovedNode = MovingChild->Parent;
 
+                UpdateChild(MovingChild, 0);
                 free(MovingChild);
             }
             else
             {
                 query_tree_node *Child = CurrentNode->Left ? CurrentNode->Left : CurrentNode->Right;
-                query_tree_node *Parent = CurrentNode->Parent;
 
                 if (Child)
                 {
+                    query_tree_node *OldParent = CurrentNode->Parent;
+
                     *CurrentNode = *Child;
-                    CurrentNode->Parent = Parent;
+                    CurrentNode->Parent = OldParent;
 
                     free(Child);
                 }
                 else
                 {
-                    if (Parent)
-                    {
-                        if (Parent->Left == CurrentNode)
-                        {
-                            Parent->Left = Child;
-                        }
-                        else if (Parent->Right == CurrentNode)
-                        {
-                            Parent->Right = Child;
-                        }
-                    }
-
+                    UpdateChild(CurrentNode, 0);
                     free(CurrentNode);
                 }
 
-                ParentOfRemovedNode = Parent;
+                ParentOfRemovedNode = CurrentNode->Parent;
             }
 
             Found = true;
@@ -437,7 +411,7 @@ QueryTree_Destroy(query_tree *Tree)
     }
 
     void
-    VisualizeQueryMetadataTree_(query_tree *Tree)
+    QueryTree_Visualize_(query_tree *Tree)
     {
         if (Tree->Root)
         {
