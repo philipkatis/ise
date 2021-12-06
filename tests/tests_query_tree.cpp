@@ -48,19 +48,16 @@ QueryTree(void)
         query_tree_node *Root = Tree.Root;
         TEST_CHECK(Root != 0);
         TEST_CHECK(Root->Data.ID == 50);
-        TEST_CHECK(Root->Parent == 0);
 
         query_tree_node *Left = Root->Left;
         TEST_CHECK(Left != 0);
         TEST_CHECK(Left->Data.ID == 25);
-        TEST_CHECK(Left->Parent == Root);
         TEST_CHECK(Left->Left == 0);
         TEST_CHECK(Left->Right == 0);
 
         query_tree_node *Right = Root->Right;
         TEST_CHECK(Right != 0);
         TEST_CHECK(Right->Data.ID == 100);
-        TEST_CHECK(Right->Parent == Root);
         TEST_CHECK(Right->Left == 0);
         TEST_CHECK(Right->Right == 0);
 
@@ -135,19 +132,16 @@ QueryTree(void)
         query_tree_node *Root = Tree.Root;
         TEST_CHECK(Root != 0);
         TEST_CHECK(Root->Data.ID == 20);
-        TEST_CHECK(Root->Parent == 0);
 
         query_tree_node *Left = Root->Left;
         TEST_CHECK(Left != 0);
         TEST_CHECK(Left->Data.ID == 10);
-        TEST_CHECK(Left->Parent == Root);
         TEST_CHECK(Left->Left == 0);
         TEST_CHECK(Left->Right == 0);
 
         query_tree_node *Right = Root->Right;
         TEST_CHECK(Right != 0);
         TEST_CHECK(Right->Data.ID == 25);
-        TEST_CHECK(Right->Parent == Root);
         TEST_CHECK(Right->Left == 0);
         TEST_CHECK(Right->Right == 0);
 

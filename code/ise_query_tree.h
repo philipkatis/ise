@@ -18,8 +18,6 @@ struct query
 struct query_tree_node
 {
     query Data;
-
-    query_tree_node *Parent;
     u64 Height;
 
     query_tree_node *Left;

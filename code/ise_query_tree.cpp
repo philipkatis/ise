@@ -2,19 +2,6 @@
 
 #include <stdlib.h>
 
-function query_tree_node *
-AllocateNode(u32 ID, query_tree_node *Parent)
-{
-    query_tree_node *Node = (query_tree_node *)calloc(1, sizeof(query_tree_node));
-
-    Node->Data.ID = ID;
-
-    Node->Parent = Parent;
-    Node->Height = 1;
-
-    return Node;
-}
-
 function u64
 GetNodeHeight(query_tree_node *Node)
 {
@@ -47,47 +34,14 @@ GetNodeBalance(query_tree_node *Node)
     return Balance;
 }
 
-function void
-UpdateChild(query_tree_node *OldChild, query_tree_node *NewChild)
-{
-    query_tree_node *Parent = OldChild->Parent;
-    if (Parent)
-    {
-        if (Parent->Left == OldChild)
-        {
-            Parent->Left = NewChild;
-        }
-        else if (Parent->Right == OldChild)
-        {
-            Parent->Right = NewChild;
-        }
-    }
-
-    if (NewChild)
-    {
-        NewChild->Parent = OldChild->Parent;
-    }
-}
-
 function query_tree_node *
 RotateLeft(query_tree_node *Root)
 {
-    query_tree_node *OldRoot = Root;
-    query_tree_node *NewRoot = OldRoot->Right;
+    query_tree_node *NewRoot = Root->Right;
+    Root->Right = NewRoot->Left;
+    NewRoot->Left = Root;
 
-    UpdateChild(OldRoot, NewRoot);
-    OldRoot->Parent = NewRoot;
-
-    query_tree_node *MovingChild = NewRoot->Left;
-    if (MovingChild)
-    {
-        MovingChild->Parent = OldRoot;
-    }
-
-    OldRoot->Right = MovingChild;
-    NewRoot->Left = OldRoot;
-
-    UpdateNodeHeight(OldRoot);
+    UpdateNodeHeight(Root);
     UpdateNodeHeight(NewRoot);
 
     return NewRoot;
@@ -96,24 +50,73 @@ RotateLeft(query_tree_node *Root)
 function query_tree_node *
 RotateRight(query_tree_node *Root)
 {
-    query_tree_node *OldRoot = Root;
-    query_tree_node *NewRoot = OldRoot->Left;
+    query_tree_node *NewRoot = Root->Left;
+    Root->Left = NewRoot->Right;
+    NewRoot->Right = Root;
 
-    UpdateChild(OldRoot, NewRoot);
-    OldRoot->Parent = NewRoot;
-
-    query_tree_node *MovingChild = NewRoot->Right;
-
-    if (MovingChild)
-    {
-        MovingChild->Parent = OldRoot;
-    }
-
-    OldRoot->Left = MovingChild;
-    NewRoot->Right = OldRoot;
-
-    UpdateNodeHeight(OldRoot);
+    UpdateNodeHeight(Root);
     UpdateNodeHeight(NewRoot);
+
+    return NewRoot;
+}
+
+function query_tree_node *
+Insert(query_tree_node *Root, u32 ID, query **Query, b32 *Exists)
+{
+    query_tree_node *NewRoot = Root;
+
+    if (Root)
+    {
+        if (Root->Data.ID > ID)
+        {
+            Root->Left = Insert(Root->Left, ID, Query, Exists);
+        }
+        else if (Root->Data.ID < ID)
+        {
+            Root->Right = Insert(Root->Right, ID, Query, Exists);
+        }
+        else
+        {
+            *Query = &NewRoot->Data;
+            *Exists = true;
+        }
+
+        if (!(*Exists))
+        {
+            u64 LeftHeight = GetNodeHeight(Root->Left);
+            u64 RightHeight = GetNodeHeight(Root->Right);
+
+            Root->Height = Max(LeftHeight, RightHeight) + 1;
+            s64 Balance = RightHeight - LeftHeight;
+
+            if (Balance < -1)
+            {
+                if (Root->Left->Data.ID < ID)
+                {
+                    Root->Left = RotateLeft(Root->Left);
+                }
+
+                NewRoot = RotateRight(Root);
+            }
+            else if (Balance > 1)
+            {
+                if (Root->Right->Data.ID > ID)
+                {
+                    Root->Right = RotateRight(Root->Right);
+                }
+
+                NewRoot = RotateLeft(Root);
+            }
+        }
+    }
+    else
+    {
+        NewRoot = (query_tree_node *)calloc(1, sizeof(query_tree_node));
+        NewRoot->Data.ID = ID;
+        NewRoot->Height = 1;
+
+        *Query = &NewRoot->Data;
+    }
 
     return NewRoot;
 }
@@ -122,202 +125,114 @@ query_tree_insert_result
 QueryTree_Insert(query_tree *Tree, u32 ID)
 {
     query_tree_insert_result Result = { };
-    query_tree_node *NewNode = 0;
 
-    if (Tree->Root)
+    Tree->Root = Insert(Tree->Root, ID, &Result.Query, &Result.Exists);
+    if (Result.Query && !Result.Exists)
     {
-        query_tree_node *LastValidNode = 0;
-        query_tree_node *CurrentNode = Tree->Root;
+        ++Tree->Count;
+    }
 
-        while (CurrentNode)
+    return Result;
+}
+
+function query_tree_node *
+Remove(query_tree_node *Root, u32 ID, b32 *Removed)
+{
+    query_tree_node *NewRoot = Root;
+
+    if (Root)
+    {
+        b32 CheckForBalance = true;
+
+        if (Root->Data.ID > ID)
         {
-            LastValidNode = CurrentNode;
+            Root->Left = Remove(Root->Left, ID, Removed);
+        }
+        else if (Root->Data.ID < ID)
+        {
+            Root->Right = Remove(Root->Right, ID, Removed);
+        }
+        else
+        {
+            if (Root->Left && Root->Right)
+            {
+                query_tree_node *MovingChild = Root->Right;
+                while (MovingChild->Left)
+                {
+                    MovingChild = MovingChild->Left;
+                }
 
-            if (CurrentNode->Data.ID > ID)
-            {
-                CurrentNode = CurrentNode->Left;
-            }
-            else if (CurrentNode->Data.ID < ID)
-            {
-                CurrentNode = CurrentNode->Right;
+                Root->Data = MovingChild->Data;
+                Root->Right = Remove(Root->Right, MovingChild->Data.ID, 0);
             }
             else
             {
-                Result.Query = &CurrentNode->Data;
-                Result.Exists = true;
+                query_tree_node *Child = Root->Left ? Root->Left : Root->Right;
 
-                return Result;
+                if (Child)
+                {
+                    *Root = *Child;
+                    free(Child);
+                }
+                else
+                {
+                    NewRoot = 0;
+                    CheckForBalance = false;
+
+                    free(Root);
+                }
+            }
+
+            if (Removed)
+            {
+                *Removed = true;
             }
         }
 
-        NewNode = AllocateNode(ID, LastValidNode);
-
-        if (LastValidNode->Data.ID > ID)
+        if (CheckForBalance)
         {
-            LastValidNode->Left = NewNode;
-        }
-        else if (LastValidNode->Data.ID < ID)
-        {
-            LastValidNode->Right = NewNode;
-        }
+            u64 LeftHeight = GetNodeHeight(Root->Left);
+            u64 RightHeight = GetNodeHeight(Root->Right);
 
-        CurrentNode = LastValidNode;
-        query_tree_node *PotentialNewRoot = 0;
-
-        while (CurrentNode)
-        {
-            PotentialNewRoot = CurrentNode;
-
-            u64 LeftHeight = GetNodeHeight(CurrentNode->Left);
-            u64 RightHeight = GetNodeHeight(CurrentNode->Right);
-
-            CurrentNode->Height = Max(LeftHeight, RightHeight) + 1;
+            Root->Height = Max(LeftHeight, RightHeight) + 1;
             s64 Balance = RightHeight - LeftHeight;
 
             if (Balance < -1)
             {
-                if (CurrentNode->Left->Data.ID < ID)
+                s64 LeftBalance = GetNodeBalance(Root->Left);
+                if (LeftBalance >= 0)
                 {
-                    CurrentNode->Left = RotateLeft(CurrentNode->Left);
+                    Root->Left = RotateLeft(Root->Left);
                 }
 
-                CurrentNode = RotateRight(CurrentNode);
+                NewRoot = RotateRight(Root);
             }
             else if (Balance > 1)
             {
-                if (CurrentNode->Right->Data.ID > ID)
+                s64 RightBalance = GetNodeBalance(NewRoot->Right);
+                if (RightBalance <= 0)
                 {
-                    CurrentNode->Right = RotateRight(CurrentNode->Right);
+                    Root->Right = RotateRight(NewRoot->Right);
                 }
 
-                CurrentNode = RotateLeft(CurrentNode);
-            }
-            else
-            {
-                CurrentNode = CurrentNode->Parent;
+                NewRoot = RotateLeft(Root);
             }
         }
-
-        Tree->Root = PotentialNewRoot;
-    }
-    else
-    {
-        NewNode = AllocateNode(ID, 0);
-        Tree->Root = NewNode;
     }
 
-    ++Tree->Count;
-
-    Result.Query = &NewNode->Data;
-    return Result;
+    return NewRoot;
 }
 
 void
 QueryTree_Remove(query_tree *Tree, u32 ID)
 {
-    b32 Found = false;
-    query_tree_node *ParentOfRemovedNode = 0;
-    query_tree_node *CurrentNode = Tree->Root;
+    b32 Removed = false;
+    Tree->Root = Remove(Tree->Root, ID, &Removed);
 
-    while (CurrentNode)
+    if (Removed)
     {
-        if (CurrentNode->Data.ID > ID)
-        {
-            CurrentNode = CurrentNode->Left;
-        }
-        else if (CurrentNode->Data.ID < ID)
-        {
-            CurrentNode = CurrentNode->Right;
-        }
-        else
-        {
-            if (CurrentNode->Left && CurrentNode->Right)
-            {
-                query_tree_node *MovingChild = CurrentNode->Left;
-                while (MovingChild->Right)
-                {
-                    MovingChild = MovingChild->Right;
-                }
-
-                CurrentNode->Data = MovingChild->Data;
-                ParentOfRemovedNode = MovingChild->Parent;
-
-                UpdateChild(MovingChild, 0);
-                free(MovingChild);
-            }
-            else
-            {
-                query_tree_node *Child = CurrentNode->Left ? CurrentNode->Left : CurrentNode->Right;
-
-                if (Child)
-                {
-                    query_tree_node *OldParent = CurrentNode->Parent;
-
-                    *CurrentNode = *Child;
-                    CurrentNode->Parent = OldParent;
-
-                    free(Child);
-                }
-                else
-                {
-                    UpdateChild(CurrentNode, 0);
-                    free(CurrentNode);
-                }
-
-                ParentOfRemovedNode = CurrentNode->Parent;
-            }
-
-            Found = true;
-            break;
-        }
+        --Tree->Count;
     }
-
-    if (!Found)
-    {
-        return;
-    }
-
-    CurrentNode = ParentOfRemovedNode;
-    query_tree_node *PotentialNewRoot = 0;
-
-    while (CurrentNode)
-    {
-        PotentialNewRoot = CurrentNode;
-
-        u64 LeftHeight = GetNodeHeight(CurrentNode->Left);
-        u64 RightHeight = GetNodeHeight(CurrentNode->Right);
-
-        CurrentNode->Height = Max(LeftHeight, RightHeight) + 1;
-        s64 Balance = RightHeight - LeftHeight;
-
-        if (Balance < -1)
-        {
-            s64 LeftBalance = GetNodeBalance(CurrentNode->Left);
-            if (LeftBalance >= 0)
-            {
-                CurrentNode->Left = RotateLeft(CurrentNode->Left);
-            }
-
-            CurrentNode = RotateRight(CurrentNode);
-        }
-        else if (Balance > 1)
-        {
-            s64 RightBalance = GetNodeBalance(CurrentNode->Right);
-            if (RightBalance <= 0)
-            {
-                CurrentNode->Right = RotateRight(CurrentNode->Right);
-            }
-
-            CurrentNode = RotateLeft(CurrentNode);
-        }
-        else
-        {
-            CurrentNode = CurrentNode->Parent;
-        }
-    }
-
-    Tree->Root = PotentialNewRoot;
-    --Tree->Count;
 }
 
 function void
