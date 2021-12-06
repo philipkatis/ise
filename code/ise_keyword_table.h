@@ -50,4 +50,16 @@ void KeywordTable_Destroy(keyword_table *Table);
     #define KeywordTable_Visualize(Table)
 #endif
 
+struct keyword_iterator
+{
+    keyword_table_node *Node;
+    keyword_table *Table;
+    u32 BucketIndex;
+};
+
+keyword_iterator IterateAllKeywords(keyword_table *Table);
+b32 IsValid(keyword_iterator *Iterator);
+void Advance(keyword_iterator *Iterator);
+keyword *GetValue(keyword_iterator *Iterator);
+
 #endif

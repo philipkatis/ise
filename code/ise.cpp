@@ -34,23 +34,27 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
     char *Words[MAX_KEYWORD_COUNT_PER_QUERY];
     u32 WordCount = 0;
 
-    Words[WordCount] = (char*)String;
-    ++WordCount;
-
-    for (char *Character = (char *)String;
-         *Character;
-         ++Character)
+    // NOTE(philip): Count and split the words from the input.
     {
-        if (*Character == ' ')
+        Words[WordCount] = (char*)String;
+        ++WordCount;
+
+        for (char *Character = (char *)String;
+             *Character;
+             ++Character)
         {
-            *Character = 0;
-            Words[WordCount] = Character + 1;
-            ++WordCount;
+            if (*Character == ' ')
+            {
+                *Character = 0;
+                Words[WordCount] = Character + 1;
+                ++WordCount;
+            }
         }
     }
 
     Assert(WordCount > 0 && WordCount <= MAX_KEYWORD_COUNT_PER_QUERY);
 
+    // NOTE(philip): Insert the query into the tree.
     query_tree_insert_result QueryInsert = QueryTree_Insert(&Application.Queries, ID, WordCount, Type,
                                                             Distance);
     if (QueryInsert.Exists)
@@ -64,9 +68,11 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
          WordIndex < WordCount;
          ++WordIndex)
     {
+        // NOTE(philip): Insert the keyword into the keyword hash table.
         keyword_table_insert_result KeywordInsert = KeywordTable_Insert(&Application.Keywords, Words[WordIndex]);
         keyword *Keyword = KeywordInsert.Keyword;
 
+        // NOTE(philip): Insert the keyword into the query and the query into the keyword.
         Query->Keywords[WordIndex] = Keyword;
         QueryList_Insert(&Keyword->Queries, Query);
 
@@ -89,12 +95,14 @@ EndQuery(QueryID ID)
              KeywordIndex < KeywordCount;
              ++KeywordIndex)
         {
+            // NOTE(philip): Remove the query from the keyword.
             keyword *Keyword = Query->Keywords[KeywordIndex];
             QueryList_Remove(&Keyword->Queries, Query);
 
             // TODO(philip): Remove keyword from tree. Remove keyword if it is in no queries.
         }
 
+        // NOTE(philip): Remove the query from the tree.
         QueryTree_Remove(&Application.Queries, ID);
     }
 
@@ -104,23 +112,27 @@ EndQuery(QueryID ID)
 ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
-#if 0
     u64 WordCount = 1;
 
-    for (char *Character = (char *)String;
-         *Character;
-         ++Character)
+    // NOTE(philip): Count and split the words from the input.
     {
-        if (*Character == ' ')
+        for (char *Character = (char *)String;
+             *Character;
+             ++Character)
         {
-            *Character = 0;
-            ++WordCount;
+            if (*Character == ' ')
+            {
+                *Character = 0;
+                ++WordCount;
+            }
         }
     }
 
-    keyword_table DocumentWords = { };
+    // TODO(philip): This is currently a waste of memory. If it becomes a problem, switch to a more specific
+    // data structure.
+    keyword_table Words = KeywordTable_Create(WordCount);
 
-    // NOTE(philip): Put the document words in the hash table.
+    // NOTE(philip): Put the document words in the hash table to deduplicate them.
     {
         char *Word = (char *)String;
 
@@ -128,10 +140,7 @@ MatchDocument(DocID ID, const char *String)
              WordIndex < WordCount;
              ++WordIndex)
         {
-            if (!KeywordTable_Find(&DocumentWords, Word))
-            {
-                KeywordTable_Insert(&DocumentWords, Word);
-            }
+            KeywordTable_Insert(&Words, Word);
 
             while (*Word)
             {
@@ -145,6 +154,17 @@ MatchDocument(DocID ID, const char *String)
         }
     }
 
+    for (keyword_iterator Iterator = IterateAllKeywords(&Words);
+         IsValid(&Iterator);
+         Advance(&Iterator))
+    {
+        keyword *Keyword = GetValue(&Iterator);
+        printf("%s\n", Keyword->Word);
+    }
+
+    Assert(false);
+
+#if 0
     query_list AnsweredQueries = { };
 
     for (u64 BucketIndex = 0;
@@ -209,9 +229,10 @@ MatchDocument(DocID ID, const char *String)
         }
     }
 
-    KeywordTable_Destroy(&DocumentWords);
     QueryList_Destroy(&AnsweredQueries);
 #endif
+
+    KeywordTable_Destroy(&Words);
 
     return EC_SUCCESS;
 }

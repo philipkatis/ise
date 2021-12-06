@@ -183,3 +183,61 @@ KeywordTable_Destroy(keyword_table *Table)
         printf("Load Factor: %f\n", (f32)Table->ElementCount / (f32)Table->BucketCount);
     }
 #endif
+
+function void
+FindNextKeyword(keyword_iterator *Iterator)
+{
+    if (Iterator->Node)
+    {
+        Iterator->Node = Iterator->Node->Next;
+    }
+    else
+    {
+        while (Iterator->BucketIndex < Iterator->Table->BucketCount)
+        {
+            Iterator->Node = Iterator->Table->Buckets[Iterator->BucketIndex];
+            if (Iterator->Node)
+            {
+                break;
+            }
+
+            ++Iterator->BucketIndex;
+        }
+    }
+}
+
+keyword_iterator
+IterateAllKeywords(keyword_table *Table)
+{
+    keyword_iterator Iterator = { };
+    Iterator.Table = Table;
+    FindNextKeyword(&Iterator);
+
+    return Iterator;
+}
+
+b32
+IsValid(keyword_iterator *Iterator)
+{
+    return Iterator->Node != 0;
+}
+
+void Advance(keyword_iterator *Iterator)
+{
+    Assert(Iterator->Node);
+
+    if (!Iterator->Node->Next)
+    {
+        ++Iterator->BucketIndex;
+        Iterator->Node = 0;
+    }
+
+    FindNextKeyword(Iterator);
+}
+
+keyword *
+GetValue(keyword_iterator *Iterator)
+{
+    Assert(Iterator->Node);
+    return &Iterator->Node->Data;
+}
