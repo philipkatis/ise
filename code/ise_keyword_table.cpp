@@ -139,7 +139,10 @@ KeywordTable_Destroy(keyword_table *Table)
         while (Node)
         {
             keyword_table_node *Next = Node->Next;
+
+            QueryList_Destroy(&Node->Data.Queries);
             free(Node);
+
             Node = Next;
         }
     }

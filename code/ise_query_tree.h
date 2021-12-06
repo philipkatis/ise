@@ -3,14 +3,18 @@
 
 #include "ise.h"
 
-struct keyword_table_node;
+struct keyword;
 
 struct __attribute__ ((__packed__)) query
 {
     u32 ID;
     u8 PackedInfo;
-    keyword_table_node *Keywords[MAX_KEYWORD_COUNT_PER_QUERY];
+    keyword *Keywords[MAX_KEYWORD_COUNT_PER_QUERY];
 };
+
+#define GetKeywordCount(Query) (Query->PackedInfo >> 5)
+#define GetType(Query) ((Query->PackedInfo << 3) >> 6)
+#define GetDistance(Query) ((Query->PackedInfo << 5) >> 5)
 
 struct __attribute__ ((__packed__)) query_tree_node
 {
@@ -41,8 +45,8 @@ struct query_tree_insert_result
 
 /*
 
-  NOTE(philip): Finds the query with ID in the tree and returns it if it exists. Otherwise, craetes a new query and
-  returns that.
+  NOTE(philip): Inserts a new query into the tree, if it does not exist. If the query already exists, it returns it
+  and sets the flag.
 
 */
 
@@ -50,11 +54,20 @@ query_tree_insert_result QueryTree_Insert(query_tree *Tree, u32 ID, u32 KeywordC
 
 /*
 
-  NOTE(philip): Finds the query with ID in the tree and removes it if it exists.
+  NOTE(philip): Finds a query in the tree and returns it. If the query does not exist, it returns zero.
 
 */
 
-void QueryTree_Remove(query_tree *Tree, u32 ID);
+query *QueryTree_Find(query_tree *Tree, u32 ID);
+
+/*
+
+  NOTE(philip): Removes a node from the tree and returns true, if it exists. If the query does not exist, it
+  returns false.
+
+*/
+
+b32 QueryTree_Remove(query_tree *Tree, u32 ID);
 
 /*
 

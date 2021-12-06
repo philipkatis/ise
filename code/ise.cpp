@@ -1,102 +1,29 @@
-#if 0
-#include "ise.h"
-#include "ise_keyword_table.h"
-#include "ise_bk_tree.h"
-#endif
-
 #include "ise_query_tree.h"
 #include "ise_keyword_table.h"
-
-#if 0
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#endif
-
-#if 0
-#define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH + 1)
-#endif
 
 struct application
 {
     query_tree Queries;
     keyword_table Keywords;
-
-#if 0
-    bk_tree HammingTrees[HAMMING_TREE_COUNT];
-#endif
 };
 
 global application Application = { };
-
-#if 0
-
-function u64
-HammingTreeIndex(u64 Length)
-{
-    return Length - MIN_KEYWORD_LENGTH;
-}
-
-#endif
 
 ErrorCode
 InitializeIndex()
 {
     Application.Keywords = KeywordTable_Create(1024);
-
-#if 0
-    for (u32 Index = 0;
-         Index < HAMMING_TREE_COUNT;
-         ++Index)
-    {
-        Application.HammingTrees[Index] = BKTree_Create(BKTreeType_Hamming);
-    }
-#endif
-
     return EC_SUCCESS;
 }
 
 ErrorCode
 DestroyIndex()
 {
-#if 0
-    for (u32 Index = 0;
-         Index < HAMMING_TREE_COUNT;
-         ++Index)
-    {
-        BKTree_Visualize(&Application.HammingTrees[Index]);
-        BKTree_Destroy(&Application.HammingTrees[Index]);
-    }
-#endif
-
-    KeywordTable_Visualize(&Application.Keywords);
-
     KeywordTable_Destroy(&Application.Keywords);
     QueryTree_Destroy(&Application.Queries);
 
     return EC_SUCCESS;
 }
-
-#if 0
-function b32
-IsInQueryOfType(keyword_table_node *Keyword, u32 Type)
-{
-    b32 Result = false;
-
-    for (query *Query = Keyword->Queries.Head;
-         Query;
-         Query = Query->Next)
-    {
-        if (Query->Type == Type)
-        {
-            Result = true;
-            break;
-        }
-    }
-
-    return Result;
-}
-#endif
 
 ErrorCode
 StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
@@ -140,56 +67,11 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
         keyword_table_insert_result KeywordInsert = KeywordTable_Insert(&Application.Keywords, Words[WordIndex]);
         keyword *Keyword = KeywordInsert.Keyword;
 
-        // TODO(philip): Add keyword to the query, add query to the keyword, and keyword to BK-trees.
+        Query->Keywords[WordIndex] = Keyword;
+        QueryList_Insert(&Keyword->Queries, Query);
+
+        // TODO(philip): Add keyword to BK-trees.
     }
-#if 0
-    for (u32 Index = 0;
-         Index < WordCount;
-         ++Index)
-    {
-        // TODO(philip): Maybe store the length in the keyword.
-        u64 WordLength = strlen(Words[Index]);
-
-        keyword_table_node *Keyword = KeywordTable_Find(&Application.KeywordTable, Words[Index]);
-        if (!Keyword)
-        {
-            Keyword = KeywordTable_Insert(&Application.KeywordTable, Words[Index]);
-
-            if (Type == MT_HAMMING_DIST)
-            {
-                BKTree_Insert(&Application.HammingTrees[HammingTreeIndex(WordLength)], Keyword);
-            }
-            else if (Type == MT_EDIT_DIST)
-            {
-
-            }
-        }
-        else
-        {
-            if (Type != MT_EXACT_MATCH)
-            {
-
-                if (!IsInQueryOfType(Keyword, Type))
-                {
-                    if (Type == MT_HAMMING_DIST)
-                    {
-                        BKTree_Insert(&Application.HammingTrees[HammingTreeIndex(WordLength)], Keyword);
-                    }
-                    else if (Type == MT_EDIT_DIST)
-                    {
-
-                    }
-                }
-            }
-        }
-
-        query *Query = QueryList_Find(&Keyword->Queries, ID);
-        if (!Query)
-        {
-            Query = QueryList_Insert(&Keyword->Queries, ID, WordCount, (u8)Type, (u16)Distance);
-        }
-    }
-#endif
 
     return EC_SUCCESS;
 }
@@ -197,25 +79,24 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 ErrorCode
 EndQuery(QueryID ID)
 {
-    // TODO(philip): Search for the query. If found, remove it from the keywords. Remove it from the tree.
-    QueryTree_Remove(&Application.Queries, ID);
-#if 0
-    // TODO(philip): Make an iterator for this.
-    for (u64 BucketIndex = 0;
-         BucketIndex < KEYWORD_TABLE_BUCKET_COUNT;
-         ++BucketIndex)
+    // TODO(philip): Add unit testing for this.
+    query *Query = QueryTree_Find(&Application.Queries, ID);
+    if (Query)
     {
-        if (Application.KeywordTable.Buckets[BucketIndex])
+        u32 KeywordCount = GetKeywordCount(Query);
+
+        for (u32 KeywordIndex = 0;
+             KeywordIndex < KeywordCount;
+             ++KeywordIndex)
         {
-            for (keyword_table_node *Node = Application.KeywordTable.Buckets[BucketIndex];
-                 Node;
-                 Node = Node->Next)
-            {
-                //                QueryList_Remove(&Node->Queries, ID);
-            }
+            keyword *Keyword = Query->Keywords[KeywordIndex];
+            QueryList_Remove(&Keyword->Queries, Query);
+
+            // TODO(philip): Remove keyword from tree. Remove keyword if it is in no queries.
         }
+
+        QueryTree_Remove(&Application.Queries, ID);
     }
-#endif
 
     return EC_SUCCESS;
 }
@@ -224,9 +105,6 @@ ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
 #if 0
-    //QueryTree_Visualize(&Application.Queries);
-    //fAssert(false);
-
     u64 WordCount = 1;
 
     for (char *Character = (char *)String;
@@ -267,7 +145,7 @@ MatchDocument(DocID ID, const char *String)
         }
     }
 
-//    query_list AnsweredQueries = { };
+    query_list AnsweredQueries = { };
 
     for (u64 BucketIndex = 0;
          BucketIndex < KEYWORD_TABLE_BUCKET_COUNT;
@@ -282,7 +160,7 @@ MatchDocument(DocID ID, const char *String)
                 keyword_table_node *Keyword = KeywordTable_Find(&Application.KeywordTable, Node->Word, Node->Hash);
                 if (Keyword)
                 {
-                    /*
+
                     for (query *Query = Keyword->Queries.Head;
                          Query;
                          Query = Query->Next)
@@ -300,7 +178,7 @@ MatchDocument(DocID ID, const char *String)
                             }
                         }
                     }
-*/
+
                 }
             }
 
@@ -320,7 +198,7 @@ MatchDocument(DocID ID, const char *String)
             }
         }
     }
-#if 0
+
     for (query *Query = AnsweredQueries.Head;
          Query;
          Query = Query->Next)
@@ -330,11 +208,10 @@ MatchDocument(DocID ID, const char *String)
             //            printf("ID: %d, WordCount: %d, Type: %d, Words Found: %d\n", Query->ID, Query->WordCount, Query->Type, Query->WordsFound);
         }
     }
-#endif
 
     KeywordTable_Destroy(&DocumentWords);
-//    QueryList_Destroy(&AnsweredQueries);
-    #endif
+    QueryList_Destroy(&AnsweredQueries);
+#endif
 
     return EC_SUCCESS;
 }

@@ -2,10 +2,14 @@
 #define ISE_KEYWORD_TABLE_H
 
 #include "ise.h"
+#include "ise_query_list.h"
 
 struct keyword
 {
     char Word[MAX_KEYWORD_LENGTH + 1];
+
+    // TODO(philip): If this becomes a problem, we could switch to an array that doubles in size when it runs out.
+    query_list Queries;
 };
 
 struct keyword_table_node

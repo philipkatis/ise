@@ -170,10 +170,10 @@ QueryTree_Insert(query_tree *Tree, u32 ID, u32 KeywordCount, u32 Type, u32 Dista
     {
         u8 PackedInfo = 0;
         PackedInfo |= KeywordCount;
-        PackedInfo <<= 3;
+        PackedInfo <<= 2;
 
         PackedInfo |= Type;
-        PackedInfo <<= 2;
+        PackedInfo <<= 3;
 
         PackedInfo |= Distance;
 
@@ -183,6 +183,43 @@ QueryTree_Insert(query_tree *Tree, u32 ID, u32 KeywordCount, u32 Type, u32 Dista
     }
 
     return Result;
+}
+
+/*
+
+  NOTE(philip): Recursively searched for a node in the subtree and returns it, if it exists.
+
+*/
+
+function query *
+Find(query_tree_node *Root, u32 ID)
+{
+    query *Query = 0;
+
+    if (Root)
+    {
+        if (Root->Data.ID > ID)
+        {
+            Query = Find(Root->Left, ID);
+        }
+        else if (Root->Data.ID < ID)
+        {
+            Query = Find(Root->Right, ID);
+        }
+        else
+        {
+            Query = &Root->Data;
+        }
+    }
+
+    return Query;
+}
+
+query *
+QueryTree_Find(query_tree *Tree, u32 ID)
+{
+    query *Query = Find(Tree->Root, ID);
+    return Query;
 }
 
 /*
@@ -280,7 +317,7 @@ Remove(query_tree_node *Root, u32 ID, b32 *Removed)
     return NewRoot;
 }
 
-void
+b32
 QueryTree_Remove(query_tree *Tree, u32 ID)
 {
     b32 Removed = false;
@@ -290,6 +327,8 @@ QueryTree_Remove(query_tree *Tree, u32 ID)
     {
         --Tree->Count;
     }
+
+    return Removed;
 }
 
 /*

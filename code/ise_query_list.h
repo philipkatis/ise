@@ -1,37 +1,21 @@
 #ifndef ISE_QUERY_LIST_H
 #define ISE_QUERY_LIST_H
 
-#if 0
+struct query;
 
-#include "ise.h"
-
-struct query
+struct query_list_node
 {
-    u32 ID;
-    u8 WordCount;
-    u8 Type;
-
-    union
-    {
-        u16 Distance;
-        u16 WordsFound;
-    };
-
-    query *Next;
+    query *Query;
+    query_list_node *Next;
 };
 
 struct query_list
 {
-    query *Head;
+    query_list_node *Head;
 };
 
-query *QueryList_Find(query_list *List, u32 ID);
-
-// TODO(philip): Maybe change this to Allocate, since the data meaning is different each time.
-query *QueryList_Insert(query_list *List, u32 ID, u8 WordCount, u8 Type, u16 Distance);
-void QueryList_Remove(query_list *List, u32 ID);
+void QueryList_Insert(query_list *List, query *Query);
+void QueryList_Remove(query_list *List, query *Query);
 void QueryList_Destroy(query_list *List);
-
-#endif
 
 #endif

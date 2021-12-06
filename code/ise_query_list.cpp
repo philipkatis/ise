@@ -1,91 +1,54 @@
 #include "ise_query_list.h"
 
-#if 0
-
 #include <stdlib.h>
 
-query *
-QueryList_Find(query_list *List, u32 ID)
+void
+QueryList_Insert(query_list *List, query *Query)
 {
-    query *Result = 0;
+    query_list_node *Node = (query_list_node *)calloc(1, sizeof(query_list_node));
+    Node->Query = Query;
+    Node->Next = List->Head;
 
-    for (query *Query = List->Head;
-         Query;
-         Query = Query->Next)
-    {
-        if (Query->ID == ID)
-        {
-            Result = Query;
-            break;
-        }
-    }
-
-    return Result;
-}
-
-query *
-QueryList_Insert(query_list *List, u32 ID, u8 WordCount, u8 Type, u16 Distance)
-{
-    query *Query = (query *)calloc(1, sizeof(query));
-    Query->ID = ID;
-    Query->WordCount = WordCount;
-    Query->Type = Type;
-    Query->Distance = Distance;
-
-    Query->Next = List->Head;
-    List->Head = Query;
-
-    return Query;
+    List->Head = Node;
 }
 
 void
-QueryList_Remove(query_list *List, u32 ID)
+QueryList_Remove(query_list *List, query *Query)
 {
-    query *Query = 0;
-    query *Previous = 0;
-    query *Next = 0;
-
-    for (query *CurrentQuery = List->Head;
-         CurrentQuery;
-         CurrentQuery = CurrentQuery->Next)
+    query_list_node *Previous = 0;
+    for (query_list_node *Node = List->Head;
+         Node;
+         Node = Node->Next)
     {
-        Next = CurrentQuery->Next;
-
-        if (CurrentQuery->ID == ID)
+        if (Node->Query == Query)
         {
+            if (Previous)
+            {
+                Previous->Next = Node->Next;
+            }
+            else
+            {
+                List->Head = Node->Next;
+            }
+
+            free(Node);
             break;
         }
 
-        Previous = CurrentQuery;
-    }
-
-    if (Query)
-    {
-        if (Previous)
-        {
-            Previous->Next = Next;
-        }
-        else
-        {
-            List->Head = Next;
-        }
-
-        free(Query);
+        Previous = Node;
     }
 }
 
 void
 QueryList_Destroy(query_list *List)
 {
-    query *Query = List->Head;
-    while (Query)
+    query_list_node *Node = List->Head;
+    while (Node)
     {
-        query *Next = Query->Next;
-        free(Query);
-        Query = Next;
+        query_list_node *Next = Node->Next;
+        free(Node);
+        Node = Next;
     }
 
     List->Head = 0;
 }
-
-#endif

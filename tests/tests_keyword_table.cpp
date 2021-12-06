@@ -5,10 +5,10 @@ KeywordTable(void)
 {
     // NOTE(philip): In depth test of table creation, destruction, insertion and duplicate insertion.
     {
-        keyword_table Table = KeywordTable_Create(1);
+        keyword_table Table = KeywordTable_Create(2);
 
         TEST_CHECK(Table.Buckets != 0);
-        TEST_CHECK(Table.BucketCount == 1);
+        TEST_CHECK(Table.BucketCount == 2);
         TEST_CHECK(Table.ElementCount == 0);
 
         keyword_table_insert_result InsertResult = KeywordTable_Insert(&Table, "hello");
@@ -17,9 +17,10 @@ KeywordTable(void)
         TEST_CHECK(InsertResult.Exists == false);
 
         TEST_CHECK(Table.ElementCount == 1);
-        TEST_CHECK(Table.Buckets[0] != 0);
-        TEST_CHECK(Table.Buckets[0]->Next == 0);
-        TEST_CHECK(strcmp(Table.Buckets[0]->Data.Word, "hello") == 0);
+        TEST_CHECK(Table.Buckets[0] == 0);
+        TEST_CHECK(Table.Buckets[1] != 0);
+        TEST_CHECK(Table.Buckets[1]->Next == 0);
+        TEST_CHECK(strcmp(Table.Buckets[1]->Data.Word, "hello") == 0);
 
         InsertResult = KeywordTable_Insert(&Table, "hello");
 
