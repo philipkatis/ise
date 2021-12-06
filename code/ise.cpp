@@ -4,6 +4,7 @@
 
 #include "ise_query_tree.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 

@@ -5,24 +5,25 @@
 
 struct keyword_table_node;
 
-struct query
+struct __attribute__ ((__packed__)) query
 {
     u32 ID;
-    u16 Distance;
-    u8 Type;
-    u8 KeywordCount;
-
+    u8 PackedInfo;
     keyword_table_node *Keywords[MAX_KEYWORD_COUNT_PER_QUERY];
 };
 
-struct query_tree_node
+struct __attribute__ ((__packed__)) query_tree_node
 {
-    query Data;
-    u64 Height;
-
     query_tree_node *Left;
     query_tree_node *Right;
+
+    query Data;
+
+    u16 Height;
+    u8 Padding;
 };
+
+static_assert(sizeof(query_tree_node) == 64);
 
 struct query_tree
 {
