@@ -21,6 +21,8 @@ struct keyword_table
     u64 ElementCount;
 };
 
+// TODO(philip): Do we care about it already existing? Maybe it might speed some things up but is that the common
+// case?
 struct keyword_table_insert_result
 {
     keyword *Keyword;

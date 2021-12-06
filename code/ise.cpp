@@ -20,9 +20,9 @@
 struct application
 {
     query_tree Queries;
+    keyword_table Keywords;
 
 #if 0
-    keyword_table KeywordTable;
     bk_tree HammingTrees[HAMMING_TREE_COUNT];
 #endif
 };
@@ -42,6 +42,8 @@ HammingTreeIndex(u64 Length)
 ErrorCode
 InitializeIndex()
 {
+    Application.Keywords = KeywordTable_Create(1024);
+
 #if 0
     for (u32 Index = 0;
          Index < HAMMING_TREE_COUNT;
@@ -58,9 +60,6 @@ ErrorCode
 DestroyIndex()
 {
 #if 0
-    QueryTree_Visualize(&Application.Queries);
-    printf("%llu\n", Application.Queries.Count);
-
     for (u32 Index = 0;
          Index < HAMMING_TREE_COUNT;
          ++Index)
@@ -68,10 +67,11 @@ DestroyIndex()
         BKTree_Visualize(&Application.HammingTrees[Index]);
         BKTree_Destroy(&Application.HammingTrees[Index]);
     }
-
-    KeywordTable_Destroy(&Application.KeywordTable);
 #endif
 
+    KeywordTable_Visualize(&Application.Keywords);
+
+    KeywordTable_Destroy(&Application.Keywords);
     QueryTree_Destroy(&Application.Queries);
 
     return EC_SUCCESS;
@@ -104,11 +104,11 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
     Assert(Type >= 0 && Type <= 2);
     Assert(Distance >= 0 && Distance <= MAX_DISTANCE_THRESHOLD);
 
-    char *Keywords[MAX_KEYWORD_COUNT_PER_QUERY];
-    u32 KeywordCount = 0;
+    char *Words[MAX_KEYWORD_COUNT_PER_QUERY];
+    u32 WordCount = 0;
 
-    Keywords[KeywordCount] = (char*)String;
-    ++KeywordCount;
+    Words[WordCount] = (char*)String;
+    ++WordCount;
 
     for (char *Character = (char *)String;
          *Character;
@@ -117,29 +117,31 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
         if (*Character == ' ')
         {
             *Character = 0;
-            Keywords[KeywordCount] = Character + 1;
-            ++KeywordCount;
+            Words[WordCount] = Character + 1;
+            ++WordCount;
         }
     }
 
-    Assert(KeywordCount > 0 && KeywordCount <= MAX_KEYWORD_COUNT_PER_QUERY);
+    Assert(WordCount > 0 && WordCount <= MAX_KEYWORD_COUNT_PER_QUERY);
 
-    query_tree_insert_result InsertResult = QueryTree_Insert(&Application.Queries, ID, KeywordCount, Type,
-                                                             Distance);
-    if (InsertResult.Exists)
+    query_tree_insert_result QueryInsert = QueryTree_Insert(&Application.Queries, ID, WordCount, Type,
+                                                            Distance);
+    if (QueryInsert.Exists)
     {
         return EC_FAIL;
     }
 
-    query *Query = InsertResult.Query;
+    query *Query = QueryInsert.Query;
 
-    for (u32 Index = 0;
-         Index < KeywordCount;
-         ++Index)
+    for (u32 WordIndex = 0;
+         WordIndex < WordCount;
+         ++WordIndex)
     {
-        // TODO(philip): Add keywords to the hash table, to the query and to the bk-trees.
-    }
+        keyword_table_insert_result KeywordInsert = KeywordTable_Insert(&Application.Keywords, Words[WordIndex]);
+        keyword *Keyword = KeywordInsert.Keyword;
 
+        // TODO(philip): Add keyword to the query, add query to the keyword, and keyword to BK-trees.
+    }
 #if 0
     for (u32 Index = 0;
          Index < WordCount;
