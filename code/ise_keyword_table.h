@@ -4,19 +4,25 @@
 #include "ise.h"
 #include "ise_query_list.h"
 
-struct keyword
+// TODO(philip): If storing queries in a list becomes a problem, we could switch to an array that doubles in size
+// when it runs out.
+
+struct __attribute__ ((__packed__)) keyword
 {
     char Word[MAX_KEYWORD_LENGTH + 1];
-
-    // TODO(philip): If this becomes a problem, we could switch to an array that doubles in size when it runs out.
     query_list Queries;
+    u32 Length;
+    u32 Hash;
+    u64 Padding;
 };
 
-struct keyword_table_node
+struct __attribute__ ((__packed__)) keyword_table_node
 {
     keyword Data;
     keyword_table_node *Next;
 };
+
+static_assert(sizeof(keyword_table_node) == 64);
 
 struct keyword_table
 {

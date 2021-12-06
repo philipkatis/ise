@@ -7,9 +7,10 @@ struct keyword;
 
 struct __attribute__ ((__packed__)) query
 {
+    keyword *Keywords[MAX_KEYWORD_COUNT_PER_QUERY];
     u32 ID;
     u8 PackedInfo;
-    keyword *Keywords[MAX_KEYWORD_COUNT_PER_QUERY];
+    u8 Padding;
 };
 
 #define GetKeywordCount(Query) (Query->PackedInfo >> 5)
@@ -20,11 +21,8 @@ struct __attribute__ ((__packed__)) query_tree_node
 {
     query_tree_node *Left;
     query_tree_node *Right;
-
     query Data;
-
     u16 Height;
-    u8 Padding;
 };
 
 static_assert(sizeof(query_tree_node) == 64);

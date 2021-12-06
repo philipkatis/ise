@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TODO(philip): Should we sort the words in some way in the linked list. Maybe sort by hash?? Probably won't be
-// a problem though.
-
 // TODO(philip): Currently using the DJB2 hash algorithm. If this is not good enough switch to murmur3.
 function u32
 DJB2(char *String)
@@ -23,12 +20,13 @@ DJB2(char *String)
 }
 
 function keyword_table_node *
-AllocateNode(char *Word, keyword_table_node *Next)
+AllocateNode(char *Word, u32 Length, u32 Hash, keyword_table_node *Next)
 {
     keyword_table_node *Node = (keyword_table_node *)calloc(1, sizeof(keyword_table_node));
 
-    // TODO(philip): Switch to memcpy if we decide to store the word length.
-    strcpy(Node->Data.Word, Word);
+    memcpy(Node->Data.Word, Word, Length * sizeof(char));
+    Node->Data.Length = Length;
+    Node->Data.Hash = Hash;
     Node->Next = Next;
 
     return Node;
@@ -60,10 +58,7 @@ Rehash(keyword_table *Table)
         {
             keyword_table_node *Next = Node->Next;
 
-            // TODO(philip): Do not recalculate the hash.
-            u32 Hash = DJB2(Node->Data.Word);
-            u64 Index = Hash % BucketCount;
-
+            u64 Index = Node->Data.Hash % BucketCount;
             Node->Next = Buckets[Index];
             Buckets[Index] = Node;
 
@@ -82,6 +77,7 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
 {
     keyword_table_insert_result Result = { };
 
+    u32 Length = strlen(Word);
     u32 Hash = DJB2(Word);
     u64 BucketIndex = Hash % Table->BucketCount;
 
@@ -91,9 +87,8 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
              Node;
              Node = Node->Next)
         {
-            // TODO(philip): If we decide to store more data in the keyword, first compare length and hash and then
-            // the word itself. Also switch to memcmp.
-            if (strcmp(Node->Data.Word, Word) == 0)
+            if ((Node->Data.Hash == Hash) && (Node->Data.Length == Length) &&
+                (memcmp(Node->Data.Word, Word, Length * sizeof(char)) == 0))
             {
                 Result.Keyword = &Node->Data;
                 Result.Exists = true;
@@ -111,7 +106,7 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
                 Rehash(Table);
             }
 
-            Table->Buckets[BucketIndex] = AllocateNode(Word, Table->Buckets[BucketIndex]);
+            Table->Buckets[BucketIndex] = AllocateNode(Word, Length, Hash, Table->Buckets[BucketIndex]);
             Result.Keyword = &Table->Buckets[BucketIndex]->Data;
 
             ++Table->ElementCount;
@@ -119,7 +114,7 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
     }
     else
     {
-        Table->Buckets[BucketIndex] = AllocateNode(Word, 0);
+        Table->Buckets[BucketIndex] = AllocateNode(Word, Length, Hash, 0);
         Result.Keyword = &Table->Buckets[BucketIndex]->Data;
 
         ++Table->ElementCount;
