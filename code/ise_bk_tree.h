@@ -1,6 +1,8 @@
 #ifndef ISE_BK_TREE_H
 #define ISE_BK_TREE_H
 
+#if TODO
+
 #include "ise_match.h"
 #include "ise_keyword_table.h"
 #include "ise_keyword_list.h"
@@ -88,6 +90,8 @@ void BKTree_Destroy(bk_tree *Tree);
     #define BKTree_Visualize(Tree) _BKTree_Visualize((Tree))
 #else
     #define BKTree_Visualize(Tree)
+#endif
+
 #endif
 
 #endif

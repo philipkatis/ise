@@ -9,6 +9,7 @@
 #include "acutest.h"
 
 #include "tests_query_tree.cpp"
+#include "tests_keyword_table.cpp"
 
 function void
 Test_IsExactMatch(void)
@@ -196,6 +197,8 @@ Test_CalculateEditDistance(void)
         TEST_CHECK(Result == 1);
     }
 }
+
+#if TODO
 
 function void
 Test_KeywordList(void)
@@ -465,14 +468,22 @@ Test_EditBKTree(void)
     KeywordTable_Destroy(&Table);
 }
 
+#endif
+
 TEST_LIST =
 {
     { "Query Tree",                   QueryTree                     },
+    { "Keyword Table",                KeywordTable                  },
+
     { "Exact Keyword Matching",       Test_IsExactMatch             },
     { "Hamming Distance Calculation", Test_CalculateHammingDistance },
     { "Edit Distance Calculation",    Test_CalculateEditDistance    },
+
+#if 0
     { "Keyword List",                 Test_KeywordList              },
     { "Hamming BK-Tree",              Test_HammingBKTree            },
     { "Edit BK-Tree",                 Test_EditBKTree               },
+#endif
+
     { 0, 0 }
 };

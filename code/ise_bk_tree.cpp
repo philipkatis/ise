@@ -1,5 +1,7 @@
 #include "ise_bk_tree.h"
 
+#if TODO
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -290,4 +292,6 @@ BKTree_Destroy(bk_tree *Tree)
             BKTree_VisualizeNode(Tree->Root, 0);
         }
     }
+#endif
+
 #endif

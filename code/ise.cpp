@@ -1,21 +1,30 @@
+#if 0
 #include "ise.h"
 #include "ise_keyword_table.h"
 #include "ise_bk_tree.h"
+#endif
 
 #include "ise_query_tree.h"
+#include "ise_keyword_table.h"
 
+#if 0
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#endif
 
+#if 0
 #define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH + 1)
+#endif
 
 struct application
 {
     query_tree Queries;
 
+#if 0
     keyword_table KeywordTable;
     bk_tree HammingTrees[HAMMING_TREE_COUNT];
+#endif
 };
 
 global application Application = { };
@@ -33,14 +42,14 @@ HammingTreeIndex(u64 Length)
 ErrorCode
 InitializeIndex()
 {
-    /*
-        for (u32 Index = 0;
-             Index < HAMMING_TREE_COUNT;
-             ++Index)
-        {
-            Application.HammingTrees[Index] = BKTree_Create(BKTreeType_Hamming);
-        }
-    */
+#if 0
+    for (u32 Index = 0;
+         Index < HAMMING_TREE_COUNT;
+         ++Index)
+    {
+        Application.HammingTrees[Index] = BKTree_Create(BKTreeType_Hamming);
+    }
+#endif
 
     return EC_SUCCESS;
 }
@@ -48,18 +57,20 @@ InitializeIndex()
 ErrorCode
 DestroyIndex()
 {
-    // QueryTree_Visualize(&Application.Queries);
+#if 0
+    QueryTree_Visualize(&Application.Queries);
     printf("%llu\n", Application.Queries.Count);
 
     for (u32 Index = 0;
          Index < HAMMING_TREE_COUNT;
          ++Index)
     {
-        // BKTree_Visualize(&Application.HammingTrees[Index]);
-        //BKTree_Destroy(&Application.HammingTrees[Index]);
+        BKTree_Visualize(&Application.HammingTrees[Index]);
+        BKTree_Destroy(&Application.HammingTrees[Index]);
     }
 
-    //KeywordTable_Destroy(&Application.KeywordTable);
+    KeywordTable_Destroy(&Application.KeywordTable);
+#endif
 
     QueryTree_Destroy(&Application.Queries);
 

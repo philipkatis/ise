@@ -28,13 +28,15 @@ static_assert(sizeof(query_tree_node) == 64);
 struct query_tree
 {
     query_tree_node *Root;
+
+    // TODO(philip): Will the count be useful in the end?
     u64 Count;
 };
 
 struct query_tree_insert_result
 {
     query *Query;
-    b32 Exists;
+    b64 Exists;
 };
 
 /*

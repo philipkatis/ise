@@ -3,6 +3,8 @@
 
 #include "ise_base.h"
 
+#if TODO
+
 /*
 
   NOTE(philip): A 'keyword' is a word from a static query. These words are stored somewhere in memory and this
@@ -79,6 +81,8 @@ void KeywordList_Destroy(keyword_list *List);
     #define KeywordList_Visualize(List) _KeywordList_Visualize((List))
 #else
     #define KeywordList_Visualize(List)
+#endif
+
 #endif
 
 #endif

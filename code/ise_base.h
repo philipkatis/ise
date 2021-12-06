@@ -21,6 +21,7 @@ typedef signed long long    s64;
 
 typedef s8                  b8;
 typedef s32                 b32;
+typedef s64                 b64;
 
 typedef float               f32;
 typedef double              f64;
@@ -37,6 +38,7 @@ static_assert(sizeof(s64) == 8);
 
 static_assert(sizeof(b8)  == 1);
 static_assert(sizeof(b32) == 4);
+static_assert(sizeof(b64) == 8);
 
 static_assert(sizeof(f32) == 4);
 static_assert(sizeof(f64) == 8);

@@ -100,7 +100,7 @@ RotateRight(query_tree_node *Root)
 */
 
 function query_tree_node *
-Insert(query_tree_node *Root, u32 ID, query **Query, b32 *Exists)
+Insert(query_tree_node *Root, u32 ID, query **Query, b64 *Exists)
 {
     query_tree_node *NewRoot = Root;
 

@@ -1,5 +1,7 @@
 #include "ise_keyword_list.h"
 
+#if TODO
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -75,4 +77,6 @@ KeywordList_Destroy(keyword_list *List)
             ++Index;
         }
     }
+#endif
+
 #endif
