@@ -44,7 +44,7 @@ struct query_tree_insert_result
 
 */
 
-query_tree_insert_result QueryTree_Insert(query_tree *Tree, u32 ID);
+query_tree_insert_result QueryTree_Insert(query_tree *Tree, u32 ID, u32 KeywordCount, u32 Type, u32 Distance);
 
 /*
 

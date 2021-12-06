@@ -6,6 +6,7 @@
 #define MIN_KEYWORD_LENGTH          4
 #define MAX_KEYWORD_LENGTH          31
 #define MAX_KEYWORD_COUNT_PER_QUERY 5
+#define MAX_DISTANCE_THRESHOLD      3
 #define MAX_DOCUMENT_LENGTH         (1 << 22)
 
 typedef u32 QueryID;

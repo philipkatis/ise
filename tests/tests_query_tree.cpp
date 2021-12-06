@@ -39,9 +39,9 @@ QueryTree(void)
         TEST_CHECK(Tree.Root == 0);
         TEST_CHECK(Tree.Count == 0);
 
-        QueryTree_Insert(&Tree, 100);
-        QueryTree_Insert(&Tree, 25);
-        QueryTree_Insert(&Tree, 50);
+        QueryTree_Insert(&Tree, 100, 0, 0, 0);
+        QueryTree_Insert(&Tree, 25, 0, 0, 0);
+        QueryTree_Insert(&Tree, 50, 0, 0, 0);
 
         TEST_CHECK(Tree.Count == 3);
 
@@ -74,17 +74,17 @@ QueryTree(void)
     {
         query_tree Tree = { };
 
-        QueryTree_Insert(&Tree, 50);
-        QueryTree_Insert(&Tree, 10);
-        QueryTree_Insert(&Tree, 100);
-        QueryTree_Insert(&Tree, 5);
-        QueryTree_Insert(&Tree, 15);
+        QueryTree_Insert(&Tree, 50, 0, 0, 0);
+        QueryTree_Insert(&Tree, 10, 0, 0, 0);
+        QueryTree_Insert(&Tree, 100, 0, 0, 0);
+        QueryTree_Insert(&Tree, 5, 0, 0, 0);
+        QueryTree_Insert(&Tree, 15, 0, 0, 0);
 
-        query_tree_insert_result InsertResult = QueryTree_Insert(&Tree, 25);
+        query_tree_insert_result InsertResult = QueryTree_Insert(&Tree, 25, 0, 0, 0);
         TEST_CHECK(InsertResult.Query->ID == 25);
         TEST_CHECK(InsertResult.Exists == false);
 
-        InsertResult = QueryTree_Insert(&Tree, 25);
+        InsertResult = QueryTree_Insert(&Tree, 25, 0, 0, 0);
         TEST_CHECK(InsertResult.Query->ID == 25);
         TEST_CHECK(InsertResult.Exists == true);
 
@@ -98,17 +98,17 @@ QueryTree(void)
     {
         query_tree Tree = { };
 
-        QueryTree_Insert(&Tree, 50);
-        QueryTree_Insert(&Tree, 10);
-        QueryTree_Insert(&Tree, 100);
-        QueryTree_Insert(&Tree, 5);
-        QueryTree_Insert(&Tree, 15);
-        QueryTree_Insert(&Tree, 75);
-        QueryTree_Insert(&Tree, 150);
-        QueryTree_Insert(&Tree, 0);
-        QueryTree_Insert(&Tree, 12);
-        QueryTree_Insert(&Tree, 20);
-        QueryTree_Insert(&Tree, 25);
+        QueryTree_Insert(&Tree, 50, 0, 0, 0);
+        QueryTree_Insert(&Tree, 10, 0, 0, 0);
+        QueryTree_Insert(&Tree, 100, 0, 0, 0);
+        QueryTree_Insert(&Tree, 5, 0, 0, 0);
+        QueryTree_Insert(&Tree, 15, 0, 0, 0);
+        QueryTree_Insert(&Tree, 75, 0, 0, 0);
+        QueryTree_Insert(&Tree, 150, 0, 0, 0);
+        QueryTree_Insert(&Tree, 0, 0, 0, 0);
+        QueryTree_Insert(&Tree, 12, 0, 0, 0);
+        QueryTree_Insert(&Tree, 20, 0, 0, 0);
+        QueryTree_Insert(&Tree, 25, 0, 0, 0);
 
         u32 Solutions[11] = { 15, 10, 5, 0, 12, 50, 20, 25, 100, 75, 150 };
         ValidateTreePreOrder(&Tree, Solutions, ArrayCount(Solutions));
@@ -120,10 +120,10 @@ QueryTree(void)
     {
         query_tree Tree = { };
 
-        QueryTree_Insert(&Tree, 10);
-        QueryTree_Insert(&Tree, 5);
-        QueryTree_Insert(&Tree, 20);
-        QueryTree_Insert(&Tree, 25);
+        QueryTree_Insert(&Tree, 10, 0, 0, 0);
+        QueryTree_Insert(&Tree, 5, 0, 0, 0);
+        QueryTree_Insert(&Tree, 20, 0, 0, 0);
+        QueryTree_Insert(&Tree, 25, 0, 0, 0);
 
         QueryTree_Remove(&Tree, 5);
 
@@ -155,10 +155,10 @@ QueryTree(void)
     {
         query_tree Tree = { };
 
-        QueryTree_Insert(&Tree, 10);
-        QueryTree_Insert(&Tree, 5);
-        QueryTree_Insert(&Tree, 20);
-        QueryTree_Insert(&Tree, 25);
+        QueryTree_Insert(&Tree, 10, 0, 0, 0);
+        QueryTree_Insert(&Tree, 5, 0, 0, 0);
+        QueryTree_Insert(&Tree, 20, 0, 0, 0);
+        QueryTree_Insert(&Tree, 25, 0, 0, 0);
 
         QueryTree_Remove(&Tree, 10);
         QueryTree_Remove(&Tree, 100);
@@ -173,21 +173,18 @@ QueryTree(void)
     {
         query_tree Tree = { };
 
-        QueryTree_Insert(&Tree, 50);
-
-        QueryTree_Insert(&Tree, 25);
-        QueryTree_Insert(&Tree, 75);
-
-        QueryTree_Insert(&Tree, 15);
-        QueryTree_Insert(&Tree, 35);
-        QueryTree_Insert(&Tree, 65);
-        QueryTree_Insert(&Tree, 85);
-
-        QueryTree_Insert(&Tree, 40);
-        QueryTree_Insert(&Tree, 60);
-        QueryTree_Insert(&Tree, 80);
-        QueryTree_Insert(&Tree, 90);
-        QueryTree_Insert(&Tree, 100);
+        QueryTree_Insert(&Tree, 50, 0, 0, 0);
+        QueryTree_Insert(&Tree, 25, 0, 0, 0);
+        QueryTree_Insert(&Tree, 75, 0, 0, 0);
+        QueryTree_Insert(&Tree, 15, 0, 0, 0);
+        QueryTree_Insert(&Tree, 35, 0, 0, 0);
+        QueryTree_Insert(&Tree, 65, 0, 0, 0);
+        QueryTree_Insert(&Tree, 85, 0, 0, 0);
+        QueryTree_Insert(&Tree, 40, 0, 0, 0);
+        QueryTree_Insert(&Tree, 60, 0, 0, 0);
+        QueryTree_Insert(&Tree, 80, 0, 0, 0);
+        QueryTree_Insert(&Tree, 90, 0, 0, 0);
+        QueryTree_Insert(&Tree, 100, 0, 0, 0);
 
         QueryTree_Remove(&Tree, 15);
 

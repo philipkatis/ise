@@ -2,12 +2,24 @@
 
 #include <stdlib.h>
 
+/*
+
+  NOTE(philip): Returns the height of a node in the tree, if it exists. Otherwise, returns zero.
+
+*/
+
 function u64
 GetNodeHeight(query_tree_node *Node)
 {
     u64 Height = (Node ? Node->Height : 0);
     return Height;
 }
+
+/*
+
+  NOTE(philip): Updates the height of a node in the tree.
+
+*/
 
 function void
 UpdateNodeHeight(query_tree_node *Node)
@@ -17,6 +29,13 @@ UpdateNodeHeight(query_tree_node *Node)
 
     Node->Height = Max(LeftHeight, RightHeight) + 1;
 }
+
+/*
+
+  NOTE(philip): Returns the balance of a node in the tree. Positive values mean the node is right-heavy, negative
+  values mean the node is left-heavy. Zero means the node is perfectly balanced.
+
+*/
 
 function s64
 GetNodeBalance(query_tree_node *Node)
@@ -34,6 +53,12 @@ GetNodeBalance(query_tree_node *Node)
     return Balance;
 }
 
+/*
+
+  NOTE(philip): Rotates a subtree once counter-clockwise, updates the node links and heights.
+
+*/
+
 function query_tree_node *
 RotateLeft(query_tree_node *Root)
 {
@@ -47,6 +72,12 @@ RotateLeft(query_tree_node *Root)
     return NewRoot;
 }
 
+/*
+
+  NOTE(philip): Rotates a subtree once clockwise, updates the node links and heights.
+
+*/
+
 function query_tree_node *
 RotateRight(query_tree_node *Root)
 {
@@ -59,6 +90,14 @@ RotateRight(query_tree_node *Root)
 
     return NewRoot;
 }
+
+/*
+
+  NOTE(philip): Recursively inserts a new node into a subtree, with proper balancing. Returns the new root of the
+  subtree. The new query data location is sent back up the stack by the function parameter. If the query already
+  exists in the subtree, the function parameter flag is set.
+
+*/
 
 function query_tree_node *
 Insert(query_tree_node *Root, u32 ID, query **Query, b32 *Exists)
@@ -122,18 +161,36 @@ Insert(query_tree_node *Root, u32 ID, query **Query, b32 *Exists)
 }
 
 query_tree_insert_result
-QueryTree_Insert(query_tree *Tree, u32 ID)
+QueryTree_Insert(query_tree *Tree, u32 ID, u32 KeywordCount, u32 Type, u32 Distance)
 {
     query_tree_insert_result Result = { };
 
     Tree->Root = Insert(Tree->Root, ID, &Result.Query, &Result.Exists);
     if (Result.Query && !Result.Exists)
     {
+        u8 PackedInfo = 0;
+        PackedInfo |= KeywordCount;
+        PackedInfo <<= 3;
+
+        PackedInfo |= Type;
+        PackedInfo <<= 2;
+
+        PackedInfo |= Distance;
+
+        Result.Query->PackedInfo = PackedInfo;
+
         ++Tree->Count;
     }
 
     return Result;
 }
+
+/*
+
+  NOTE(philip): Recursively removes a node from the subtree, if it exists, with proper balancing. Sets the function
+  parameter flag if the node was removed.
+
+*/
 
 function query_tree_node *
 Remove(query_tree_node *Root, u32 ID, b32 *Removed)
@@ -234,6 +291,12 @@ QueryTree_Remove(query_tree *Tree, u32 ID)
         --Tree->Count;
     }
 }
+
+/*
+
+  NOTE(philip): Recursively deallocates the subtree nodes.
+
+*/
 
 function void
 DestroyNode(query_tree_node *Node)
