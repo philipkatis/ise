@@ -158,12 +158,11 @@ MatchDocument(DocID ID, const char *String)
          IsValid(&Iterator);
          Advance(&Iterator))
     {
-        keyword *Keyword = GetValue(&Iterator);
-        printf("%s\n", Keyword->Word);
+        keyword *Word = GetValue(&Iterator);
+
+        // TODO(philip): Run each word though the keyword table to find exact matches and through the bk-trees to
+        // find approximate matches.
     }
-
-    Assert(false);
-
 #if 0
     query_list AnsweredQueries = { };
 

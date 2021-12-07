@@ -6,6 +6,10 @@
 
 // TODO(philip): If storing queries in a list becomes a problem, we could switch to an array that doubles in size
 // when it runs out.
+// TODO(philip): In order to speed things up, we could use the padding to add 2 bits. Each will indicate whether
+// the keyword has a query of a certain type (Hamming or Edit). This will be useful so we don't have to either
+// run through the BKTree or the Query List every time we try to insert the same word, in order to check whether
+// it needs to be added in a tree.
 
 struct __attribute__ ((__packed__)) keyword
 {

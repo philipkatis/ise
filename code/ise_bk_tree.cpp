@@ -1,103 +1,94 @@
 #include "ise_bk_tree.h"
-
-#if TODO
+#include "ise_keyword_table.h"
+#include "ise_match.h"
 
 #include <stdlib.h>
-#include <string.h>
-
-/*
-
-  NOTE(philip): This array stores all the keyword matching functions. The elements are stored in such
-  a way to allow for indexing into the array using the bk_tree_type enum values.
-
-*/
-
-global match_function_type MatchFunctions[2] =
-{
-    CalculateHammingDistance,
-    CalculateEditDistance
-};
 
 bk_tree
-BKTree_Create(bk_tree_type Type)
+BKTree_Create(u32 Type)
 {
+    Assert(Type == 1 || Type == 2);
+
     bk_tree Result = { };
-    Result.MatchFunction = MatchFunctions[Type];
+    Result.Type = Type;
 
     return Result;
 }
 
-/*
-
-  NOTE(philip): This function allocates the memory and sets the data for a new BK-Tree node.
-
-*/
-
 function bk_tree_node *
-BKTree_AllocateNode(keyword_table_node *Keyword, u64 DistanceFromParent)
+AllocateNode(keyword *Keyword, s32 DistanceFromParent, bk_tree_node *NextSibling)
 {
     bk_tree_node *Result = (bk_tree_node *)calloc(1, sizeof(bk_tree_node));
     Result->Keyword = Keyword;
+    Result->NextSibling = NextSibling;
     Result->DistanceFromParent = DistanceFromParent;
 
     return Result;
 }
 
-bk_tree_node *
-BKTree_Insert(bk_tree *Tree, keyword_table_node *Keyword)
-{
-    bk_tree_node *Node = 0;
+// TODO(philip): Probably store a function pointer of the correct function at tree creation.
 
+function s32
+CalculateDistance(u32 Type, keyword *A, keyword *B)
+{
+    s32 Distance = 0;
+
+    switch (Type)
+    {
+        case 1:
+        {
+            Distance = CalculateHammingDistance(A->Word, A->Length, B->Word, B->Length);
+        } break;
+
+        case 2:
+        {
+            Distance = CalculateEditDistance(A->Word, A->Length, B->Word, B->Length);
+        } break;
+    }
+
+    return Distance;
+}
+
+void
+BKTree_Insert(bk_tree *Tree, keyword *Keyword)
+{
     if (Tree->Root)
     {
-        u64 KeywordLength = strlen(Keyword->Word);
         bk_tree_node *CurrentNode = Tree->Root;
         while (true)
         {
-            s32 DistanceFromCurrentNode = CalculateEditDistance(CurrentNode->Keyword->Word,
-                                                                strlen(CurrentNode->Keyword->Word),
-                                                                Keyword->Word, KeywordLength);
-            b32 FoundNodeWithSameDistance = false;
+            keyword *CurrentKeyword = CurrentNode->Keyword;
 
-            for (bk_tree_node *ChildNode = CurrentNode->FirstChild;
-                 ChildNode;
-                 ChildNode = ChildNode->NextSibling)
+            s32 Distance = CalculateDistance(Tree->Type, CurrentKeyword, Keyword);
+            b32 DistanceChildExists = false;
+
+            for (bk_tree_node *Child = CurrentNode->FirstChild;
+                 Child;
+                 Child = Child->NextSibling)
             {
-                if (ChildNode->DistanceFromParent == DistanceFromCurrentNode)
+                if (Child->DistanceFromParent == Distance)
                 {
-                    CurrentNode = ChildNode;
-                    FoundNodeWithSameDistance = true;
+                    CurrentNode = Child;
+                    DistanceChildExists = true;
 
                     break;
                 }
             }
 
-            if (!FoundNodeWithSameDistance)
+            if (!DistanceChildExists)
             {
-                Node = BKTree_AllocateNode(Keyword, DistanceFromCurrentNode);
-                Node->NextSibling = CurrentNode->FirstChild;
-
-                CurrentNode->FirstChild = Node;
-
+                CurrentNode->FirstChild = AllocateNode(Keyword, Distance, CurrentNode->FirstChild);
                 break;
             }
         }
     }
     else
     {
-        Node = BKTree_AllocateNode(Keyword, 0);
-        Tree->Root = Node;
+        Tree->Root = AllocateNode(Keyword, 0, 0);
     }
-
-    return Node;
 }
 
-/*
-
-  NOTE(philip): This small data structure is a utility to help with the implementation of the BK-Tree search
-  function.
-
-*/
+// TODO(philip): If this data structure becomes a problem, switch to an array that doubles it's size.
 
 struct candidate_stack_node
 {
@@ -108,15 +99,7 @@ struct candidate_stack_node
 struct candidate_stack
 {
     candidate_stack_node *Head;
-    u64 Count;
 };
-
-function candidate_stack
-CreateCandidateStack()
-{
-    candidate_stack Result = { };
-    return Result;
-}
 
 function void
 PushCandidate(candidate_stack *Stack, bk_tree_node *Data)
@@ -126,95 +109,74 @@ PushCandidate(candidate_stack *Stack, bk_tree_node *Data)
     Node->Next = Stack->Head;
 
     Stack->Head = Node;
-    ++Stack->Count;
 }
 
 function bk_tree_node *
 PopCandidate(candidate_stack *Stack)
 {
-    if (Stack->Count)
+    bk_tree_node *Data = 0;
+
+    if (Stack->Head)
     {
-        candidate_stack_node *Node = Stack->Head;
+        Data = Stack->Head->Data;
 
-        bk_tree_node *Data = Node->Data;
-        candidate_stack_node *Head = Node->Next;
-
-        free(Node);
-
-        Stack->Head = Head;
-        --Stack->Count;
-
-        return Data;
+        candidate_stack_node *Next = Stack->Head->Next;
+        free(Stack->Head);
+        Stack->Head = Next;
     }
-    else
-    {
-        return 0;
-    }
+
+    return Data;
 }
 
+// TODO(philip): If this function becomes a problem, try a version that always searches with the max distance and
+// returns the distances.
+
 keyword_list
-BKTree_FindMatches(bk_tree *Tree, char *Word, u32 DistanceThreshold)
+BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold)
 {
-    keyword_list Matches = KeywordList_Create();
-    candidate_stack Candidates = CreateCandidateStack();
+    keyword_list Result = { };
+    candidate_stack Candidates = { };
 
-    u64 WordLength = strlen(Word);
-
-    bk_tree_node *CurrentCandidate = Tree->Root;
-    while (CurrentCandidate)
+    for (bk_tree_node *Candidate = Tree->Root;
+         Candidate;
+         Candidate = PopCandidate(&Candidates))
     {
-        u32 DistanceFromCurrentCandidate = Tree->MatchFunction(CurrentCandidate->Keyword->Word,
-                                                               strlen(CurrentCandidate->Keyword->Word), Word,
-                                                               WordLength);
+        s32 Distance = CalculateDistance(Tree->Type, Candidate->Keyword, Keyword);
 
-        if (DistanceFromCurrentCandidate <= DistanceThreshold)
+        if (Distance <= DistanceThreshold)
         {
-            KeywordList_Insert(&Matches, CurrentCandidate->Keyword->Word);
+            KeywordList_Insert(&Result, Candidate->Keyword);
         }
 
-        s32 ChildrenRangeStart = DistanceFromCurrentCandidate - DistanceThreshold;
-        if (ChildrenRangeStart)
-        {
-            ChildrenRangeStart = 1;
-        }
+        s32 ChildrenRangeStart = Distance - DistanceThreshold;
+        ChildrenRangeStart = (ChildrenRangeStart < 0) ? 1 : ChildrenRangeStart;
+        s32 ChildrenRangeEnd = Distance + DistanceThreshold;
 
-        s32 ChildrenRangeEnd = DistanceFromCurrentCandidate + DistanceThreshold;
-
-        for (bk_tree_node *Child = CurrentCandidate->FirstChild;
+        for (bk_tree_node *Child = Candidate->FirstChild;
              Child;
              Child = Child->NextSibling)
         {
-            if (Child->DistanceFromParent >= ChildrenRangeStart && Child->DistanceFromParent <= ChildrenRangeEnd)
+            if ((Child->DistanceFromParent >= ChildrenRangeStart) && (Child->DistanceFromParent <= ChildrenRangeEnd))
             {
                 PushCandidate(&Candidates, Child);
             }
         }
-
-        CurrentCandidate = PopCandidate(&Candidates);
     }
 
-    return Matches;
+    return Result;
 }
 
-/*
-
-  NOTE(philip): This function destroys a BK-Tree node and all of it's siblings and children. This is a recursive
-  function that also destroys all of the node's siblings and children.. This does not deallocate the memory of the
-  keywords referenced by all the nodes.
-
-*/
-
 function void
-BKTree_DestroyNode(bk_tree_node *Node)
+DestroyNode(bk_tree_node *Node)
 {
     if (Node->FirstChild)
     {
-        BKTree_DestroyNode(Node->FirstChild);
+        DestroyNode(Node->FirstChild);
     }
 
     if (Node->NextSibling)
     {
-        BKTree_DestroyNode(Node->NextSibling);
+        DestroyNode(Node->NextSibling);
     }
 
     free(Node);
@@ -225,21 +187,14 @@ BKTree_Destroy(bk_tree *Tree)
 {
     if (Tree->Root)
     {
-        BKTree_DestroyNode(Tree->Root);
+        DestroyNode(Tree->Root);
     }
 
     Tree->Root = 0;
+    Tree->Type = 0;
 }
 
-
 #if ISE_DEBUG
-    /*
-
-      NOTE(philip): This function is used only for debugging. It prints the specified number of tabs to the
-      command-line. It is mostly used for visualization.
-
-    */
-
     function void
     PrintTabs(u64 Count)
     {
@@ -250,14 +205,6 @@ BKTree_Destroy(bk_tree *Tree)
             printf("    ");
         }
     }
-
-    /*
-
-      NOTE(philip): This function is used only for debugging. It is a tool for visualizing the contents of a BK-Tree
-      node, by dumping them into the command-line. This is a recursive function that also prints all of the node's
-      siblings and children.
-
-    */
 
     function void
     BKTree_VisualizeNode(bk_tree_node *Node, u64 Depth)
@@ -292,6 +239,4 @@ BKTree_Destroy(bk_tree *Tree)
             BKTree_VisualizeNode(Tree->Root, 0);
         }
     }
-#endif
-
 #endif
