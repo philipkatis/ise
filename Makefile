@@ -35,6 +35,9 @@ setup:
 ise_match: code/ise_match.cpp | setup
 	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
 
+ise_answer_stack: code/ise_answer_stack.cpp | setup
+	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
+
 ise_query_tree: code/ise_query_tree.cpp | setup
 	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
 
@@ -60,8 +63,8 @@ ise_test_application: tests/ise_test_application.cpp | setup
 	g++ $(CompileFlags) -c tests/$@.cpp -o build/$@.o
 
 # This target builds the core library.
-build_lib: ise_match ise_query_tree ise_query_list ise_keyword_list ise_keyword_table ise_bk_tree ise | setup
-	g++ $(CompileFlags) -shared build/ise_match.o build/ise_query_list.o build/ise_query_tree.o build/ise_keyword_list.o build/ise_keyword_table.o build/ise_bk_tree.o build/ise.o -o build/libcore.so
+build_lib: ise_match ise_answer_stack ise_query_tree ise_query_list ise_keyword_list ise_keyword_table ise_bk_tree ise | setup
+	g++ $(CompileFlags) -shared build/ise_match.o build/ise_answer_stack.o build/ise_query_list.o build/ise_query_tree.o build/ise_keyword_list.o build/ise_keyword_table.o build/ise_bk_tree.o build/ise.o -o build/libcore.so
 
 # This target builds the unit tests application.
 build_tests: ise_tests | setup

@@ -1,6 +1,9 @@
 #include "ise_query_tree.h"
 #include "ise_keyword_table.h"
 #include "ise_bk_tree.h"
+#include "ise_answer_stack.h"
+
+#include <stdlib.h>
 
 #define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
 #define GetHammingTreeIndex(Length) (Length - MIN_KEYWORD_LENGTH)
@@ -10,6 +13,7 @@ struct application
     query_tree Queries;
     keyword_table Keywords;
     bk_tree HammingTrees[HAMMING_TREE_COUNT];
+    answer_stack Answers;
 };
 
 global application Application = { };
@@ -46,6 +50,9 @@ DestroyIndex()
     // NOTE(philip): Destroy the keyword table and the query tree.
     KeywordTable_Destroy(&Application.Keywords);
     QueryTree_Destroy(&Application.Queries);
+
+    // NOTE(philip): Destroy the possible answer stack.
+    AnswerStack_Destroy(&Application.Answers);
 
     return EC_SUCCESS;
 }
@@ -177,12 +184,10 @@ EndQuery(QueryID ID)
     return EC_SUCCESS;
 }
 
-function u32
-CountAnsweredQueries_(query_tree_node *Node)
+function b32
+IsAnswer(query *Query)
 {
-    b32 Answered = true;
-
-    query *Query = &Node->Data;
+    b32 Result = true;
     u32 KeywordCount = GetQueryKeywordCount(Query);
 
     for (u32 KeywordIndex = 0;
@@ -191,12 +196,18 @@ CountAnsweredQueries_(query_tree_node *Node)
     {
         if (!Query->HasKeywordFlags[KeywordIndex])
         {
-            Answered = false;
+            Result = false;
             break;
         }
     }
 
-    u32 Count = Answered;
+    return Result;
+}
+
+function u32
+CountAnsweredQueries_(query_tree_node *Node)
+{
+    u32 Count = IsAnswer(&Node->Data);
 
     if (Node->Left)
     {
@@ -222,6 +233,38 @@ CountAnsweredQueries(query_tree *Tree)
     }
 
     return Result;
+}
+
+function u32
+CompileAnsweredQueries_(query_tree_node *Node, u32 Index, u32 *Result)
+{
+    query *Query = &Node->Data;
+    if (IsAnswer(Query))
+    {
+        Result[Index] = Query->ID;
+        ++Index;
+    }
+
+    if (Node->Left)
+    {
+        Index = CompileAnsweredQueries_(Node->Left, Index, Result);
+    }
+
+    if (Node->Right)
+    {
+        Index = CompileAnsweredQueries_(Node->Right, Index, Result);
+    }
+
+    return Index;
+}
+
+function void
+CompileAnsweredQueries(query_tree *Tree, u32 *Result)
+{
+    if (Tree->Root)
+    {
+        CompileAnsweredQueries_(Tree->Root, 0, Result);
+    }
 }
 
 ErrorCode
@@ -334,75 +377,19 @@ MatchDocument(DocID ID, const char *String)
 
     KeywordTable_Destroy(&DocumentWords);
 
-    u32 AnswerCount = CountAnsweredQueries(&PossibleAnswers);
-    printf("%d\n", AnswerCount);
+    answer Answer = { };
+    Answer.DocumentID = ID;
 
-    // TODO(philip): From the possible matches, find the ones that were actually match.
+    // NOTE(philip): Compile the answered queries. This will be deallocated by the client.
+    Answer.QueryIDCount = CountAnsweredQueries(&PossibleAnswers);
+    if (Answer.QueryIDCount)
+    {
+        Answer.QueryIDs = (u32 *)calloc(1, Answer.QueryIDCount * sizeof(u32));
+        CompileAnsweredQueries(&PossibleAnswers, Answer.QueryIDs);
+    }
 
     QueryTree_Destroy(&PossibleAnswers);
-#if 0
-    for (u64 BucketIndex = 0;
-         BucketIndex < KEYWORD_TABLE_BUCKET_COUNT;
-         ++BucketIndex)
-    {
-        for (keyword_table_node *Node = DocumentWords.Buckets[BucketIndex];
-             Node;
-             Node = Node->Next)
-        {
-            // NOTE(philip): Exact Matching.
-            {
-                keyword_table_node *Keyword = KeywordTable_Find(&Application.KeywordTable, Node->Word, Node->Hash);
-                if (Keyword)
-                {
-
-                    for (query *Query = Keyword->Queries.Head;
-                         Query;
-                         Query = Query->Next)
-                    {
-                        if (Query->Type == 0)
-                        {
-                            query *ResultingQuery = QueryList_Find(&AnsweredQueries, Query->ID);
-                            if (!ResultingQuery)
-                            {
-                                ResultingQuery = QueryList_Insert(&AnsweredQueries, Query->ID, Query->WordCount, Query->Type, 1);
-                            }
-                            else
-                            {
-                                ++ResultingQuery->WordsFound;
-                            }
-                        }
-                    }
-
-                }
-            }
-
-            // NOTE(philip): Hamming Matching.
-            {
-                u64 WordLength = strlen(Node->Word);
-                u64 TreeIndex = HammingTreeIndex(WordLength);
-
-                for (u32 Distance = 1;
-                     Distance <= 4;
-                     ++Distance)
-                {
-                    BKTree_FindMatches(&Application.HammingTrees[TreeIndex], Node->Word, Distance);
-
-                    // TODO(philip): Do stuff.
-                }
-            }
-        }
-    }
-
-    for (query *Query = AnsweredQueries.Head;
-         Query;
-         Query = Query->Next)
-    {
-        if (Query->WordCount == Query->WordsFound)
-        {
-            //            printf("ID: %d, WordCount: %d, Type: %d, Words Found: %d\n", Query->ID, Query->WordCount, Query->Type, Query->WordsFound);
-        }
-    }
-#endif
+    AnswerStack_Push(&Application.Answers, Answer);
 
     return EC_SUCCESS;
 }
@@ -410,5 +397,7 @@ MatchDocument(DocID ID, const char *String)
 ErrorCode
 GetNextAvailRes(DocID *DocumentIDs, u32 *QueryCount, QueryID **QueryIDs)
 {
+    // TODO(philip): Pop item off the answer stack and return the results.
+
     return EC_SUCCESS;
 }
