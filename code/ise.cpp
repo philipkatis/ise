@@ -267,6 +267,47 @@ CompileAnsweredQueries(query_tree *Tree, u32 *Result)
     }
 }
 
+function void
+UpdateQueriesForKeyword(query_tree *PossibleAnswers, u32 Type, u32 Distance, keyword *Keyword)
+{
+    if (Keyword)
+    {
+        // TODO(philip): Make an iterator for this.
+        // NOTE(philip): If it exists go through the queries it is part of.
+        for (query_list_node *Node = Keyword->Queries.Head;
+             Node;
+             Node = Node->Next)
+        {
+            // NOTE(philip): Stop by every query that satisfies the search results.
+            query *Query = Node->Query;
+            if ((GetQueryType(Query) == Type) && (GetQueryDistance(Query) == Distance))
+            {
+                // NOTE(philip): Insert that query in the possible answer query tree.
+                u32 KeywordCount = GetQueryKeywordCount(Query);
+                query_tree_insert_result InsertResult = QueryTree_Insert(PossibleAnswers, Query->ID, KeywordCount,
+                                                                         Type, Distance);
+                query *PossibleAnswer = InsertResult.Query;
+
+                if (PossibleAnswer)
+                {
+                    // NOTE(philip): Go through all the keywords that the query has.
+                    for (u32 KeywordIndex = 0;
+                         KeywordIndex < KeywordCount;
+                         ++KeywordIndex)
+                    {
+                        if (Query->Keywords[KeywordIndex] == Keyword)
+                        {
+                            // NOTE(philip): Find the index of the found query and set the flag.
+                            PossibleAnswer->HasKeywordFlags[KeywordIndex] = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
@@ -326,48 +367,32 @@ MatchDocument(DocID ID, const char *String)
         {
             // NOTE(philip): Find the word in keyword table.
             keyword *FoundKeyword = KeywordTable_Find(&Application.Keywords, DocumentWord->Word);
-            if (FoundKeyword)
-            {
-                // TODO(philip): Make an iterator for this.
-                // NOTE(philip): If it exists go through the queries it is part of.
-                for (query_list_node *Node = FoundKeyword->Queries.Head;
-                     Node;
-                     Node = Node->Next)
-                {
-                    // NOTE(philip): Stop by every query that requires exact matching.
-                    query *Query = Node->Query;
-                    if (GetQueryType(Query) == 0)
-                    {
-                        // NOTE(philip): Insert that query in the possible answer query tree.
-                        u32 KeywordCount = GetQueryKeywordCount(Query);
-                        query_tree_insert_result InsertResult = QueryTree_Insert(&PossibleAnswers, Query->ID,
-                                                                                 KeywordCount, 0, 0);
-                        query *PossibleAnswer = InsertResult.Query;
-
-                        // TODO(philip): Redundant? In the exact matching case we just need to store a count?
-                        if (PossibleAnswer)
-                        {
-                            // NOTE(philip): Go through all the keywords that the query has.
-                            for (u32 KeywordIndex = 0;
-                                 KeywordIndex < KeywordCount;
-                                 ++KeywordIndex)
-                            {
-                                if (Query->Keywords[KeywordIndex] == FoundKeyword)
-                                {
-                                    // NOTE(philip): Find the index of the found query and set the flag.
-                                    PossibleAnswer->HasKeywordFlags[KeywordIndex] = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            UpdateQueriesForKeyword(&PossibleAnswers, 0, 0, FoundKeyword);
         }
 
         // TODO(philip): Run each word through the bk-trees to find approximate matches.
         {
+            // NOTE(philip): Find the tree we want to search.
+            bk_tree *Tree = &Application.HammingTrees[GetHammingTreeIndex(DocumentWord->Length)];
 
+            // NOTE(philip): Go through all the thresholds.
+            for (u32 Threshold = 1;
+                 Threshold <= MAX_DISTANCE_THRESHOLD;
+                 ++Threshold)
+            {
+                // NOTE(philip): Find the matches.
+                keyword_list FoundKeywords = BKTree_FindMatches(Tree, DocumentWord, Threshold);
+
+                for (keyword_list_node *Node = FoundKeywords.Head;
+                     Node;
+                     Node = Node->Next)
+                {
+                    keyword *FoundKeyword = Node->Keyword;
+                    UpdateQueriesForKeyword(&PossibleAnswers, 1, Threshold, FoundKeyword);
+                }
+
+                KeywordList_Destroy(&FoundKeywords);
+            }
         }
 
         {
