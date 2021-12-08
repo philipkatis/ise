@@ -72,6 +72,26 @@ Rehash(keyword_table *Table)
     Table->BucketCount = BucketCount;
 }
 
+function keyword *
+Find(keyword_table *Table, char *Word, u32 Length, u32 Hash, u64 BucketIndex)
+{
+    keyword *Result = 0;
+
+    for (keyword_table_node *Node = Table->Buckets[BucketIndex];
+         Node;
+         Node = Node->Next)
+    {
+        if ((Node->Data.Hash == Hash) && (Node->Data.Length == Length) &&
+            (memcmp(Node->Data.Word, Word, Length * sizeof(char)) == 0))
+        {
+            Result = &Node->Data;
+            break;
+        }
+    }
+
+    return Result;
+}
+
 keyword_table_insert_result
 KeywordTable_Insert(keyword_table *Table, char *Word)
 {
@@ -83,24 +103,12 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
 
     if (Table->Buckets[BucketIndex])
     {
-        for (keyword_table_node *Node = Table->Buckets[BucketIndex];
-             Node;
-             Node = Node->Next)
-        {
-            if ((Node->Data.Hash == Hash) && (Node->Data.Length == Length) &&
-                (memcmp(Node->Data.Word, Word, Length * sizeof(char)) == 0))
-            {
-                Result.Keyword = &Node->Data;
-                Result.Exists = true;
+        Result.Keyword = Find(Table, Word, Length, Hash, BucketIndex);
 
-                break;
-            }
-        }
-
-        if (!Result.Exists)
+        if (!Result.Keyword)
         {
             // TODO(philip): Investigate what load factor works.
-            f32 LoadFactor = (f32)(Table->ElementCount + 1 ) / (f32)Table->BucketCount;
+            f32 LoadFactor = (f32)(Table->ElementCount + 1) / (f32)Table->BucketCount;
             if (LoadFactor > 0.85f)
             {
                 Rehash(Table);
@@ -111,6 +119,10 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
 
             ++Table->ElementCount;
         }
+        else
+        {
+            Result.Exists = true;
+        }
     }
     else
     {
@@ -118,6 +130,24 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
         Result.Keyword = &Table->Buckets[BucketIndex]->Data;
 
         ++Table->ElementCount;
+    }
+
+    return Result;
+}
+
+// TODO(philip): Unit test.
+keyword *
+KeywordTable_Find(keyword_table *Table, char *Word)
+{
+    keyword *Result = 0;
+
+    u32 Length = strlen(Word);
+    u32 Hash = DJB2(Word);
+    u64 BucketIndex = Hash % Table->BucketCount;
+
+    if (Table->Buckets[BucketIndex])
+    {
+        Result = Find(Table, Word, Length, Hash, BucketIndex);
     }
 
     return Result;

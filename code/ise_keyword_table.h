@@ -45,6 +45,7 @@ struct keyword_table_insert_result
 
 keyword_table KeywordTable_Create(u64 InitialBucketCount);
 keyword_table_insert_result KeywordTable_Insert(keyword_table *Table, char *Word);
+keyword *KeywordTable_Find(keyword_table *Table, char *Word);
 void KeywordTable_Destroy(keyword_table *Table);
 
 #if ISE_DEBUG

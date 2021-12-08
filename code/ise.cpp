@@ -177,6 +177,53 @@ EndQuery(QueryID ID)
     return EC_SUCCESS;
 }
 
+function u32
+CountAnsweredQueries_(query_tree_node *Node)
+{
+    b32 Answered = true;
+
+    query *Query = &Node->Data;
+    u32 KeywordCount = GetQueryKeywordCount(Query);
+
+    for (u32 KeywordIndex = 0;
+         KeywordIndex < KeywordCount;
+         ++KeywordIndex)
+    {
+        if (!Query->HasKeywordFlags[KeywordIndex])
+        {
+            Answered = false;
+            break;
+        }
+    }
+
+    u32 Count = Answered;
+
+    if (Node->Left)
+    {
+        Count += CountAnsweredQueries_(Node->Left);
+    }
+
+    if (Node->Right)
+    {
+        Count += CountAnsweredQueries_(Node->Right);
+    }
+
+    return Count;
+}
+
+function u32
+CountAnsweredQueries(query_tree *Tree)
+{
+    u32 Result = 0;
+
+    if (Tree->Root)
+    {
+        Result = CountAnsweredQueries_(Tree->Root);
+    }
+
+    return Result;
+}
+
 ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
@@ -198,7 +245,7 @@ MatchDocument(DocID ID, const char *String)
 
     // TODO(philip): This is currently a waste of memory. If it becomes a problem, switch to a more specific
     // data structure.
-    keyword_table Words = KeywordTable_Create(WordCount);
+    keyword_table DocumentWords = KeywordTable_Create(WordCount);
 
     // NOTE(philip): Put the document words in the hash table to deduplicate them.
     {
@@ -208,7 +255,7 @@ MatchDocument(DocID ID, const char *String)
              WordIndex < WordCount;
              ++WordIndex)
         {
-            KeywordTable_Insert(&Words, Word);
+            KeywordTable_Insert(&DocumentWords, Word);
 
             while (*Word)
             {
@@ -222,18 +269,78 @@ MatchDocument(DocID ID, const char *String)
         }
     }
 
-    for (keyword_iterator Iterator = IterateAllKeywords(&Words);
+    // TODO(philip): This is currently a waste of memroy. If it becomes a problem, switch to a more specific
+    // data structure.
+    query_tree PossibleAnswers = { };
+
+    for (keyword_iterator Iterator = IterateAllKeywords(&DocumentWords);
          IsValid(&Iterator);
          Advance(&Iterator))
     {
-        keyword *Word = GetValue(&Iterator);
+        keyword *DocumentWord = GetValue(&Iterator);
 
-        // TODO(philip): Run each word though the keyword table to find exact matches and through the bk-trees to
-        // find approximate matches.
+        // NOTE(philip): Exact macthing.
+        {
+            // NOTE(philip): Find the word in keyword table.
+            keyword *FoundKeyword = KeywordTable_Find(&Application.Keywords, DocumentWord->Word);
+            if (FoundKeyword)
+            {
+                // TODO(philip): Make an iterator for this.
+                // NOTE(philip): If it exists go through the queries it is part of.
+                for (query_list_node *Node = FoundKeyword->Queries.Head;
+                     Node;
+                     Node = Node->Next)
+                {
+                    // NOTE(philip): Stop by every query that requires exact matching.
+                    query *Query = Node->Query;
+                    if (GetQueryType(Query) == 0)
+                    {
+                        // NOTE(philip): Insert that query in the possible answer query tree.
+                        u32 KeywordCount = GetQueryKeywordCount(Query);
+                        query_tree_insert_result InsertResult = QueryTree_Insert(&PossibleAnswers, Query->ID,
+                                                                                 KeywordCount, 0, 0);
+                        query *PossibleAnswer = InsertResult.Query;
+
+                        // TODO(philip): Redundant? In the exact matching case we just need to store a count?
+                        if (PossibleAnswer)
+                        {
+                            // NOTE(philip): Go through all the keywords that the query has.
+                            for (u32 KeywordIndex = 0;
+                                 KeywordIndex < KeywordCount;
+                                 ++KeywordIndex)
+                            {
+                                if (Query->Keywords[KeywordIndex] == FoundKeyword)
+                                {
+                                    // NOTE(philip): Find the index of the found query and set the flag.
+                                    PossibleAnswer->HasKeywordFlags[KeywordIndex] = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // TODO(philip): Run each word through the bk-trees to find approximate matches.
+        {
+
+        }
+
+        {
+
+        }
     }
-#if 0
-    query_list AnsweredQueries = { };
 
+    KeywordTable_Destroy(&DocumentWords);
+
+    u32 AnswerCount = CountAnsweredQueries(&PossibleAnswers);
+    printf("%d\n", AnswerCount);
+
+    // TODO(philip): From the possible matches, find the ones that were actually match.
+
+    QueryTree_Destroy(&PossibleAnswers);
+#if 0
     for (u64 BucketIndex = 0;
          BucketIndex < KEYWORD_TABLE_BUCKET_COUNT;
          ++BucketIndex)
@@ -295,11 +402,7 @@ MatchDocument(DocID ID, const char *String)
             //            printf("ID: %d, WordCount: %d, Type: %d, Words Found: %d\n", Query->ID, Query->WordCount, Query->Type, Query->WordsFound);
         }
     }
-
-    QueryList_Destroy(&AnsweredQueries);
 #endif
-
-    KeywordTable_Destroy(&Words);
 
     return EC_SUCCESS;
 }
