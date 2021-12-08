@@ -168,17 +168,7 @@ QueryTree_Insert(query_tree *Tree, u32 ID, u32 KeywordCount, u32 Type, u32 Dista
     Tree->Root = Insert(Tree->Root, ID, &Result.Query, &Result.Exists);
     if (Result.Query && !Result.Exists)
     {
-        u8 PackedInfo = 0;
-        PackedInfo |= KeywordCount;
-        PackedInfo <<= 2;
-
-        PackedInfo |= Type;
-        PackedInfo <<= 3;
-
-        PackedInfo |= Distance;
-
-        Result.Query->PackedInfo = PackedInfo;
-
+        Result.Query->PackedInfo = ((KeywordCount << 5) | (Type << 3) | Distance);
         ++Tree->Count;
     }
 

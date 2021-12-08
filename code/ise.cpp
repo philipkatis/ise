@@ -1,10 +1,15 @@
 #include "ise_query_tree.h"
 #include "ise_keyword_table.h"
+#include "ise_bk_tree.h"
+
+#define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
+#define GetHammingTreeIndex(Length) (Length - MIN_KEYWORD_LENGTH)
 
 struct application
 {
     query_tree Queries;
     keyword_table Keywords;
+    bk_tree HammingTrees[HAMMING_TREE_COUNT];
 };
 
 global application Application = { };
@@ -12,17 +17,55 @@ global application Application = { };
 ErrorCode
 InitializeIndex()
 {
+    // NOTE(philip): Initialize the keyword table.
     Application.Keywords = KeywordTable_Create(1024);
+
+    // NOTE(philip): Initialize the hamming BK trees.
+    for (u64 Index = 0;
+         Index < HAMMING_TREE_COUNT;
+         ++Index)
+    {
+        // TODO(philip): Change the type.
+        Application.HammingTrees[Index] = BKTree_Create(1);
+    }
+
     return EC_SUCCESS;
 }
 
 ErrorCode
 DestroyIndex()
 {
+    // NOTE(philip): Destroy the hamming BK trees.
+    for (u64 Index = 0;
+         Index < HAMMING_TREE_COUNT;
+         ++Index)
+    {
+        BKTree_Destroy(&Application.HammingTrees[Index]);
+    }
+
+    // NOTE(philip): Destroy the keyword table and the query tree.
     KeywordTable_Destroy(&Application.Keywords);
     QueryTree_Destroy(&Application.Queries);
 
     return EC_SUCCESS;
+}
+
+function void
+InsertInBK(u32 Type, keyword *Keyword)
+{
+    switch (Type)
+    {
+        case 1:
+        {
+            u64 TreeIndex = GetHammingTreeIndex(Keyword->Length);
+            BKTree_Insert(&Application.HammingTrees[TreeIndex], Keyword);
+        } break;
+
+        case 2:
+        {
+            // TODO(philip): Insert in levenshtein tree.
+        } break;
+    }
 }
 
 ErrorCode
@@ -76,7 +119,32 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
         Query->Keywords[WordIndex] = Keyword;
         QueryList_Insert(&Keyword->Queries, Query);
 
-        // TODO(philip): Add keyword to BK-trees.
+        if (KeywordInsert.Exists && ((Type == 1) || (Type == 2)))
+        {
+            // NOTE(philip): If the keyword is already in the BK tree, do not attempt to insert it again.
+            b32 AlreadyInBK = false;
+
+            // TODO(philp): Make an iterator for this. Or use flags.
+            for (query_list_node *Node = Keyword->Queries.Head;
+                 Node;
+                 Node = Node->Next)
+            {
+                if (GetQueryType(Node->Query) == (u8)Type)
+                {
+                    AlreadyInBK = true;
+                    break;
+                }
+            }
+
+            if (!AlreadyInBK)
+            {
+                InsertInBK(Type, Keyword);
+            }
+        }
+        else
+        {
+            InsertInBK(Type, Keyword);
+        }
     }
 
     return EC_SUCCESS;
@@ -89,7 +157,7 @@ EndQuery(QueryID ID)
     query *Query = QueryTree_Find(&Application.Queries, ID);
     if (Query)
     {
-        u32 KeywordCount = GetKeywordCount(Query);
+        u32 KeywordCount = GetQueryKeywordCount(Query);
 
         for (u32 KeywordIndex = 0;
              KeywordIndex < KeywordCount;
