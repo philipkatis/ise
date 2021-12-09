@@ -18,9 +18,9 @@ struct __attribute__ ((__packed__)) query
     u8 Padding;
 };
 
-#define GetQueryKeywordCount(Query) (Query->PackedInfo >> 5)
-#define GetQueryType(Query) ((Query->PackedInfo >> 3) & 0x3)
-#define GetQueryDistance(Query) (Query->PackedInfo & 0x7)
+#define GetQueryKeywordCount(Query) ((Query)->PackedInfo >> 5)
+#define GetQueryType(Query) (((Query)->PackedInfo >> 3) & 0x3)
+#define GetQueryDistance(Query) ((Query)->PackedInfo & 0x7)
 
 struct __attribute__ ((__packed__)) query_tree_node
 {

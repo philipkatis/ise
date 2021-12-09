@@ -4,6 +4,7 @@
 #include "ise_answer_stack.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
 #define GetHammingTreeIndex(Length) (Length - MIN_KEYWORD_LENGTH)
@@ -12,14 +13,17 @@ struct application
 {
     query_tree Queries;
     keyword_table Keywords;
+
     bk_tree HammingTrees[HAMMING_TREE_COUNT];
+    bk_tree EditTree;
+
     answer_stack Answers;
 };
 
 global application Application = { };
 
 ErrorCode
-InitializeIndex()
+InitializeIndex(void)
 {
     // NOTE(philip): Initialize the keyword table.
     Application.Keywords = KeywordTable_Create(1024);
@@ -33,12 +37,21 @@ InitializeIndex()
         Application.HammingTrees[Index] = BKTree_Create(1);
     }
 
+    // NOTE(philip): Initialize the edit BK tree.
+    Application.EditTree = BKTree_Create(2);
+
     return EC_SUCCESS;
 }
 
 ErrorCode
-DestroyIndex()
+DestroyIndex(void)
 {
+    // NOTE(philip): Destroy the possible answer stack.
+    AnswerStack_Destroy(&Application.Answers);
+
+    // NOTE(philip): Destroy the edit tree.
+    BKTree_Destroy(&Application.EditTree);
+
     // NOTE(philip): Destroy the hamming BK trees.
     for (u64 Index = 0;
          Index < HAMMING_TREE_COUNT;
@@ -50,9 +63,6 @@ DestroyIndex()
     // NOTE(philip): Destroy the keyword table and the query tree.
     KeywordTable_Destroy(&Application.Keywords);
     QueryTree_Destroy(&Application.Queries);
-
-    // NOTE(philip): Destroy the possible answer stack.
-    AnswerStack_Destroy(&Application.Answers);
 
     return EC_SUCCESS;
 }
@@ -70,7 +80,7 @@ InsertInBK(u32 Type, keyword *Keyword)
 
         case 2:
         {
-            // TODO(philip): Insert in levenshtein tree.
+            BKTree_Insert(&Application.EditTree, Keyword);
         } break;
     }
 }
@@ -122,10 +132,6 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
         keyword_table_insert_result KeywordInsert = KeywordTable_Insert(&Application.Keywords, Words[WordIndex]);
         keyword *Keyword = KeywordInsert.Keyword;
 
-        // NOTE(philip): Insert the keyword into the query and the query into the keyword.
-        Query->Keywords[WordIndex] = Keyword;
-        QueryList_Insert(&Keyword->Queries, Query);
-
         if (KeywordInsert.Exists && ((Type == 1) || (Type == 2)))
         {
             // NOTE(philip): If the keyword is already in the BK tree, do not attempt to insert it again.
@@ -152,6 +158,10 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
         {
             InsertInBK(Type, Keyword);
         }
+
+        // NOTE(philip): Insert the keyword into the query and the query into the keyword.
+        Query->Keywords[WordIndex] = Keyword;
+        QueryList_Insert(&Keyword->Queries, Query);
     }
 
     return EC_SUCCESS;
@@ -268,7 +278,7 @@ CompileAnsweredQueries(query_tree *Tree, u32 *Result)
 }
 
 function void
-UpdateQueriesForKeyword(query_tree *PossibleAnswers, u32 Type, u32 Distance, keyword *Keyword)
+LookForMatchingQueries(query_tree *PossibleAnswers, u32 Type, u32 Threshold, keyword *Keyword)
 {
     if (Keyword)
     {
@@ -280,12 +290,12 @@ UpdateQueriesForKeyword(query_tree *PossibleAnswers, u32 Type, u32 Distance, key
         {
             // NOTE(philip): Stop by every query that satisfies the search results.
             query *Query = Node->Query;
-            if ((GetQueryType(Query) == Type) && (GetQueryDistance(Query) == Distance))
+            if ((GetQueryType(Query) == Type) && (GetQueryDistance(Query) == Threshold))
             {
                 // NOTE(philip): Insert that query in the possible answer query tree.
                 u32 KeywordCount = GetQueryKeywordCount(Query);
                 query_tree_insert_result InsertResult = QueryTree_Insert(PossibleAnswers, Query->ID, KeywordCount,
-                                                                         Type, Distance);
+                                                                         Type, 0);
                 query *PossibleAnswer = InsertResult.Query;
 
                 if (PossibleAnswer)
@@ -363,40 +373,57 @@ MatchDocument(DocID ID, const char *String)
     {
         keyword *DocumentWord = GetValue(&Iterator);
 
-        // NOTE(philip): Exact macthing.
+        // NOTE(philip): Exact matching.
         {
             // NOTE(philip): Find the word in keyword table.
             keyword *FoundKeyword = KeywordTable_Find(&Application.Keywords, DocumentWord->Word);
-            UpdateQueriesForKeyword(&PossibleAnswers, 0, 0, FoundKeyword);
+            LookForMatchingQueries(&PossibleAnswers, 0, 0, FoundKeyword);
         }
 
-        // TODO(philip): Run each word through the bk-trees to find approximate matches.
+        // NOTE(philip): Approximate matching.
         {
-            // NOTE(philip): Find the tree we want to search.
-            bk_tree *Tree = &Application.HammingTrees[GetHammingTreeIndex(DocumentWord->Length)];
+            // NOTE(philip): Find the hamming tree we want to search.
+            bk_tree *HammingTree = &Application.HammingTrees[GetHammingTreeIndex(DocumentWord->Length)];
 
             // NOTE(philip): Go through all the thresholds.
             for (u32 Threshold = 1;
                  Threshold <= MAX_DISTANCE_THRESHOLD;
                  ++Threshold)
             {
-                // NOTE(philip): Find the matches.
-                keyword_list FoundKeywords = BKTree_FindMatches(Tree, DocumentWord, Threshold);
-
-                for (keyword_list_node *Node = FoundKeywords.Head;
-                     Node;
-                     Node = Node->Next)
+                // NOTE(philip): Hamming tree.
                 {
-                    keyword *FoundKeyword = Node->Keyword;
-                    UpdateQueriesForKeyword(&PossibleAnswers, 1, Threshold, FoundKeyword);
+                    // NOTE(philip): Find the matches.
+                    keyword_list FoundKeywords = BKTree_FindMatches(HammingTree, DocumentWord, Threshold);
+
+                    // NOTE(philip): Go through all the keywords and update the queries.
+                    for (keyword_list_node *Node = FoundKeywords.Head;
+                         Node;
+                         Node = Node->Next)
+                    {
+                        keyword *FoundKeyword = Node->Keyword;
+                        LookForMatchingQueries(&PossibleAnswers, 1, Threshold, FoundKeyword);
+                    }
+
+                    KeywordList_Destroy(&FoundKeywords);
                 }
 
-                KeywordList_Destroy(&FoundKeywords);
+                // NOTE(philip): Edit tree.
+                {
+                    // NOTE(philip): Find the matches.
+                    keyword_list FoundKeywords = BKTree_FindMatches(&Application.EditTree, DocumentWord, Threshold);
+
+                    // NOTE(philip): Go through all the keywords and update the queries.
+                    for (keyword_list_node *Node = FoundKeywords.Head;
+                         Node;
+                         Node = Node->Next)
+                    {
+                        keyword *FoundKeyword = Node->Keyword;
+                        LookForMatchingQueries(&PossibleAnswers, 2, Threshold, FoundKeyword);
+                    }
+
+                    KeywordList_Destroy(&FoundKeywords);
+                }
             }
-        }
-
-        {
-
         }
     }
 
@@ -419,10 +446,34 @@ MatchDocument(DocID ID, const char *String)
     return EC_SUCCESS;
 }
 
-ErrorCode
-GetNextAvailRes(DocID *DocumentIDs, u32 *QueryCount, QueryID **QueryIDs)
+function s32
+CompareQueryIDs(const void *A, const void *B)
 {
+    return (*(s32 *)A - *(s32 *)B);
+}
+
+ErrorCode
+GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs)
+{
+    ErrorCode Result = EC_FAIL;
+
+    if (Application.Answers.Count)
+    {
+        answer Answer = AnswerStack_Pop(&Application.Answers);
+        qsort(Answer.QueryIDs, Answer.QueryIDCount, sizeof(u32), CompareQueryIDs);
+
+        *DocumentID = Answer.DocumentID;
+        *QueryCount = Answer.QueryIDCount;
+        *QueryIDs = Answer.QueryIDs;
+
+        Result = EC_SUCCESS;
+    }
+    else
+    {
+        Result = EC_NO_AVAIL_RES;
+    }
+
     // TODO(philip): Pop item off the answer stack and return the results.
 
-    return EC_SUCCESS;
+    return Result;
 }

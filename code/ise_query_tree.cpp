@@ -1,4 +1,5 @@
 #include "ise_query_tree.h"
+#include "ise_keyword_table.h"
 
 #include <stdlib.h>
 
@@ -212,6 +213,31 @@ QueryTree_Find(query_tree *Tree, u32 ID)
     return Query;
 }
 
+// TODO(philip): Work around.
+struct query_list_node;
+function void
+UpdateKeywordQueryLinks(query *Source, query *Destination)
+{
+    // TODO(philip): Work around.
+    u32 KeywordCount = GetQueryKeywordCount(Source);
+    for (u32 KeywordIndex = 0;
+         KeywordIndex < KeywordCount;
+         ++KeywordIndex)
+    {
+        keyword *Keyword = Source->Keywords[KeywordIndex];
+        for (query_list_node *Node = Keyword->Queries.Head;
+             Node;
+             Node = Node->Next)
+        {
+            if (Node->Query == Source)
+            {
+                Node->Query = Destination;
+                break;
+            }
+        }
+    }
+}
+
 /*
 
   NOTE(philip): Recursively removes a node from the subtree, if it exists, with proper balancing. Sets the function
@@ -247,6 +273,8 @@ Remove(query_tree_node *Root, u32 ID, b32 *Removed)
                 }
 
                 Root->Data = MovingChild->Data;
+                UpdateKeywordQueryLinks(&MovingChild->Data, &Root->Data);
+
                 Root->Right = Remove(Root->Right, MovingChild->Data.ID, 0);
             }
             else
@@ -256,6 +284,8 @@ Remove(query_tree_node *Root, u32 ID, b32 *Removed)
                 if (Child)
                 {
                     *Root = *Child;
+                    UpdateKeywordQueryLinks(&Child->Data, &Root->Data);
+
                     free(Child);
                 }
                 else

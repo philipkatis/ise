@@ -8,19 +8,19 @@ IncludeDirectories=-Icode -Ithird_party/acutest/include
 CompileFlags=-g -Wall -Wno-address-of-packed-member -Wno-write-strings -DISE_DEBUG=1 $(IncludeDirectories)
 
 # The default target that builds all the executables.
-all: build_lib build_tests build_test_application | setup
+all: build_lib build_tests build_example | setup
 
 # This command runs the test application.
-run: build/test_application
-	./build/test_application
+run: build/example
+	./build/example
 
 #  This command runs the unit tests.
 tests: build/tests
 	./build/tests
 
 # This command runs valgrind and cheks for any memory errors.
-valgrind:
-	valgrind ./build/tests
+valgrind: build/example
+	valgrind ./build/example
 
 # This target deletes the output directory.
 .PHONY: clean
@@ -59,8 +59,8 @@ ise: code/ise.cpp | setup
 ise_tests: tests/tests.cpp | setup
 	g++ $(CompileFlags) -c tests/tests.cpp -o build/$@.o
 
-ise_test_application: tests/ise_test_application.cpp | setup
-	g++ $(CompileFlags) -c tests/$@.cpp -o build/$@.o
+ise_example: example/example.cpp | setup
+	g++ $(CompileFlags) -c example/example.cpp -o build/$@.o
 
 # This target builds the core library.
 build_lib: ise_match ise_answer_stack ise_query_tree ise_query_list ise_keyword_list ise_keyword_table ise_bk_tree ise | setup
@@ -70,6 +70,6 @@ build_lib: ise_match ise_answer_stack ise_query_tree ise_query_list ise_keyword_
 build_tests: ise_tests | setup
 	g++ $(CompileFlags) build/ise_tests.o -Lbuild -lcore -o build/tests -Wl,-rpath=build
 
-# This target builds the test application.
-build_test_application: ise_test_application | setup
-	g++ $(CompileFlags) build/ise_test_application.o -Lbuild -lcore -o build/test_application -Wl,-rpath=build
+# This target builds the example.
+build_example: ise_example | setup
+	g++ $(CompileFlags) build/ise_example.o -Lbuild -lcore -o build/example -Wl,-rpath=build

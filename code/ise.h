@@ -35,6 +35,6 @@ ErrorCode StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distanc
 ErrorCode EndQuery(QueryID ID);
 
 ErrorCode MatchDocument(DocID ID, const char *String);
-ErrorCode GetNextAvailRes(DocID *DocumentIDs, u32 *QueryCount, QueryID **QueryIDs);
+ErrorCode GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs);
 
 #endif
