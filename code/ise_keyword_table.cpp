@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TODO(philip): Currently using the DJB2 hash algorithm. If this is not good enough switch to murmur3.
+// NOTE(philip): DJB2 string hashing algorithm.
 function u32
 DJB2(char *String)
 {
@@ -107,7 +107,6 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
 
         if (!Result.Keyword)
         {
-            // TODO(philip): Investigate what load factor works.
             f32 LoadFactor = (f32)(Table->ElementCount + 1) / (f32)Table->BucketCount;
             if (LoadFactor > 0.85f)
             {
@@ -135,7 +134,6 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
     return Result;
 }
 
-// TODO(philip): Unit test.
 keyword *
 KeywordTable_Find(keyword_table *Table, char *Word)
 {

@@ -63,7 +63,7 @@ QueryTree(void)
         TEST_CHECK(Tree.Root == 0);
     }
 
-    // NOTE(philip): High level test of multiple insertions with rebalancing. Duplicate query insertion.
+    // NOTE(philip): High level test of multiple insertions with rebalancing. Duplicate query insertion. Search.
     {
         query_tree Tree = { };
 
@@ -80,6 +80,12 @@ QueryTree(void)
         InsertResult = QueryTree_Insert(&Tree, 25, 0, 0, 0);
         TEST_CHECK(InsertResult.Query->ID == 25);
         TEST_CHECK(InsertResult.Exists == true);
+
+        query *Query = QueryTree_Find(&Tree, 20);
+        TEST_CHECK(Query == 0);
+
+        Query = QueryTree_Find(&Tree, 5);
+        TEST_CHECK(Query != 0);
 
         u32 Solutions[6] = { 15, 10, 5, 50, 25, 100 };
         ValidateTreePreOrder(&Tree, Solutions, ArrayCount(Solutions));

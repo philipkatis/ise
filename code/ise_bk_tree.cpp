@@ -81,7 +81,8 @@ BKTree_Insert(bk_tree *Tree, keyword *Keyword)
     }
 }
 
-// TODO(philip): If this data structure becomes a problem, switch to an array that doubles it's size.
+// TODO(philip): If this data structure becomes a problem, switch to an array. The array could either double in
+// size or grow based on the tree height and max child count.
 
 struct candidate_stack_node
 {
@@ -121,8 +122,10 @@ PopCandidate(candidate_stack *Stack)
     return Data;
 }
 
-// TODO(philip): If this function becomes a problem, try a version that always searches with the max distance and
-// returns the distances.
+
+// TODO(philip): This function is currently the bottleneck. 74% of cycles are spent calculating the edit distance.
+// Waiting for the 3rd assignment to choose a proper solution. Maybe calling this function once per match check (we
+// currently do it 3 times per keyword for all the possible distances).
 
 keyword_list
 BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold)

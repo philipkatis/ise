@@ -35,7 +35,7 @@ KeywordTable(void)
         TEST_CHECK(Table.ElementCount == 0);
     }
 
-    // NOTE(philip): Multiple keyword insertions with rehashing.
+    // NOTE(philip): Multiple keyword insertions with rehashing. Search.
     {
         keyword_table Table = KeywordTable_Create(2);
 
@@ -53,6 +53,12 @@ KeywordTable(void)
         TEST_CHECK(&Table.Buckets[1]->Next->Data == WorldInsertResult.Keyword);
         TEST_CHECK(Table.Buckets[1]->Next->Next != 0);
         TEST_CHECK(&Table.Buckets[1]->Next->Next->Data == HelloInsertResult.Keyword);
+
+        keyword *Keyword = KeywordTable_Find(&Table, "test");
+        TEST_CHECK(Keyword == 0);
+
+        Keyword = KeywordTable_Find(&Table, "bazinga");
+        TEST_CHECK(Keyword != 0);
 
         KeywordTable_Destroy(&Table);
 

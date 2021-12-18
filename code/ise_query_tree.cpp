@@ -212,12 +212,17 @@ QueryTree_Find(query_tree *Tree, u32 ID)
     return Query;
 }
 
-// TODO(philip): Work around.
+// TODO(philip): Maybe, probably, should do something better.
+// NOTE(philip): Due to the way node removal works in AVL trees, there are some cases where the memory address of
+// the query data might change. This invalidates the links from keywords to queries. There is not an attractive way
+// to fix this without switching away from recursive functions. So currently when the memory address changes we
+// go through the keywords and update the broken links.
+
 struct query_list_node;
+
 function void
 UpdateKeywordQueryLinks(query *Source, query *Destination)
 {
-    // TODO(philip): Work around.
     u32 KeywordCount = GetQueryKeywordCount(Source);
     for (u32 KeywordIndex = 0;
          KeywordIndex < KeywordCount;

@@ -136,7 +136,7 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
             // NOTE(philip): If the keyword is already in the BK tree, do not attempt to insert it again.
             b32 AlreadyInBK = false;
 
-            // TODO(philp): Make an iterator for this. Or use flags.
+            // TODO(philip): If we choose to use the occupancy flags, use them here.
             for (query_list_node *Node = Keyword->Queries.Head;
                  Node;
                  Node = Node->Next)
@@ -169,7 +169,6 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 ErrorCode
 EndQuery(QueryID ID)
 {
-    // TODO(philip): Add unit testing for this.
     query *Query = QueryTree_Find(&Application.Queries, ID);
     if (Query)
     {
@@ -183,7 +182,11 @@ EndQuery(QueryID ID)
             keyword *Keyword = Query->Keywords[KeywordIndex];
             QueryList_Remove(&Keyword->Queries, Query);
 
-            // TODO(philip): Remove keyword from tree. Remove keyword if it is in no queries.
+            // TODO(philip): Currenty, keywords that were previously part of queryies are not removed. They remain
+            // in the keyword table, as well as the BK trees. This is fine per the assignment, but a proper solution
+            // would be to evict them. Hash table removal is easy. BK tree removal on the other hand would require
+            // either a complete rebuild or a rebuild of the subtree after the keyword. Another solution is at
+            // a certain moment (based on a load factor), rebuild the entire tree. But these would happen here.
         }
 
         // NOTE(philip): Remove the query from the tree.
@@ -281,7 +284,6 @@ LookForMatchingQueries(query_tree *PossibleAnswers, u32 Type, u32 Threshold, key
 {
     if (Keyword)
     {
-        // TODO(philip): Make an iterator for this.
         // NOTE(philip): If it exists go through the queries it is part of.
         for (query_list_node *Node = Keyword->Queries.Head;
              Node;
