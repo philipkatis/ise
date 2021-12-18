@@ -7,10 +7,25 @@
 bk_tree
 BKTree_Create(bk_tree_type Type)
 {
-    Assert(Type != BKTree_Type_None);
-
     bk_tree Result = { };
-    Result.Type = Type;
+
+    switch (Type)
+    {
+        case BKTree_Type_Hamming:
+        {
+            Result.MatchFunction = CalculateHammingDistance;
+        } break;
+
+        case BKTree_Type_Edit:
+        {
+            Result.MatchFunction = CalculateEditDistance;
+        } break;
+
+        default:
+        {
+            Assert(false);
+        } break;
+    }
 
     return Result;
 }
@@ -26,29 +41,6 @@ AllocateNode(keyword *Keyword, s32 DistanceFromParent, bk_tree_node *NextSibling
     return Result;
 }
 
-// TODO(philip): Probably store a function pointer of the correct function at tree creation.
-
-function s32
-CalculateDistance(bk_tree_type Type, keyword *A, keyword *B)
-{
-    s32 Distance = 0;
-
-    switch (Type)
-    {
-        case BKTree_Type_Hamming:
-        {
-            Distance = CalculateHammingDistance(A->Word, A->Length, B->Word, B->Length);
-        } break;
-
-        case BKTree_Type_Edit:
-        {
-            Distance = CalculateEditDistance(A->Word, A->Length, B->Word, B->Length);
-        } break;
-    }
-
-    return Distance;
-}
-
 void
 BKTree_Insert(bk_tree *Tree, keyword *Keyword)
 {
@@ -59,7 +51,8 @@ BKTree_Insert(bk_tree *Tree, keyword *Keyword)
         {
             keyword *CurrentKeyword = CurrentNode->Keyword;
 
-            s32 Distance = CalculateDistance(Tree->Type, CurrentKeyword, Keyword);
+            s32 Distance = Tree->MatchFunction(CurrentKeyword->Word, CurrentKeyword->Length,
+                                               Keyword->Word, Keyword->Length);
             b32 DistanceChildExists = false;
 
             for (bk_tree_node *Child = CurrentNode->FirstChild;
@@ -141,8 +134,8 @@ BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold)
          Candidate;
          Candidate = PopCandidate(&Candidates))
     {
-        s32 Distance = CalculateDistance(Tree->Type, Candidate->Keyword, Keyword);
-
+        s32 Distance = Tree->MatchFunction(Candidate->Keyword->Word, Candidate->Keyword->Length,
+                                           Keyword->Word, Keyword->Length);
         if (Distance <= DistanceThreshold)
         {
             KeywordList_Insert(&Result, Candidate->Keyword);
@@ -191,7 +184,7 @@ BKTree_Destroy(bk_tree *Tree)
     }
 
     Tree->Root = 0;
-    Tree->Type = BKTree_Type_None;
+    Tree->MatchFunction = 0;
 }
 
 #if ISE_DEBUG

@@ -20,10 +20,12 @@ struct bk_tree_node
     s32 DistanceFromParent;
 };
 
+typedef s32 (*match_function_type)(char *A, u64 LengthA, char *B, u64 LengthB);
+
 struct bk_tree
 {
     bk_tree_node *Root;
-    bk_tree_type Type;
+    match_function_type MatchFunction;
 };
 
 bk_tree BKTree_Create(bk_tree_type Type);

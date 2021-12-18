@@ -1,6 +1,5 @@
 #include "ise_bk_tree.h"
-
-// TODO(philip): Change the BK tree types.
+#include "ise_match.h"
 
 function void
 BKTree(void)
@@ -21,10 +20,10 @@ BKTree(void)
             KeywordTable_Insert(&Keywords, Words[WordIndex]);
         }
 
-        bk_tree Tree = BKTree_Create(1);
+        bk_tree Tree = BKTree_Create(BKTree_Type_Hamming);
 
         TEST_CHECK(Tree.Root == 0);
-        TEST_CHECK(Tree.Type == 1);
+        TEST_CHECK(Tree.MatchFunction == CalculateHammingDistance);
 
         for (keyword_iterator Iterator = IterateAllKeywords(&Keywords);
              IsValid(&Iterator);
@@ -103,7 +102,11 @@ BKTree(void)
             KeywordTable_Insert(&Keywords, Words[WordIndex]);
         }
 
-        bk_tree Tree = BKTree_Create(2);
+        bk_tree Tree = BKTree_Create(BKTree_Type_Edit);
+
+        TEST_CHECK(Tree.Root == 0);
+        TEST_CHECK(Tree.MatchFunction == CalculateEditDistance);
+
 
         for (keyword_iterator Iterator = IterateAllKeywords(&Keywords);
              IsValid(&Iterator);
