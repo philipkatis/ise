@@ -473,7 +473,5 @@ GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs)
         Result = EC_NO_AVAIL_RES;
     }
 
-    // TODO(philip): Pop item off the answer stack and return the results.
-
     return Result;
 }

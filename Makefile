@@ -5,7 +5,7 @@
 IncludeDirectories=-Icode -Ithird_party/acutest/include
 
 # The compile flags we want to use through all our g++ calls.
-CompileFlags=-g -Wall -Wno-address-of-packed-member -Wno-write-strings -DISE_DEBUG=1 $(IncludeDirectories)
+CompileFlags=-g -Wall -Wno-address-of-packed-member -Wno-write-strings -O3 -DISE_DEBUG=0 $(IncludeDirectories)
 
 # The default target that builds all the executables.
 all: build_lib build_tests build_example | setup

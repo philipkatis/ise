@@ -4,3 +4,4 @@ build/
 
 # File Types
 *.4coder
+callgrind.*
