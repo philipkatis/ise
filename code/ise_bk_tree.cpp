@@ -5,9 +5,9 @@
 #include <stdlib.h>
 
 bk_tree
-BKTree_Create(u32 Type)
+BKTree_Create(bk_tree_type Type)
 {
-    Assert(Type == 1 || Type == 2);
+    Assert(Type != BKTree_Type_None);
 
     bk_tree Result = { };
     Result.Type = Type;
@@ -29,18 +29,18 @@ AllocateNode(keyword *Keyword, s32 DistanceFromParent, bk_tree_node *NextSibling
 // TODO(philip): Probably store a function pointer of the correct function at tree creation.
 
 function s32
-CalculateDistance(u32 Type, keyword *A, keyword *B)
+CalculateDistance(bk_tree_type Type, keyword *A, keyword *B)
 {
     s32 Distance = 0;
 
     switch (Type)
     {
-        case 1:
+        case BKTree_Type_Hamming:
         {
             Distance = CalculateHammingDistance(A->Word, A->Length, B->Word, B->Length);
         } break;
 
-        case 2:
+        case BKTree_Type_Edit:
         {
             Distance = CalculateEditDistance(A->Word, A->Length, B->Word, B->Length);
         } break;
@@ -191,7 +191,7 @@ BKTree_Destroy(bk_tree *Tree)
     }
 
     Tree->Root = 0;
-    Tree->Type = 0;
+    Tree->Type = BKTree_Type_None;
 }
 
 #if ISE_DEBUG

@@ -33,12 +33,11 @@ InitializeIndex(void)
          Index < HAMMING_TREE_COUNT;
          ++Index)
     {
-        // TODO(philip): Change the type.
-        Application.HammingTrees[Index] = BKTree_Create(1);
+        Application.HammingTrees[Index] = BKTree_Create(BKTree_Type_Hamming);
     }
 
     // NOTE(philip): Initialize the edit BK tree.
-    Application.EditTree = BKTree_Create(2);
+    Application.EditTree = BKTree_Create(BKTree_Type_Edit);
 
     return EC_SUCCESS;
 }

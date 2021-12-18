@@ -4,6 +4,14 @@
 #include "ise.h"
 #include "ise_keyword_list.h"
 
+typedef u32 bk_tree_type;
+enum
+{
+    BKTree_Type_None,
+    BKTree_Type_Hamming,
+    BKTree_Type_Edit
+};
+
 struct bk_tree_node
 {
     keyword *Keyword;
@@ -15,10 +23,10 @@ struct bk_tree_node
 struct bk_tree
 {
     bk_tree_node *Root;
-    u32 Type;
+    bk_tree_type Type;
 };
 
-bk_tree BKTree_Create(u32 Type);
+bk_tree BKTree_Create(bk_tree_type Type);
 void BKTree_Insert(bk_tree *Tree, keyword *Keyword);
 keyword_list BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold);
 void BKTree_Destroy(bk_tree *Tree);
