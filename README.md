@@ -1,6 +1,6 @@
 ![tests](https://github.com/philipkatis/ise/actions/workflows/main.yml/badge.svg)
 
-# Inverted Search Engine - K23A University Project
+# Inverted Search Engine Version 2 - K23A University Project
 
 This repository has the code for the Inverted Search Engine project. It is comprised of the
 core codebase as well as a few unit tests and an example application.
