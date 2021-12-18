@@ -170,7 +170,6 @@ QueryTree_Insert(query_tree *Tree, u32 ID, u32 KeywordCount, u32 Type, u32 Dista
     if (Result.Query && !Result.Exists)
     {
         Result.Query->PackedInfo = ((KeywordCount << 5) | (Type << 3) | Distance);
-        ++Tree->Count;
     }
 
     return Result;
@@ -343,11 +342,6 @@ QueryTree_Remove(query_tree *Tree, u32 ID)
     b32 Removed = false;
     Tree->Root = Remove(Tree->Root, ID, &Removed);
 
-    if (Removed)
-    {
-        --Tree->Count;
-    }
-
     return Removed;
 }
 
@@ -382,7 +376,6 @@ QueryTree_Destroy(query_tree *Tree)
     }
 
     Tree->Root = 0;
-    Tree->Count = 0;
 }
 
 #if ISE_DEBUG

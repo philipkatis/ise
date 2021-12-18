@@ -21,8 +21,6 @@ ValidateNodePreOrder(query_tree_node *Node, u32 *Solutions)
 function void
 ValidateTreePreOrder(query_tree *Tree, u32 *Solutions, u32 SolutionCount)
 {
-    TEST_CHECK(Tree->Count == SolutionCount);
-
     if (Tree->Root)
     {
         ValidateNodePreOrder(Tree->Root, Solutions);
@@ -35,15 +33,11 @@ QueryTree(void)
     // NOTE(philip): In depth test of proper links between nodes and tree rotation for rebalancing.
     {
         query_tree Tree = { };
-
         TEST_CHECK(Tree.Root == 0);
-        TEST_CHECK(Tree.Count == 0);
 
         QueryTree_Insert(&Tree, 100, 0, 0, 0);
         QueryTree_Insert(&Tree, 25, 0, 0, 0);
         QueryTree_Insert(&Tree, 50, 0, 0, 0);
-
-        TEST_CHECK(Tree.Count == 3);
 
         query_tree_node *Root = Tree.Root;
         TEST_CHECK(Root != 0);
@@ -67,7 +61,6 @@ QueryTree(void)
         QueryTree_Destroy(&Tree);
 
         TEST_CHECK(Tree.Root == 0);
-        TEST_CHECK(Tree.Count == 0);
     }
 
     // NOTE(philip): High level test of multiple insertions with rebalancing. Duplicate query insertion.
@@ -126,8 +119,6 @@ QueryTree(void)
         QueryTree_Insert(&Tree, 25, 0, 0, 0);
 
         QueryTree_Remove(&Tree, 5);
-
-        TEST_CHECK(Tree.Count == 3);
 
         query_tree_node *Root = Tree.Root;
         TEST_CHECK(Root != 0);
