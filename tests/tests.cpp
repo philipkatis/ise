@@ -3,7 +3,6 @@
 #include "ise.h"
 
 #include "ise_base.cpp"
-#include "ise_match.cpp"
 #include "ise_query_tree.cpp"
 #include "ise_query_list.cpp"
 #include "ise_keyword_table.cpp"
