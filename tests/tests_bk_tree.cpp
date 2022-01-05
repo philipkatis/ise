@@ -1,6 +1,3 @@
-#include "ise_bk_tree.h"
-#include "ise_match.h"
-
 function void
 BKTree(void)
 {

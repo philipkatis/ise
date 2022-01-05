@@ -1,5 +1,3 @@
-#include "ise_keyword_table.h"
-
 function void
 KeywordTable(void)
 {

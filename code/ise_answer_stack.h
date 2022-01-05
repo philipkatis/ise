@@ -1,8 +1,6 @@
 #ifndef ISE_ANSWER_LIST_H
 #define ISE_ANSWER_LIST_H
 
-#include "ise_base.h"
-
 struct answer
 {
     u32 DocumentID;
@@ -22,8 +20,8 @@ struct answer_stack
     u64 Count = 0;
 };
 
-void AnswerStack_Push(answer_stack *Stack, answer Answer);
-answer AnswerStack_Pop(answer_stack *Stack);
-void AnswerStack_Destroy(answer_stack *Stack);
+function void AnswerStack_Push(answer_stack *Stack, answer Answer);
+function answer AnswerStack_Pop(answer_stack *Stack);
+function void AnswerStack_Destroy(answer_stack *Stack);
 
 #endif

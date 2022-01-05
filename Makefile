@@ -5,7 +5,7 @@
 IncludeDirectories=-Icode -Ithird_party/acutest/include
 
 # The compile flags we want to use through all our g++ calls.
-CompileFlags=-g -Wall -Wno-address-of-packed-member -Wno-write-strings -O3 -DISE_DEBUG=0 $(IncludeDirectories)
+CompileFlags=-g -Wall -Wno-unused-function -Wno-address-of-packed-member -Wno-write-strings -DISE_DEBUG=1 $(IncludeDirectories)
 
 # The default target that builds all the executables.
 all: build_lib build_tests build_example | setup
@@ -31,44 +31,14 @@ clean:
 setup:
 	mkdir -p build
 
-# These targets build all the translation units separately into object files.
-ise_match: code/ise_match.cpp | setup
-	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
-
-ise_answer_stack: code/ise_answer_stack.cpp | setup
-	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
-
-ise_query_tree: code/ise_query_tree.cpp | setup
-	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
-
-ise_query_list: code/ise_query_list.cpp | setup
-	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
-
-ise_keyword_list: code/ise_keyword_list.cpp | setup
-	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
-
-ise_keyword_table: code/ise_keyword_table.cpp | setup
-	g++ $(CompileFlags) -fPIC -c code/$@.cpp -o build/$@.o
-
-ise_bk_tree: code/ise_bk_tree.cpp | setup
-	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
-
-ise: code/ise.cpp | setup
-	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
-
-ise_tests: tests/tests.cpp | setup
-	g++ $(CompileFlags) -c tests/tests.cpp -o build/$@.o
-
 ise_example: example/example.cpp | setup
 	g++ $(CompileFlags) -c example/example.cpp -o build/$@.o
 
-# This target builds the core library.
-build_lib: ise_match ise_answer_stack ise_query_tree ise_query_list ise_keyword_list ise_keyword_table ise_bk_tree ise | setup
-	g++ $(CompileFlags) -shared build/ise_match.o build/ise_answer_stack.o build/ise_query_list.o build/ise_query_tree.o build/ise_keyword_list.o build/ise_keyword_table.o build/ise_bk_tree.o build/ise.o -o build/libcore.so
+build_lib: code/ise.cpp | setup
+	g++ $(CompileFlags) -shared -fPIC code/ise.cpp -o build/libcore.so
 
-# This target builds the unit tests application.
-build_tests: ise_tests | setup
-	g++ $(CompileFlags) build/ise_tests.o -Lbuild -lcore -o build/tests -Wl,-rpath=build
+build_tests: tests/tests.cpp | setup
+	g++ $(CompileFlags) tests/tests.cpp -o build/tests
 
 # This target builds the example.
 build_example: ise_example | setup

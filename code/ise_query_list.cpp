@@ -1,8 +1,4 @@
-#include "ise_query_list.h"
-
-#include <stdlib.h>
-
-void
+function void
 QueryList_Insert(query_list *List, query *Query)
 {
     query_list_node *Node = (query_list_node *)calloc(1, sizeof(query_list_node));
@@ -12,7 +8,7 @@ QueryList_Insert(query_list *List, query *Query)
     List->Head = Node;
 }
 
-void
+function void
 QueryList_Remove(query_list *List, query *Query)
 {
     query_list_node *Previous = 0;
@@ -39,7 +35,7 @@ QueryList_Remove(query_list *List, query *Query)
     }
 }
 
-void
+function void
 QueryList_Destroy(query_list *List)
 {
     query_list_node *Node = List->Head;

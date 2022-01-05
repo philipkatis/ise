@@ -44,7 +44,6 @@ static_assert(sizeof(f32) == 4);
 static_assert(sizeof(f64) == 8);
 
 #if ISE_DEBUG
-    #include <stdio.h>
     #define DebugBreak() __builtin_trap()
     #define Assert(Condition) \
         if (!(Condition)) \

@@ -37,4 +37,12 @@ ErrorCode EndQuery(QueryID ID);
 ErrorCode MatchDocument(DocID ID, const char *String);
 ErrorCode GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs);
 
+#include "ise_match.h"
+#include "ise_query_tree.h"
+#include "ise_query_list.h"
+#include "ise_keyword_table.h"
+#include "ise_keyword_list.h"
+#include "ise_bk_tree.h"
+#include "ise_answer_stack.h"
+
 #endif

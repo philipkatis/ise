@@ -1,10 +1,17 @@
-#include "ise_query_tree.h"
-#include "ise_keyword_table.h"
-#include "ise_bk_tree.h"
-#include "ise_answer_stack.h"
-
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "ise.h"
+
+#include "ise_base.cpp"
+#include "ise_match.cpp"
+#include "ise_query_tree.cpp"
+#include "ise_query_list.cpp"
+#include "ise_keyword_table.cpp"
+#include "ise_keyword_list.cpp"
+#include "ise_bk_tree.cpp"
+#include "ise_answer_stack.cpp"
 
 #define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
 #define GetHammingTreeIndex(Length) (Length - MIN_KEYWORD_LENGTH)

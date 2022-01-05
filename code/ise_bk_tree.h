@@ -1,9 +1,6 @@
 #ifndef ISE_BK_TREE_H
 #define ISE_BK_TREE_H
 
-#include "ise.h"
-#include "ise_keyword_list.h"
-
 typedef u32 bk_tree_type;
 enum
 {
@@ -28,13 +25,13 @@ struct bk_tree
     match_function_type MatchFunction;
 };
 
-bk_tree BKTree_Create(bk_tree_type Type);
-void BKTree_Insert(bk_tree *Tree, keyword *Keyword);
-keyword_list BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold);
-void BKTree_Destroy(bk_tree *Tree);
+function bk_tree BKTree_Create(bk_tree_type Type);
+function void BKTree_Insert(bk_tree *Tree, keyword *Keyword);
+function keyword_list BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold);
+function void BKTree_Destroy(bk_tree *Tree);
 
 #if ISE_DEBUG
-    void _BKTree_Visualize(bk_tree *Tree);
+    function void _BKTree_Visualize(bk_tree *Tree);
     #define BKTree_Visualize(Tree) _BKTree_Visualize((Tree))
 #else
     #define BKTree_Visualize(Tree)

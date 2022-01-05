@@ -1,10 +1,4 @@
-#include "ise_match.h"
-
-#include "ise.h"
-
-#include <string.h>
-
-s32
+function s32
 IsExactMatch(char *A, u64 LengthA, char *B, u64 LengthB)
 {
     s32 Result = 1;
@@ -30,7 +24,7 @@ IsExactMatch(char *A, u64 LengthA, char *B, u64 LengthB)
     return Result;
 }
 
-s32
+function s32
 CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB)
 {
     s32 Result = 0;
@@ -52,7 +46,7 @@ CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB)
 #define EDIT_DISTANCE_CACHE_MATRIX_SIZE (MAX_KEYWORD_LENGTH + 1)
 global s32 EditDistanceCacheMatrix[EDIT_DISTANCE_CACHE_MATRIX_SIZE * EDIT_DISTANCE_CACHE_MATRIX_SIZE];
 
-s32
+function s32
 CalculateEditDistance(char *A, u64 LengthA, char *B, u64 LengthB)
 {
     memset(EditDistanceCacheMatrix,

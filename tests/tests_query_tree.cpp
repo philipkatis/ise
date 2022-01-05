@@ -1,5 +1,3 @@
-#include "ise_query_tree.h"
-
 function u32 *
 ValidateNodePreOrder(query_tree_node *Node, u32 *Solutions)
 {

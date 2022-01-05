@@ -1,8 +1,3 @@
-#include "ise_keyword_table.h"
-
-#include <stdlib.h>
-#include <string.h>
-
 // NOTE(philip): DJB2 string hashing algorithm.
 function u32
 DJB2(char *String)
@@ -32,7 +27,7 @@ AllocateNode(char *Word, u32 Length, u32 Hash, keyword_table_node *Next)
     return Node;
 }
 
-keyword_table
+function keyword_table
 KeywordTable_Create(u64 InitialBucketCount)
 {
     keyword_table Table = { };
@@ -92,7 +87,7 @@ Find(keyword_table *Table, char *Word, u32 Length, u32 Hash, u64 BucketIndex)
     return Result;
 }
 
-keyword_table_insert_result
+function keyword_table_insert_result
 KeywordTable_Insert(keyword_table *Table, char *Word)
 {
     keyword_table_insert_result Result = { };
@@ -134,7 +129,7 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
     return Result;
 }
 
-keyword *
+function keyword *
 KeywordTable_Find(keyword_table *Table, char *Word)
 {
     keyword *Result = 0;
@@ -151,7 +146,7 @@ KeywordTable_Find(keyword_table *Table, char *Word)
     return Result;
 }
 
-void
+function void
 KeywordTable_Destroy(keyword_table *Table)
 {
     for (u64 BucketIndex = 0;
@@ -178,7 +173,7 @@ KeywordTable_Destroy(keyword_table *Table)
 }
 
 #if ISE_DEBUG
-    void
+    function void
     KeywordTable_Visualize_(keyword_table *Table)
     {
         for (u64 BucketIndex = 0;
@@ -234,7 +229,7 @@ FindNextKeyword(keyword_iterator *Iterator)
     }
 }
 
-keyword_iterator
+function keyword_iterator
 IterateAllKeywords(keyword_table *Table)
 {
     keyword_iterator Iterator = { };
@@ -244,13 +239,14 @@ IterateAllKeywords(keyword_table *Table)
     return Iterator;
 }
 
-b32
+function b32
 IsValid(keyword_iterator *Iterator)
 {
     return Iterator->Node != 0;
 }
 
-void Advance(keyword_iterator *Iterator)
+function void
+Advance(keyword_iterator *Iterator)
 {
     Assert(Iterator->Node);
 
@@ -263,7 +259,7 @@ void Advance(keyword_iterator *Iterator)
     FindNextKeyword(Iterator);
 }
 
-keyword *
+function keyword *
 GetValue(keyword_iterator *Iterator)
 {
     Assert(Iterator->Node);

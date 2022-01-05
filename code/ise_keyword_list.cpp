@@ -1,8 +1,4 @@
-#include "ise_keyword_list.h"
-
-#include <stdlib.h>
-
-void
+function void
 KeywordList_Insert(keyword_list *List, keyword *Keyword)
 {
     keyword_list_node *Node = (keyword_list_node *)calloc(1, sizeof(keyword_list_node));
@@ -12,7 +8,7 @@ KeywordList_Insert(keyword_list *List, keyword *Keyword)
     List->Head = Node;
 }
 
-void
+function void
 KeywordList_Destroy(keyword_list *List)
 {
     keyword_list_node *Node = List->Head;

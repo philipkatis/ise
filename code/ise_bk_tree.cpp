@@ -1,10 +1,4 @@
-#include "ise_bk_tree.h"
-#include "ise_keyword_table.h"
-#include "ise_match.h"
-
-#include <stdlib.h>
-
-bk_tree
+function bk_tree
 BKTree_Create(bk_tree_type Type)
 {
     bk_tree Result = { };
@@ -41,7 +35,7 @@ AllocateNode(keyword *Keyword, s32 DistanceFromParent, bk_tree_node *NextSibling
     return Result;
 }
 
-void
+function void
 BKTree_Insert(bk_tree *Tree, keyword *Keyword)
 {
     if (Tree->Root)
@@ -127,7 +121,7 @@ PopCandidate(candidate_stack *Stack)
 // Waiting for the 3rd assignment to choose a proper solution. Maybe calling this function once per match check (we
 // currently do it 3 times per keyword for all the possible distances).
 
-keyword_list
+function keyword_list
 BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold)
 {
     keyword_list Result = { };
@@ -178,7 +172,7 @@ DestroyNode(bk_tree_node *Node)
     free(Node);
 }
 
-void
+function void
 BKTree_Destroy(bk_tree *Tree)
 {
     if (Tree->Root)
@@ -191,17 +185,6 @@ BKTree_Destroy(bk_tree *Tree)
 }
 
 #if ISE_DEBUG
-    function void
-    PrintTabs(u64 Count)
-    {
-        for (u64 Index = 0;
-             Index < Count;
-             ++Index)
-        {
-            printf("    ");
-        }
-    }
-
     function void
     BKTree_VisualizeNode(bk_tree_node *Node, u64 Depth)
     {
@@ -227,7 +210,7 @@ BKTree_Destroy(bk_tree *Tree)
         }
     }
 
-    void
+    function void
     _BKTree_Visualize(bk_tree *Tree)
     {
         if (Tree->Root)

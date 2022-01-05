@@ -1,8 +1,4 @@
-#include "ise_answer_stack.h"
-
-#include <stdlib.h>
-
-void
+function void
 AnswerStack_Push(answer_stack *Stack, answer Answer)
 {
     answer_stack_node *Node = (answer_stack_node *)calloc(1, sizeof(answer_stack_node));
@@ -13,7 +9,7 @@ AnswerStack_Push(answer_stack *Stack, answer Answer)
     ++Stack->Count;
 }
 
-answer
+function answer
 AnswerStack_Pop(answer_stack *Stack)
 {
     answer Answer = { };
@@ -32,7 +28,7 @@ AnswerStack_Pop(answer_stack *Stack)
     return Answer;
 }
 
-void
+function void
 AnswerStack_Destroy(answer_stack *Stack)
 {
     answer_stack_node *Node = Stack->Head;

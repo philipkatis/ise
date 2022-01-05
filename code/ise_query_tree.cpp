@@ -1,8 +1,3 @@
-#include "ise_query_tree.h"
-#include "ise_keyword_table.h"
-
-#include <stdlib.h>
-
 /*
 
   NOTE(philip): Returns the height of a node in the tree, if it exists. Otherwise, returns zero.
@@ -161,7 +156,7 @@ Insert(query_tree_node *Root, u32 ID, query **Query, b64 *Exists)
     return NewRoot;
 }
 
-query_tree_insert_result
+function query_tree_insert_result
 QueryTree_Insert(query_tree *Tree, u32 ID, u32 KeywordCount, u32 Type, u32 Distance)
 {
     query_tree_insert_result Result = { };
@@ -205,7 +200,7 @@ Find(query_tree_node *Root, u32 ID)
     return Query;
 }
 
-query *
+function query *
 QueryTree_Find(query_tree *Tree, u32 ID)
 {
     query *Query = Find(Tree->Root, ID);
@@ -372,7 +367,7 @@ DestroyNode(query_tree_node *Node)
     free(Node);
 }
 
-void
+function void
 QueryTree_Destroy(query_tree *Tree)
 {
     if (Tree->Root)
@@ -384,17 +379,6 @@ QueryTree_Destroy(query_tree *Tree)
 }
 
 #if ISE_DEBUG
-    function void
-    PrintTabs(u64 Count)
-    {
-        for (u64 Index = 0;
-             Index < Count;
-             ++Index)
-        {
-            printf("    ");
-        }
-    }
-
     function void
     VisualizeNode(query_tree_node *Node, u64 Depth = 0)
     {
@@ -445,7 +429,7 @@ QueryTree_Destroy(query_tree *Tree)
         printf("}\n");
     }
 
-    void
+    function void
     QueryTree_Visualize_(query_tree *Tree)
     {
         if (Tree->Root)
