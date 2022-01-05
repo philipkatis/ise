@@ -147,6 +147,39 @@ KeywordTable_Find(keyword_table *Table, char *Word)
 }
 
 function void
+KeywordTable_Visualize(keyword_table *Table)
+{
+    for (u64 BucketIndex = 0;
+         BucketIndex < Table->BucketCount;
+         ++BucketIndex)
+    {
+        keyword_table_node *BucketHead = Table->Buckets[BucketIndex];
+        if (BucketHead)
+        {
+            printf("%llu: ", BucketIndex);
+
+            for (keyword_table_node *Node = BucketHead;
+                 Node;
+                 Node = Node->Next)
+            {
+                printf("%s", Node->Data.Word);
+
+                if (Node->Next)
+                {
+                    printf(" -> ");
+                }
+            }
+
+            printf("\n");
+        }
+    }
+
+    printf("\nBucket Count: %llu\n", Table->BucketCount);
+    printf("Element Count: %llu\n", Table->ElementCount);
+    printf("Load Factor: %f\n", (f32)Table->ElementCount / (f32)Table->BucketCount);
+}
+
+function void
 KeywordTable_Destroy(keyword_table *Table)
 {
     for (u64 BucketIndex = 0;
@@ -171,41 +204,6 @@ KeywordTable_Destroy(keyword_table *Table)
     Table->BucketCount = 0;
     Table->ElementCount = 0;
 }
-
-#if ISE_DEBUG
-    function void
-    KeywordTable_Visualize_(keyword_table *Table)
-    {
-        for (u64 BucketIndex = 0;
-             BucketIndex < Table->BucketCount;
-             ++BucketIndex)
-        {
-            keyword_table_node *BucketHead = Table->Buckets[BucketIndex];
-            if (BucketHead)
-            {
-                printf("%llu: ", BucketIndex);
-
-                for (keyword_table_node *Node = BucketHead;
-                     Node;
-                     Node = Node->Next)
-                {
-                    printf("%s", Node->Data.Word);
-
-                    if (Node->Next)
-                    {
-                        printf(" -> ");
-                    }
-                }
-
-                printf("\n");
-            }
-        }
-
-        printf("\nBucket Count: %llu\n", Table->BucketCount);
-        printf("Element Count: %llu\n", Table->ElementCount);
-        printf("Load Factor: %f\n", (f32)Table->ElementCount / (f32)Table->BucketCount);
-    }
-#endif
 
 function void
 FindNextKeyword(keyword_iterator *Iterator)

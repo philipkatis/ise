@@ -28,13 +28,7 @@ struct bk_tree
 function bk_tree BKTree_Create(bk_tree_type Type);
 function void BKTree_Insert(bk_tree *Tree, keyword *Keyword);
 function keyword_list BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold);
+function void BKTree_Visualize(bk_tree *Tree);
 function void BKTree_Destroy(bk_tree *Tree);
-
-#if ISE_DEBUG
-    function void _BKTree_Visualize(bk_tree *Tree);
-    #define BKTree_Visualize(Tree) _BKTree_Visualize((Tree))
-#else
-    #define BKTree_Visualize(Tree)
-#endif
 
 #endif

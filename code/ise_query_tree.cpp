@@ -336,13 +336,74 @@ Remove(query_tree_node *Root, u32 ID, b32 *Removed)
     return NewRoot;
 }
 
-b32
+function b32
 QueryTree_Remove(query_tree *Tree, u32 ID)
 {
     b32 Removed = false;
     Tree->Root = Remove(Tree->Root, ID, &Removed);
 
     return Removed;
+}
+
+
+function void
+VisualizeNode(query_tree_node *Node, u64 Depth = 0)
+{
+    query *Data = &Node->Data;
+
+    PrintTabs(Depth);
+    printf("{\n");
+
+    PrintTabs(Depth + 1);
+    printf("Height: %llu\n", GetNodeHeight(Node));
+
+    PrintTabs(Depth + 1);
+    printf("Balance: %lld\n\n", GetNodeBalance(Node));
+
+    PrintTabs(Depth + 1);
+    printf("Data:\n");
+
+    PrintTabs(Depth + 1);
+    printf("{\n");
+
+    PrintTabs(Depth + 2);
+    printf("ID: %d\n", Data->ID);
+
+    PrintTabs(Depth + 1);
+    printf("}\n");
+
+    if (Node->Left)
+    {
+        printf("\n");
+
+        PrintTabs(Depth + 1);
+        printf("Left Child:\n");
+
+        VisualizeNode(Node->Left, Depth + 1);
+    }
+
+    if (Node->Right)
+    {
+        printf("\n");
+
+        PrintTabs(Depth + 1);
+        printf("Right Child:\n");
+
+        VisualizeNode(Node->Right, Depth + 1);
+    }
+
+    PrintTabs(Depth);
+    printf("}\n");
+}
+
+function void
+QueryTree_Visualize(query_tree *Tree)
+{
+    if (Tree->Root)
+    {
+        printf("Root:\n");
+        VisualizeNode(Tree->Root);
+    }
 }
 
 /*
@@ -377,65 +438,3 @@ QueryTree_Destroy(query_tree *Tree)
 
     Tree->Root = 0;
 }
-
-#if ISE_DEBUG
-    function void
-    VisualizeNode(query_tree_node *Node, u64 Depth = 0)
-    {
-        query *Data = &Node->Data;
-
-        PrintTabs(Depth);
-        printf("{\n");
-
-        PrintTabs(Depth + 1);
-        printf("Height: %llu\n", GetNodeHeight(Node));
-
-        PrintTabs(Depth + 1);
-        printf("Balance: %lld\n\n", GetNodeBalance(Node));
-
-        PrintTabs(Depth + 1);
-        printf("Data:\n");
-
-        PrintTabs(Depth + 1);
-        printf("{\n");
-
-        PrintTabs(Depth + 2);
-        printf("ID: %d\n", Data->ID);
-
-        PrintTabs(Depth + 1);
-        printf("}\n");
-
-        if (Node->Left)
-        {
-            printf("\n");
-
-            PrintTabs(Depth + 1);
-            printf("Left Child:\n");
-
-            VisualizeNode(Node->Left, Depth + 1);
-        }
-
-        if (Node->Right)
-        {
-            printf("\n");
-
-            PrintTabs(Depth + 1);
-            printf("Right Child:\n");
-
-            VisualizeNode(Node->Right, Depth + 1);
-        }
-
-        PrintTabs(Depth);
-        printf("}\n");
-    }
-
-    function void
-    QueryTree_Visualize_(query_tree *Tree)
-    {
-        if (Tree->Root)
-        {
-            printf("Root:\n");
-            VisualizeNode(Tree->Root);
-        }
-    }
-#endif

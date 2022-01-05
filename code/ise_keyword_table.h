@@ -40,14 +40,8 @@ struct keyword_table_insert_result
 function keyword_table KeywordTable_Create(u64 InitialBucketCount);
 function keyword_table_insert_result KeywordTable_Insert(keyword_table *Table, char *Word);
 function keyword *KeywordTable_Find(keyword_table *Table, char *Word);
+function void KeywordTable_Visualize(keyword_table *Table);
 function void KeywordTable_Destroy(keyword_table *Table);
-
-#if ISE_DEBUG
-    function void KeywordTable_Visualize_(keyword_table *Table);
-    #define KeywordTable_Visualize(Table) KeywordTable_Visualize_(Table);
-#else
-    #define KeywordTable_Visualize(Table)
-#endif
 
 struct keyword_iterator
 {

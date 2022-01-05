@@ -173,6 +173,40 @@ DestroyNode(bk_tree_node *Node)
 }
 
 function void
+BKTree_VisualizeNode(bk_tree_node *Node, u64 Depth)
+{
+    PrintTabs(Depth);
+    printf("Word: %s, DistanceFromParent: %d, Depth: %llu\n", Node->Keyword->Word, Node->DistanceFromParent,
+           Depth);
+
+    if (Node->FirstChild)
+    {
+        PrintTabs(Depth);
+        printf("{\n");
+
+        BKTree_VisualizeNode(Node->FirstChild, Depth + 1);
+
+        PrintTabs(Depth);
+        printf("}\n");
+    }
+
+    if (Node->NextSibling)
+    {
+        printf("\n");
+        BKTree_VisualizeNode(Node->NextSibling, Depth);
+    }
+}
+
+function void
+BKTree_Visualize(bk_tree *Tree)
+{
+    if (Tree->Root)
+    {
+        BKTree_VisualizeNode(Tree->Root, 0);
+    }
+}
+
+function void
 BKTree_Destroy(bk_tree *Tree)
 {
     if (Tree->Root)
@@ -183,39 +217,3 @@ BKTree_Destroy(bk_tree *Tree)
     Tree->Root = 0;
     Tree->MatchFunction = 0;
 }
-
-#if ISE_DEBUG
-    function void
-    BKTree_VisualizeNode(bk_tree_node *Node, u64 Depth)
-    {
-        PrintTabs(Depth);
-        printf("Word: %s, DistanceFromParent: %d, Depth: %llu\n", Node->Keyword->Word, Node->DistanceFromParent,
-               Depth);
-
-        if (Node->FirstChild)
-        {
-            PrintTabs(Depth);
-            printf("{\n");
-
-            BKTree_VisualizeNode(Node->FirstChild, Depth + 1);
-
-            PrintTabs(Depth);
-            printf("}\n");
-        }
-
-        if (Node->NextSibling)
-        {
-            printf("\n");
-            BKTree_VisualizeNode(Node->NextSibling, Depth);
-        }
-    }
-
-    function void
-    _BKTree_Visualize(bk_tree *Tree)
-    {
-        if (Tree->Root)
-        {
-            BKTree_VisualizeNode(Tree->Root, 0);
-        }
-    }
-#endif

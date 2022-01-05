@@ -32,6 +32,8 @@ global application Application = { };
 ErrorCode
 InitializeIndex(void)
 {
+    Assert(false);
+
     // NOTE(philip): Initialize the keyword table.
     Application.Keywords = KeywordTable_Create(1024);
 
