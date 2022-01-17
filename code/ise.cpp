@@ -11,6 +11,7 @@
 #include "ise_keyword_list.cpp"
 #include "ise_bk_tree.cpp"
 #include "ise_answer_stack.cpp"
+#include "ise_thread_pool.cpp"
 
 #define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
 #define GetHammingTreeIndex(Length) (Length - MIN_KEYWORD_LENGTH)
@@ -27,11 +28,12 @@ struct application
 };
 
 global application Application = { };
+global thread_pool ThreadPool = { };
 
 ErrorCode
 InitializeIndex(void)
 {
-    Assert(false);
+    ThreadPool = ThreadPool_Create(4);
 
     // NOTE(philip): Initialize the keyword table.
     Application.Keywords = KeywordTable_Create(1024);
@@ -53,6 +55,8 @@ InitializeIndex(void)
 ErrorCode
 DestroyIndex(void)
 {
+    ThreadPool_Destroy(&ThreadPool);
+
     // NOTE(philip): Destroy the possible answer stack.
     AnswerStack_Destroy(&Application.Answers);
 
@@ -327,9 +331,14 @@ LookForMatchingQueries(query_tree *PossibleAnswers, u32 Type, u32 Threshold, key
     }
 }
 
+global u32 WorkID = 0;
+
 ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
+    WorkQueue_Push(&ThreadPool.Memory->Queue, WorkType_Actual, WorkID);
+    ++WorkID;
+
     u64 WordCount = 1;
 
     // NOTE(philip): Count and split the words from the input.

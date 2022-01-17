@@ -1,6 +1,8 @@
 #ifndef ISE_H
 #define ISE_H
 
+#include <pthread.h>
+
 #include "ise_base.h"
 
 #define MIN_KEYWORD_LENGTH          4
@@ -43,5 +45,6 @@ ErrorCode GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs
 #include "ise_keyword_list.h"
 #include "ise_bk_tree.h"
 #include "ise_answer_stack.h"
+#include "ise_thread_pool.h"
 
 #endif
