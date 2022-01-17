@@ -8,7 +8,7 @@
 #include "ise_keyword_table.cpp"
 #include "ise_keyword_list.cpp"
 #include "ise_bk_tree.cpp"
-#include "ise_answer_stack.cpp"
+#include "ise_answer.cpp"
 
 #include "tests_query_tree.cpp"
 #include "tests_keyword_table.cpp"
