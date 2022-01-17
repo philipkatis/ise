@@ -14,10 +14,14 @@ struct answer_stack_node
     answer_stack_node *Next;
 };
 
+// TODO(philip): Replace with circular buffer.
 struct answer_stack
 {
     answer_stack_node *Head;
-    u64 Count = 0;
+    u64 Count;
+
+    pthread_mutex_t Mutex;
+    pthread_cond_t HasData;
 };
 
 function void AnswerStack_Push(answer_stack *Stack, answer Answer);

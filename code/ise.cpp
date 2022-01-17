@@ -10,11 +10,13 @@
 #include "ise_keyword_table.cpp"
 #include "ise_keyword_list.cpp"
 #include "ise_bk_tree.cpp"
-#include "ise_answer_stack.cpp"
+#include "ise_answer.cpp"
 #include "ise_thread_pool.cpp"
 
+#if 0
 #define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
 #define GetHammingTreeIndex(Length) (Length - MIN_KEYWORD_LENGTH)
+#endif
 
 struct application
 {
@@ -33,8 +35,6 @@ global thread_pool ThreadPool = { };
 ErrorCode
 InitializeIndex(void)
 {
-    ThreadPool = ThreadPool_Create(4);
-
     // NOTE(philip): Initialize the keyword table.
     Application.Keywords = KeywordTable_Create(1024);
 
@@ -48,6 +48,9 @@ InitializeIndex(void)
 
     // NOTE(philip): Initialize the edit BK tree.
     Application.EditTree = BKTree_Create(BKTree_Type_Edit);
+
+    ThreadPool = ThreadPool_Create(16, &Application.Keywords, Application.HammingTrees, &Application.EditTree,
+                                   &Application.Answers);
 
     return EC_SUCCESS;
 }
@@ -208,6 +211,7 @@ EndQuery(QueryID ID)
     return EC_SUCCESS;
 }
 
+#if 0
 function b32
 IsAnswer(query *Query)
 {
@@ -330,15 +334,22 @@ LookForMatchingQueries(query_tree *PossibleAnswers, u32 Type, u32 Threshold, key
         }
     }
 }
-
-global u32 WorkID = 0;
+#endif
 
 ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
-    WorkQueue_Push(&ThreadPool.Memory->Queue, WorkType_Actual, WorkID);
-    ++WorkID;
+    // TODO(philip): Waste of memory.
+    u8 *WorkData = (u8 *)calloc(1, sizeof(u32) + ((MAX_DOCUMENT_LENGTH + 1) * sizeof(char)));
 
+    memcpy(WorkData, &ID, sizeof(u32));
+    memcpy(WorkData + sizeof(u32), String, MAX_DOCUMENT_LENGTH * sizeof(char));
+
+    // TODO(philip): Better API.
+    WorkQueue_Push(&ThreadPool.Memory->Queue, WorkType_MatchDocument, WorkData);
+
+#if 0
+    // TODO(philip): Figure out how to move this into the thread.
     u64 WordCount = 1;
 
     // NOTE(philip): Count and split the words from the input.
@@ -460,6 +471,7 @@ MatchDocument(DocID ID, const char *String)
 
     QueryTree_Destroy(&PossibleAnswers);
     AnswerStack_Push(&Application.Answers, Answer);
+#endif
 
     return EC_SUCCESS;
 }
@@ -475,8 +487,12 @@ GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs)
 {
     ErrorCode Result = EC_FAIL;
 
+
+    // TODO(philip): Check if there is any work pending or in-flight.
+#if 0
     if (Application.Answers.Count)
     {
+#endif
         answer Answer = AnswerStack_Pop(&Application.Answers);
         qsort(Answer.QueryIDs, Answer.QueryIDCount, sizeof(u32), CompareQueryIDs);
 
@@ -485,11 +501,13 @@ GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs)
         *QueryIDs = Answer.QueryIDs;
 
         Result = EC_SUCCESS;
+#if 0
     }
     else
     {
         Result = EC_NO_AVAIL_RES;
     }
+#endif
 
     return Result;
 }

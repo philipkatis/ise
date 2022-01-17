@@ -6,15 +6,15 @@
 typedef u32 work_type;
 enum
 {
-    WorkType_None = 0,
-    WorkType_Exit = 1,
-    WorkType_Actual = 2
+    WorkType_None              = 0,
+    WorkType_MatchDocument     = 1,
+    WorkType_Exit              = 2
 };
 
 struct work
 {
     work_type Type;
-    u32 Data;
+    u8 *Data;
 };
 
 struct work_queue
@@ -32,6 +32,10 @@ struct work_queue
 struct thread_pool_memory
 {
     work_queue Queue;
+    keyword_table *Keywords;
+    bk_tree *HammingTrees;
+    bk_tree *EditTree;
+    answer_stack *Answers;
 };
 
 struct thread_pool
