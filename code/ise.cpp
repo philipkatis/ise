@@ -4,7 +4,10 @@
 
 #include "ise.h"
 
+#if 0
 #include <pthread.h>
+#endif
+
 #include "ise_base.h"
 #include "ise_query_tree.h"
 #include "ise_query_list.h"
@@ -12,7 +15,10 @@
 #include "ise_keyword_list.h"
 #include "ise_bk_tree.h"
 #include "ise_answer.h"
+
+#if 0
 #include "ise_thread_pool.h"
+#endif
 
 #include "ise_base.cpp"
 #include "ise_query_tree.cpp"
@@ -21,26 +27,32 @@
 #include "ise_keyword_list.cpp"
 #include "ise_bk_tree.cpp"
 #include "ise_answer.cpp"
-#include "ise_thread_pool.cpp"
 
 #if 0
-#define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
-#define GetHammingTreeIndex(Length) (Length - MIN_KEYWORD_LENGTH)
+#include "ise_thread_pool.cpp"
 #endif
+
+#include "ise_ops.cpp"
+
+// TODO(philip): Move to constants.
+#define ISE_HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
 
 struct application
 {
     query_tree Queries;
     keyword_table Keywords;
 
-    bk_tree HammingTrees[HAMMING_TREE_COUNT];
+    bk_tree HammingTrees[ISE_HAMMING_TREE_COUNT];
     bk_tree EditTree;
 
     answer_stack Answers;
 };
 
 global application Application = { };
+
+#if 0
 global thread_pool ThreadPool = { };
+#endif
 
 ErrorCode
 InitializeIndex(void)
@@ -50,7 +62,7 @@ InitializeIndex(void)
 
     // NOTE(philip): Initialize the hamming BK trees.
     for (u64 Index = 0;
-         Index < HAMMING_TREE_COUNT;
+         Index < ISE_HAMMING_TREE_COUNT;
          ++Index)
     {
         Application.HammingTrees[Index] = BKTree_Create(BKTree_Type_Hamming);
@@ -59,8 +71,10 @@ InitializeIndex(void)
     // NOTE(philip): Initialize the edit BK tree.
     Application.EditTree = BKTree_Create(BKTree_Type_Edit);
 
+#if 0
     ThreadPool = ThreadPool_Create(16, &Application.Keywords, Application.HammingTrees, &Application.EditTree,
                                    &Application.Answers);
+#endif
 
     return EC_SUCCESS;
 }
@@ -68,7 +82,9 @@ InitializeIndex(void)
 ErrorCode
 DestroyIndex(void)
 {
+#if 0
     ThreadPool_Destroy(&ThreadPool);
+#endif
 
     // NOTE(philip): Destroy the possible answer stack.
     AnswerStack_Destroy(&Application.Answers);
@@ -78,7 +94,7 @@ DestroyIndex(void)
 
     // NOTE(philip): Destroy the hamming BK trees.
     for (u64 Index = 0;
-         Index < HAMMING_TREE_COUNT;
+         Index < ISE_HAMMING_TREE_COUNT;
          ++Index)
     {
         BKTree_Destroy(&Application.HammingTrees[Index]);
@@ -221,134 +237,14 @@ EndQuery(QueryID ID)
     return EC_SUCCESS;
 }
 
-#if 0
-function b32
-IsAnswer(query *Query)
-{
-    b32 Result = true;
-    u32 KeywordCount = GetQueryKeywordCount(Query);
-
-    for (u32 KeywordIndex = 0;
-         KeywordIndex < KeywordCount;
-         ++KeywordIndex)
-    {
-        if (!Query->HasKeywordFlags[KeywordIndex])
-        {
-            Result = false;
-            break;
-        }
-    }
-
-    return Result;
-}
-
-function u32
-CountAnsweredQueries_(query_tree_node *Node)
-{
-    u32 Count = IsAnswer(&Node->Data);
-
-    if (Node->Left)
-    {
-        Count += CountAnsweredQueries_(Node->Left);
-    }
-
-    if (Node->Right)
-    {
-        Count += CountAnsweredQueries_(Node->Right);
-    }
-
-    return Count;
-}
-
-function u32
-CountAnsweredQueries(query_tree *Tree)
-{
-    u32 Result = 0;
-
-    if (Tree->Root)
-    {
-        Result = CountAnsweredQueries_(Tree->Root);
-    }
-
-    return Result;
-}
-
-function u32
-CompileAnsweredQueries_(query_tree_node *Node, u32 Index, u32 *Result)
-{
-    query *Query = &Node->Data;
-    if (IsAnswer(Query))
-    {
-        Result[Index] = Query->ID;
-        ++Index;
-    }
-
-    if (Node->Left)
-    {
-        Index = CompileAnsweredQueries_(Node->Left, Index, Result);
-    }
-
-    if (Node->Right)
-    {
-        Index = CompileAnsweredQueries_(Node->Right, Index, Result);
-    }
-
-    return Index;
-}
-
-function void
-CompileAnsweredQueries(query_tree *Tree, u32 *Result)
-{
-    if (Tree->Root)
-    {
-        CompileAnsweredQueries_(Tree->Root, 0, Result);
-    }
-}
-
-function void
-LookForMatchingQueries(query_tree *PossibleAnswers, u32 Type, u32 Threshold, keyword *Keyword)
-{
-    if (Keyword)
-    {
-        // NOTE(philip): If it exists go through the queries it is part of.
-        for (query_list_node *Node = Keyword->Queries.Head;
-             Node;
-             Node = Node->Next)
-        {
-            // NOTE(philip): Stop by every query that satisfies the search results.
-            query *Query = Node->Query;
-            if ((GetQueryType(Query) == Type) && (GetQueryDistance(Query) == Threshold))
-            {
-                // NOTE(philip): Insert that query in the possible answer query tree.
-                u32 KeywordCount = GetQueryKeywordCount(Query);
-                query_tree_insert_result InsertResult = QueryTree_Insert(PossibleAnswers, Query->ID, KeywordCount,
-                                                                         Type, 0);
-                query *PossibleAnswer = InsertResult.Query;
-
-                if (PossibleAnswer)
-                {
-                    // NOTE(philip): Go through all the keywords that the query has.
-                    for (u32 KeywordIndex = 0;
-                         KeywordIndex < KeywordCount;
-                         ++KeywordIndex)
-                    {
-                        if (Query->Keywords[KeywordIndex] == Keyword)
-                        {
-                            // NOTE(philip): Find the index of the found query and set the flag.
-                            PossibleAnswer->HasKeywordFlags[KeywordIndex] = true;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-#endif
-
 ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
+    // TODO(philip): We need to produce a copy of the document for the multithreaded version.
+    // TODO(philip): Toggle between single and multi-threaded.
+    FindDocumentAnswer(&Application.Answers, &Application.Keywords, Application.HammingTrees, &Application.EditTree,
+                       ID, (char *)String);
+#if 0
     // TODO(philip): Waste of memory.
     u8 *WorkData = (u8 *)calloc(1, sizeof(u32) + ((MAX_DOCUMENT_LENGTH + 1) * sizeof(char)));
 
@@ -357,130 +253,6 @@ MatchDocument(DocID ID, const char *String)
 
     // TODO(philip): Better API.
     WorkQueue_Push(&ThreadPool.Memory->Queue, WorkType_MatchDocument, WorkData);
-
-#if 0
-    // TODO(philip): Figure out how to move this into the thread.
-    u64 WordCount = 1;
-
-    // NOTE(philip): Count and split the words from the input.
-    {
-        for (char *Character = (char *)String;
-             *Character;
-             ++Character)
-        {
-            if (*Character == ' ')
-            {
-                *Character = 0;
-                ++WordCount;
-            }
-        }
-    }
-
-    // TODO(philip): This is currently a waste of memory. If it becomes a problem, switch to a more specific
-    // data structure.
-    keyword_table DocumentWords = KeywordTable_Create(WordCount);
-
-    // NOTE(philip): Put the document words in the hash table to deduplicate them.
-    {
-        char *Word = (char *)String;
-
-        for (u64 WordIndex = 0;
-             WordIndex < WordCount;
-             ++WordIndex)
-        {
-            KeywordTable_Insert(&DocumentWords, Word);
-
-            while (*Word)
-            {
-                ++Word;
-            }
-
-            if (WordIndex < WordCount - 1)
-            {
-                ++Word;
-            }
-        }
-    }
-
-    // TODO(philip): This is currently a waste of memroy. If it becomes a problem, switch to a more specific
-    // data structure.
-    query_tree PossibleAnswers = { };
-
-    for (keyword_iterator Iterator = IterateAllKeywords(&DocumentWords);
-         IsValid(&Iterator);
-         Advance(&Iterator))
-    {
-        keyword *DocumentWord = GetValue(&Iterator);
-
-        // NOTE(philip): Exact matching.
-        {
-            // NOTE(philip): Find the word in keyword table.
-            keyword *FoundKeyword = KeywordTable_Find(&Application.Keywords, DocumentWord->Word);
-            LookForMatchingQueries(&PossibleAnswers, 0, 0, FoundKeyword);
-        }
-
-        // NOTE(philip): Approximate matching.
-        {
-            // NOTE(philip): Find the hamming tree we want to search.
-            bk_tree *HammingTree = &Application.HammingTrees[GetHammingTreeIndex(DocumentWord->Length)];
-
-            // NOTE(philip): Go through all the thresholds.
-            for (u32 Threshold = 1;
-                 Threshold <= MAX_DISTANCE_THRESHOLD;
-                 ++Threshold)
-            {
-                // NOTE(philip): Hamming tree.
-                {
-                    // NOTE(philip): Find the matches.
-                    keyword_list FoundKeywords = BKTree_FindMatches(HammingTree, DocumentWord, Threshold);
-
-                    // NOTE(philip): Go through all the keywords and update the queries.
-                    for (keyword_list_node *Node = FoundKeywords.Head;
-                         Node;
-                         Node = Node->Next)
-                    {
-                        keyword *FoundKeyword = Node->Keyword;
-                        LookForMatchingQueries(&PossibleAnswers, 1, Threshold, FoundKeyword);
-                    }
-
-                    KeywordList_Destroy(&FoundKeywords);
-                }
-
-                // NOTE(philip): Edit tree.
-                {
-                    // NOTE(philip): Find the matches.
-                    keyword_list FoundKeywords = BKTree_FindMatches(&Application.EditTree, DocumentWord, Threshold);
-
-                    // NOTE(philip): Go through all the keywords and update the queries.
-                    for (keyword_list_node *Node = FoundKeywords.Head;
-                         Node;
-                         Node = Node->Next)
-                    {
-                        keyword *FoundKeyword = Node->Keyword;
-                        LookForMatchingQueries(&PossibleAnswers, 2, Threshold, FoundKeyword);
-                    }
-
-                    KeywordList_Destroy(&FoundKeywords);
-                }
-            }
-        }
-    }
-
-    KeywordTable_Destroy(&DocumentWords);
-
-    answer Answer = { };
-    Answer.DocumentID = ID;
-
-    // NOTE(philip): Compile the answered queries. This will be deallocated by the client.
-    Answer.QueryIDCount = CountAnsweredQueries(&PossibleAnswers);
-    if (Answer.QueryIDCount)
-    {
-        Answer.QueryIDs = (u32 *)calloc(1, Answer.QueryIDCount * sizeof(u32));
-        CompileAnsweredQueries(&PossibleAnswers, Answer.QueryIDs);
-    }
-
-    QueryTree_Destroy(&PossibleAnswers);
-    AnswerStack_Push(&Application.Answers, Answer);
 #endif
 
     return EC_SUCCESS;
@@ -497,12 +269,8 @@ GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs)
 {
     ErrorCode Result = EC_FAIL;
 
-
-    // TODO(philip): Check if there is any work pending or in-flight.
-#if 0
     if (Application.Answers.Count)
     {
-#endif
         answer Answer = AnswerStack_Pop(&Application.Answers);
         qsort(Answer.QueryIDs, Answer.QueryIDCount, sizeof(u32), CompareQueryIDs);
 
@@ -511,13 +279,11 @@ GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs)
         *QueryIDs = Answer.QueryIDs;
 
         Result = EC_SUCCESS;
-#if 0
     }
     else
     {
         Result = EC_NO_AVAIL_RES;
     }
-#endif
 
     return Result;
 }

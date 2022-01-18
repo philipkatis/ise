@@ -345,6 +345,142 @@ QueryTree_Remove(query_tree *Tree, u32 ID)
     return Removed;
 }
 
+//
+// NOTE(philip): Returns whether a query has all of it's keywords found.
+//
+
+function b32
+WereAllKeywordsFound(query *Query)
+{
+    b32 Result = true;
+
+    u32 KeywordCount = GetQueryKeywordCount(Query);
+    for (u32 Index = 0;
+         Index < KeywordCount;
+         ++Index)
+    {
+        if (!Query->HasKeyword[Index])
+        {
+            Result = false;
+            break;
+        }
+    }
+
+    return Result;
+}
+
+//
+// NOTE(philip): Returns the number of queries in a subtree, for which all the keywords were found.
+//
+
+function u32
+GetAnsweredQueryCount_(query_tree_node *Node)
+{
+    u32 Count = WereAllKeywordsFound(&Node->Data);
+
+    if (Node->Left)
+    {
+        Count += GetAnsweredQueryCount_(Node->Left);
+    }
+
+    if (Node->Right)
+    {
+        Count += GetAnsweredQueryCount_(Node->Right);
+    }
+
+    return Count;
+}
+
+//
+// NOTE(philip): Returns the number of queries in a tree, for which all the keywords were found.
+//
+
+// TODO(philip): Maybe remove this?
+function u32
+GetAnsweredQueryCount(query_tree *Tree)
+{
+    u32 Count = 0;
+
+    if (Tree->Root)
+    {
+        Count = GetAnsweredQueryCount_(Tree->Root);
+    }
+
+    return Count;
+}
+
+//
+// NOTE(philip): Stores the query IDs that have been answered to an array for the specified subtree, and returns
+// the next empty slot of that array. The array must be preallocated.
+//
+
+function u32 *
+AnsweredQueryIDsToArray_(query_tree_node *Node, u32 *IDs)
+{
+    query *Query = &Node->Data;
+    if (WereAllKeywordsFound(Query))
+    {
+        *IDs = Query->ID;
+        ++IDs;
+    }
+
+    if (Node->Left)
+    {
+        IDs = AnsweredQueryIDsToArray_(Node->Left, IDs);
+    }
+
+    if (Node->Right)
+    {
+        IDs = AnsweredQueryIDsToArray_(Node->Right, IDs);
+    }
+
+    return IDs;
+}
+
+//
+// NOTE(philip): Stores the query IDs that have been answered to an array for the specified tree. The array
+// must be preallocated.
+//
+
+// TODO(philip): Maybe remove this?
+function void
+AnsweredQueryIDsToArray(query_tree *Tree, u32 *IDs)
+{
+    if (Tree->Root)
+    {
+        AnsweredQueryIDsToArray_(Tree->Root, IDs);
+    }
+}
+
+//
+// NOTE(philip): Generates and returns an answer structure, containing all the query IDs that have been answered.
+//
+
+function s32
+CompareU32(const void *A, const void *B)
+{
+    s32 Result = (*(u32 *)A - *(u32 *)B);
+    return Result;
+}
+
+function answer
+QueryTree_CompileAnswer(query_tree *Tree, u32 DocumentID)
+{
+    answer Answer = { };
+    Answer.DocumentID = DocumentID;
+    Answer.QueryIDCount = GetAnsweredQueryCount(Tree);
+
+    if (Answer.QueryIDCount)
+    {
+        Answer.QueryIDs = (u32 *)calloc(1, Answer.QueryIDCount * sizeof(u32));
+        AnsweredQueryIDsToArray(Tree, Answer.QueryIDs);
+
+        // NOTE(philip): Sort the array.
+        qsort(Answer.QueryIDs, Answer.QueryIDCount, sizeof(u32), CompareU32);
+    }
+
+    return Answer;
+}
 
 function void
 VisualizeNode(query_tree_node *Node, u64 Depth = 0)

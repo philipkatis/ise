@@ -8,7 +8,7 @@ struct __attribute__ ((__packed__)) query
     union
     {
         keyword *Keywords[MAX_KEYWORD_COUNT_PER_QUERY];
-        b64 HasKeywordFlags[MAX_KEYWORD_COUNT_PER_QUERY];
+        b64 HasKeyword[MAX_KEYWORD_COUNT_PER_QUERY];
     };
 
     u32 ID;

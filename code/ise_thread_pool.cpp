@@ -92,7 +92,7 @@ IsAnswer(query *Query)
          KeywordIndex < KeywordCount;
          ++KeywordIndex)
     {
-        if (!Query->HasKeywordFlags[KeywordIndex])
+        if (!Query->HasKeyword[KeywordIndex])
         {
             Result = false;
             break;
@@ -195,7 +195,7 @@ LookForMatchingQueries(query_tree *PossibleAnswers, u32 Type, u32 Threshold, key
                         if (Query->Keywords[KeywordIndex] == Keyword)
                         {
                             // NOTE(philip): Find the index of the found query and set the flag.
-                            PossibleAnswer->HasKeywordFlags[KeywordIndex] = true;
+                            PossibleAnswer->HasKeyword[KeywordIndex] = true;
                             break;
                         }
                     }
