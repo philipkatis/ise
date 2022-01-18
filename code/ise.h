@@ -1,29 +1,31 @@
 #ifndef ISE_H
 #define ISE_H
 
-#include <pthread.h>
+//
+// NOTE(philip): Constants
+//
 
-#include "ise_base.h"
+#define MIN_KEYWORD_LENGTH              4
+#define MAX_KEYWORD_LENGTH              31
+#define MAX_KEYWORD_COUNT_PER_QUERY     5
+#define MAX_DISTANCE_THRESHOLD          3
+#define MAX_DOCUMENT_LENGTH             (1 << 22)
 
-#define MIN_KEYWORD_LENGTH          4
-#define MAX_KEYWORD_LENGTH          31
-#define MAX_KEYWORD_COUNT_PER_QUERY 5
-#define MAX_DISTANCE_THRESHOLD      3
-#define MAX_DOCUMENT_LENGTH         (1 << 22)
+//
+// NOTE(philip): ISE Library Interface
+//
 
-typedef u32 QueryID;
-typedef u32 DocID;
+typedef unsigned int QueryID;
+typedef unsigned int DocID;
 
-typedef u32 MatchType;
-enum
+enum MatchType
 {
     MT_EXACT_MATCH,
     MT_HAMMING_DIST,
     MT_EDIT_DIST
 };
 
-typedef u32 ErrorCode;
-enum
+enum ErrorCode
 {
     EC_SUCCESS,
     EC_NO_AVAIL_RES,
@@ -33,18 +35,10 @@ enum
 ErrorCode InitializeIndex();
 ErrorCode DestroyIndex();
 
-ErrorCode StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance);
+ErrorCode StartQuery(QueryID ID, const char *String, MatchType Type, unsigned int Distance);
 ErrorCode EndQuery(QueryID ID);
 
 ErrorCode MatchDocument(DocID ID, const char *String);
-ErrorCode GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs);
-
-#include "ise_query_tree.h"
-#include "ise_query_list.h"
-#include "ise_keyword_table.h"
-#include "ise_keyword_list.h"
-#include "ise_bk_tree.h"
-#include "ise_answer.h"
-#include "ise_thread_pool.h"
+ErrorCode GetNextAvailRes(DocID *DocumentID, unsigned int *QueryCount, QueryID **QueryIDs);
 
 #endif

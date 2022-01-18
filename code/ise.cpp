@@ -4,6 +4,16 @@
 
 #include "ise.h"
 
+#include <pthread.h>
+#include "ise_base.h"
+#include "ise_query_tree.h"
+#include "ise_query_list.h"
+#include "ise_keyword_table.h"
+#include "ise_keyword_list.h"
+#include "ise_bk_tree.h"
+#include "ise_answer.h"
+#include "ise_thread_pool.h"
+
 #include "ise_base.cpp"
 #include "ise_query_tree.cpp"
 #include "ise_query_list.cpp"

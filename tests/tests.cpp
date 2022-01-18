@@ -1,6 +1,12 @@
 #include "acutest.h"
 
 #include "ise.h"
+#include "ise_base.h"
+#include "ise_query_tree.h"
+#include "ise_query_list.h"
+#include "ise_keyword_table.h"
+#include "ise_keyword_list.h"
+#include "ise_bk_tree.h"
 
 #include "ise_base.cpp"
 #include "ise_query_tree.cpp"
@@ -8,7 +14,6 @@
 #include "ise_keyword_table.cpp"
 #include "ise_keyword_list.cpp"
 #include "ise_bk_tree.cpp"
-#include "ise_answer.cpp"
 
 #include "tests_query_tree.cpp"
 #include "tests_keyword_table.cpp"

@@ -2,7 +2,7 @@
 #define ISE_BASE_H
 
 //
-// NOTE(philip): Base keyword definitions.
+// NOTE(philip): Base Keywords
 //
 
 #define function               static
@@ -10,7 +10,7 @@
 #define local_persistant       static
 
 //
-// NOTE(philip): Base type definitions and size checks.
+// NOTE(philip): Base Types
 //
 
 typedef unsigned char          u8;
@@ -44,14 +44,10 @@ typedef s32                    b32;
 typedef s64                    b64;
 
 //
-// TODO(philip): Assert macro.
+// NOTE(philip): Utility Macros
 //
 
-#define Assert(Condition)
-
-//
-// NOTE(philip): Utility macros.
-//
+#define Assert(Condition) if (!(Condition)) { *(int *)0 = 0; }
 
 #define Min(A, B) (((A) < (B)) ? (A) : (B))
 #define Max(A, B) (((A) > (B)) ? (A) : (B))
