@@ -10,6 +10,7 @@
 #define MAX_KEYWORD_COUNT_PER_QUERY     5
 #define MAX_DISTANCE_THRESHOLD          3
 #define MAX_DOCUMENT_LENGTH             (1 << 22)
+#define HAMMING_TREE_COUNT              (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
 
 //
 // NOTE(philip): ISE Library Interface

@@ -1,12 +1,19 @@
-CommonCompileFlags=-Wall -Wno-write-strings -Wno-unused-function -g -pthread -fPIC -Icode
+CommonCompileFlags=-Wall -Wno-write-strings -Wno-unused-function -fPIC -Icode
 
-build_all: build_library build_tests build_example
+# TODO(philip): Disable exceptions, rtti, etc
+# TODO(philip): Reimplement run/tests.
 
-run: build/example
-	./build/example
+DebugCompileFlags=-g $(CommonCompileFlags)
+ReleaseCompileFlags=-O2 $(CommonCompileFlags)
 
-tests: build/tests
-	./build/tests
+build_all: build_library build_tests build_example | setup
+
+tests: build_library build_tests | setup
+	./build/tests_debug
+	./build/tests_release
+
+profile: build_library build_example | setup
+	valgrind --tool=callgrind ./build/example_release
 
 clean:
 	rm -rf build
@@ -15,10 +22,13 @@ setup:
 	mkdir -p build
 
 build_library: code/ise.cpp | setup
-	g++ $(CommonCompileFlags) -shared code/ise.cpp -o build/libcore.so
+	g++ $(DebugCompileFlags) -shared code/ise.cpp -o build/libcore_debug.so
+	g++ $(ReleaseCompileFlags) -shared code/ise.cpp -o build/libcore_release.so
 
 build_tests: tests/tests.cpp | setup
-	g++ $(CommonCompileFlags) -Ithird_party/acutest/include tests/tests.cpp -o build/tests
+	g++ $(DebugCompileFlags) -Ithird_party/acutest/include tests/tests.cpp -o build/tests_debug
+	g++ $(ReleaseCompileFlags) -Ithird_party/acutest/include tests/tests.cpp -o build/tests_release
 
 build_example: example/example.cpp | setup
-	g++ $(CommonCompileFlags) example/example.cpp -Lbuild -lcore -o build/example -Wl,-rpath=build
+	g++ $(DebugCompileFlags) example/example.cpp -Lbuild -lcore_debug -o build/example_debug -Wl,-rpath=build
+	g++ $(ReleaseCompileFlags) example/example.cpp -Lbuild -lcore_release -o build/example_release -Wl,-rpath=build
