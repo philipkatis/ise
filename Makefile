@@ -4,7 +4,7 @@ CommonCompileFlags=-Wall -Wno-write-strings -Wno-unused-function -fPIC -Icode
 # TODO(philip): Reimplement run/tests.
 
 DebugCompileFlags=-g $(CommonCompileFlags)
-ReleaseCompileFlags=-O2 $(CommonCompileFlags)
+ReleaseCompileFlags=-g -O2 $(CommonCompileFlags)
 
 build_all: build_library build_tests build_example | setup
 
