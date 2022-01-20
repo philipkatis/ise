@@ -174,13 +174,6 @@ Insert(query_tree *Tree, query_tree_node *Root, u32 ID, query **Query, b64 *Exis
     else
     {
         NewRoot = AllocateNode(Tree, ID);
-
-#if 0
-        NewRoot = (query_tree_node *)calloc(1, sizeof(query_tree_node));
-        NewRoot->Data.ID = ID;
-        NewRoot->Height = 1;
-#endif
-
         *Query = &NewRoot->Data;
     }
 
@@ -539,39 +532,10 @@ QueryTree_Visualize(query_tree *Tree)
     }
 }
 
-//
-// NOTE(philip): Recursively deallocates the subtree nodes.
-//
-
-#if 0
-function void
-DestroyNode(query_tree_node *Node)
-{
-    if (Node->Left)
-    {
-        DestroyNode(Node->Left);
-    }
-
-    if (Node->Right)
-    {
-        DestroyNode(Node->Right);
-    }
-
-    free(Node);
-}
-#endif
-
 function void
 QueryTree_Destroy(query_tree *Tree)
 {
-#if 0
-    if (Tree->Root)
-    {
-        DestroyNode(Tree->Root);
-    }
-#endif
-
     DestroyMemoryArena(&Tree->Arena);
-
     Tree->Root = 0;
+    Tree->FreeNode = 0;
 }

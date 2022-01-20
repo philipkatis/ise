@@ -77,45 +77,37 @@ BKTree_Insert(bk_tree *Tree, keyword *Keyword)
     }
 }
 
-// TODO(philip): If this data structure becomes a problem, switch to an array. The array could either double in
-// size or grow based on the tree height and max child count.
-
-struct candidate_stack_node
-{
-    bk_tree_node *Data;
-    candidate_stack_node *Next;
-};
-
-struct candidate_stack
-{
-    candidate_stack_node *Head;
-};
-
 function void
-PushCandidate(candidate_stack *Stack, bk_tree_node *Data)
+PushCandidate(candidate_stack *Stack, bk_tree_node *Node)
 {
-    candidate_stack_node *Node = (candidate_stack_node *)calloc(1, sizeof(candidate_stack_node));
-    Node->Data = Data;
-    Node->Next = Stack->Head;
+    if ((Stack->Count + 1) > Stack->Capacity)
+    {
+        u64 NewCapacity = (Stack->Capacity ? (2 * Stack->Capacity) : 1024);
 
-    Stack->Head = Node;
+        void *Memory = malloc(NewCapacity * sizeof(bk_tree_node *));
+        memcpy(Memory, Stack->Data, Stack->Count * sizeof(bk_tree_node *));
+        free(Stack->Data);
+
+        Stack->Data = (bk_tree_node **)Memory;
+        Stack->Capacity = NewCapacity;
+    }
+
+    Stack->Data[Stack->Count] = Node;
+    ++Stack->Count;
 }
 
 function bk_tree_node *
 PopCandidate(candidate_stack *Stack)
 {
-    bk_tree_node *Data = 0;
+    bk_tree_node *Result = 0;
 
-    if (Stack->Head)
+    if (Stack->Count)
     {
-        Data = Stack->Head->Data;
-
-        candidate_stack_node *Next = Stack->Head->Next;
-        free(Stack->Head);
-        Stack->Head = Next;
+        Result = Stack->Data[Stack->Count - 1];
+        --Stack->Count;
     }
 
-    return Data;
+    return Result;
 }
 
 // TODO(philip): This function is currently the bottleneck. 74% of cycles are spent calculating the edit distance.
@@ -126,6 +118,8 @@ function keyword_list
 BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold)
 {
     keyword_list Result = { };
+
+    // TODO(philip): Move to bk tree structure.
     candidate_stack Candidates = { };
 
     for (bk_tree_node *Candidate = Tree->Root;
@@ -154,6 +148,8 @@ BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold)
             }
         }
     }
+
+    free(Candidates.Data);
 
     return Result;
 }

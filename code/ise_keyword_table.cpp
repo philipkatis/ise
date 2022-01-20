@@ -17,9 +17,6 @@ DJB2(char *String)
 function keyword_table_node *
 AllocateNode(memory_arena *Arena, char *Word, u32 Length, u32 Hash, keyword_table_node *Next = 0)
 {
-#if 0
-    keyword_table_node *Node = (keyword_table_node *)calloc(1, sizeof(keyword_table_node));
-#endif
     keyword_table_node *Node = PushStruct(Arena, keyword_table_node);
 
     memcpy(Node->Data.Word, Word, Length * sizeof(char));
@@ -197,13 +194,7 @@ KeywordTable_Destroy(keyword_table *Table)
         while (Node)
         {
             keyword_table_node *Next = Node->Next;
-
             QueryList_Destroy(&Node->Data.Queries);
-
-#if 0
-            free(Node);
-#endif
-
             Node = Next;
         }
     }

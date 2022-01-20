@@ -19,6 +19,13 @@ struct bk_tree_node
 
 typedef u8 (*match_function_type)(char *A, u8 LengthA, char *B, u8 LengthB);
 
+struct candidate_stack
+{
+    bk_tree_node **Data;
+    u64 Capacity;
+    u64 Count;
+};
+
 struct bk_tree
 {
     bk_tree_node *Root;
