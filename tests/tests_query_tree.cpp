@@ -30,7 +30,7 @@ QueryTree(void)
 {
     // NOTE(philip): In depth test of proper links between nodes and tree rotation for rebalancing.
     {
-        query_tree Tree = { };
+        query_tree Tree = QueryTree_Create();
         TEST_CHECK(Tree.Root == 0);
 
         QueryTree_Insert(&Tree, 100, 0, 0, 0);
@@ -63,7 +63,7 @@ QueryTree(void)
 
     // NOTE(philip): High level test of multiple insertions with rebalancing. Duplicate query insertion. Search.
     {
-        query_tree Tree = { };
+        query_tree Tree = QueryTree_Create();
 
         QueryTree_Insert(&Tree, 50, 0, 0, 0);
         QueryTree_Insert(&Tree, 10, 0, 0, 0);
@@ -93,7 +93,7 @@ QueryTree(void)
 
     // NOTE(philip): High level test of even more insertions.
     {
-        query_tree Tree = { };
+        query_tree Tree = QueryTree_Create();
 
         QueryTree_Insert(&Tree, 50, 0, 0, 0);
         QueryTree_Insert(&Tree, 10, 0, 0, 0);
@@ -115,7 +115,7 @@ QueryTree(void)
 
     // NOTE(philip): In depth test of proper links between nodes and rebalancing after node removal.
     {
-        query_tree Tree = { };
+        query_tree Tree = QueryTree_Create();
 
         QueryTree_Insert(&Tree, 10, 0, 0, 0);
         QueryTree_Insert(&Tree, 5, 0, 0, 0);
@@ -148,7 +148,7 @@ QueryTree(void)
 
     // NOTE(philip): High level test of a node removal with two children. Removal of query that does not exist.
     {
-        query_tree Tree = { };
+        query_tree Tree = QueryTree_Create();
 
         QueryTree_Insert(&Tree, 10, 0, 0, 0);
         QueryTree_Insert(&Tree, 5, 0, 0, 0);
@@ -166,7 +166,7 @@ QueryTree(void)
 
     // NOTE(philip): High level test of node removal with multiple rotations.
     {
-        query_tree Tree = { };
+        query_tree Tree = QueryTree_Create();
 
         QueryTree_Insert(&Tree, 50, 0, 0, 0);
         QueryTree_Insert(&Tree, 25, 0, 0, 0);

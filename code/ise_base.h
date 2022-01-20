@@ -44,7 +44,7 @@ typedef s32                    b32;
 typedef s64                    b64;
 
 //
-// NOTE(philip): Utility Macros
+// NOTE(philip): Base Macros
 //
 
 #define Assert(Condition) if (!(Condition)) { *(int *)0 = 0; }
@@ -53,5 +53,28 @@ typedef s64                    b64;
 #define Max(A, B) (((A) > (B)) ? (A) : (B))
 
 #define ArrayCount(Array) (sizeof((Array)) / sizeof(*(Array)))
+
+#define KB(X) (X * 1024)
+#define MB(X) (X * 1024 * 1024)
+#define GB(X) (X * 1024 * 1024 * 1024)
+
+//
+// NOTE(philip): Memory
+//
+
+struct memory_block
+{
+    memory_block *Previous;
+
+    u8 *Base;
+    u64 Size;
+    u64 Used;
+};
+
+struct memory_arena
+{
+    u64 BlockSize;
+    memory_block *CurrentBlock;
+};
 
 #endif

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/mman.h>
 
 #if ISE_MULTI_THREADED
 #include <pthread.h>
@@ -54,6 +55,8 @@ global thread_pool ThreadPool = { };
 ErrorCode
 InitializeIndex(void)
 {
+    Application.Queries = QueryTree_Create();
+
     // NOTE(philip): Initialize the keyword table.
     Application.Keywords = KeywordTable_Create(1024);
 

@@ -26,6 +26,7 @@ static_assert(sizeof(keyword_table_node) == 64);
 
 struct keyword_table
 {
+    memory_arena Arena;
     keyword_table_node **Buckets;
     u64 BucketCount;
     u64 ElementCount;

@@ -1,18 +1,20 @@
 function bk_tree
 BKTree_Create(bk_tree_type Type)
 {
-    bk_tree Result = { };
+    bk_tree Tree = { };
+
+    InitializeMemoryArena(&Tree.Arena, MB(1));
 
     switch (Type)
     {
         case BKTree_Type_Hamming:
         {
-            Result.MatchFunction = HammingDistance;
+            Tree.MatchFunction = HammingDistance;
         } break;
 
         case BKTree_Type_Edit:
         {
-            Result.MatchFunction = EditDistance;
+            Tree.MatchFunction = EditDistance;
         } break;
 
         default:
@@ -21,18 +23,18 @@ BKTree_Create(bk_tree_type Type)
         } break;
     }
 
-    return Result;
+    return Tree;
 }
 
 function bk_tree_node *
-AllocateNode(keyword *Keyword, s32 DistanceFromParent, bk_tree_node *NextSibling)
+AllocateNode(memory_arena *Arena, keyword *Keyword, u64 DistanceFromParent = 0, bk_tree_node *NextSibling = 0)
 {
-    bk_tree_node *Result = (bk_tree_node *)calloc(1, sizeof(bk_tree_node));
-    Result->Keyword = Keyword;
-    Result->NextSibling = NextSibling;
-    Result->DistanceFromParent = DistanceFromParent;
+    bk_tree_node *Node = PushStruct(Arena, bk_tree_node);
+    Node->Keyword = Keyword;
+    Node->NextSibling = NextSibling;
+    Node->DistanceFromParent = DistanceFromParent;
 
-    return Result;
+    return Node;
 }
 
 function void
@@ -64,14 +66,14 @@ BKTree_Insert(bk_tree *Tree, keyword *Keyword)
 
             if (!DistanceChildExists)
             {
-                CurrentNode->FirstChild = AllocateNode(Keyword, Distance, CurrentNode->FirstChild);
+                CurrentNode->FirstChild = AllocateNode(&Tree->Arena, Keyword, Distance, CurrentNode->FirstChild);
                 break;
             }
         }
     }
     else
     {
-        Tree->Root = AllocateNode(Keyword, 0, 0);
+        Tree->Root = AllocateNode(&Tree->Arena, Keyword);
     }
 }
 
@@ -116,7 +118,6 @@ PopCandidate(candidate_stack *Stack)
     return Data;
 }
 
-
 // TODO(philip): This function is currently the bottleneck. 74% of cycles are spent calculating the edit distance.
 // Waiting for the 3rd assignment to choose a proper solution. Maybe calling this function once per match check (we
 // currently do it 3 times per keyword for all the possible distances).
@@ -146,7 +147,8 @@ BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold)
              Child;
              Child = Child->NextSibling)
         {
-            if ((Child->DistanceFromParent >= ChildrenRangeStart) && (Child->DistanceFromParent <= ChildrenRangeEnd))
+            if (((u8)Child->DistanceFromParent >= ChildrenRangeStart) &&
+                ((u8)Child->DistanceFromParent <= ChildrenRangeEnd))
             {
                 PushCandidate(&Candidates, Child);
             }
@@ -157,26 +159,10 @@ BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold)
 }
 
 function void
-DestroyNode(bk_tree_node *Node)
-{
-    if (Node->FirstChild)
-    {
-        DestroyNode(Node->FirstChild);
-    }
-
-    if (Node->NextSibling)
-    {
-        DestroyNode(Node->NextSibling);
-    }
-
-    free(Node);
-}
-
-function void
 BKTree_VisualizeNode(bk_tree_node *Node, u64 Depth)
 {
     PrintTabs(Depth);
-    printf("Word: %s, DistanceFromParent: %d, Depth: %llu\n", Node->Keyword->Word, Node->DistanceFromParent,
+    printf("Word: %s, DistanceFromParent: %llu, Depth: %llu\n", Node->Keyword->Word, Node->DistanceFromParent,
            Depth);
 
     if (Node->FirstChild)
@@ -209,10 +195,7 @@ BKTree_Visualize(bk_tree *Tree)
 function void
 BKTree_Destroy(bk_tree *Tree)
 {
-    if (Tree->Root)
-    {
-        DestroyNode(Tree->Root);
-    }
+    DestroyMemoryArena(&Tree->Arena);
 
     Tree->Root = 0;
     Tree->MatchFunction = 0;

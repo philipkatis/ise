@@ -22,8 +22,18 @@ struct __attribute__ ((__packed__)) query
 
 struct __attribute__ ((__packed__)) query_tree_node
 {
-    query_tree_node *Left;
-    query_tree_node *Right;
+    union
+    {
+        query_tree_node *Left;
+        query_tree_node *Next;
+    };
+
+    union
+    {
+        query_tree_node *Right;
+        query_tree_node *Previous;
+    };
+
     query Data;
     u16 Height;
 };
@@ -32,7 +42,9 @@ static_assert(sizeof(query_tree_node) == 64);
 
 struct query_tree
 {
+    memory_arena Arena;
     query_tree_node *Root;
+    query_tree_node *FreeNode;
 };
 
 struct query_tree_insert_result
@@ -41,6 +53,7 @@ struct query_tree_insert_result
     b64 Exists;
 };
 
+function query_tree QueryTree_Create();
 function query_tree_insert_result QueryTree_Insert(query_tree *Tree, u32 ID, u32 KeywordCount, u32 Type, u32 Distance);
 function query *QueryTree_Find(query_tree *Tree, u32 ID);
 function b32 QueryTree_Remove(query_tree *Tree, u32 ID);

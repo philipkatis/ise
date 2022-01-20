@@ -110,7 +110,7 @@ FindDocumentAnswer(result_queue *Results, keyword_table *Keywords, bk_tree *Hamm
     // NOTE(philip): Use a query tree, to store what keywords for what query have been found.
     // TODO(philip): The tree stores more information that it is necessary. If that becomes a problem swap it out
     // for a more suitable alternative.
-    query_tree MatchingQueries = { };
+    query_tree MatchingQueries = QueryTree_Create();
 
     // NOTE(philip): Iterate over the document words and look them up in the data structures.
     for (keyword_iterator Iterator = IterateAllKeywords(&DocumentWords);

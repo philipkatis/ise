@@ -15,9 +15,12 @@ DJB2(char *String)
 }
 
 function keyword_table_node *
-AllocateNode(char *Word, u32 Length, u32 Hash, keyword_table_node *Next)
+AllocateNode(memory_arena *Arena, char *Word, u32 Length, u32 Hash, keyword_table_node *Next = 0)
 {
+#if 0
     keyword_table_node *Node = (keyword_table_node *)calloc(1, sizeof(keyword_table_node));
+#endif
+    keyword_table_node *Node = PushStruct(Arena, keyword_table_node);
 
     memcpy(Node->Data.Word, Word, Length * sizeof(char));
     Node->Data.Length = Length;
@@ -31,6 +34,9 @@ function keyword_table
 KeywordTable_Create(u64 InitialBucketCount)
 {
     keyword_table Table = { };
+    InitializeMemoryArena(&Table.Arena, MB(2));
+
+    // TODO(philip): Use a list to link bucket blocks.
     Table.Buckets = (keyword_table_node **)calloc(1, InitialBucketCount * sizeof(keyword_table_node *));
     Table.BucketCount = InitialBucketCount;
 
@@ -108,7 +114,8 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
                 Rehash(Table);
             }
 
-            Table->Buckets[BucketIndex] = AllocateNode(Word, Length, Hash, Table->Buckets[BucketIndex]);
+            Table->Buckets[BucketIndex] = AllocateNode(&Table->Arena, Word, Length, Hash,
+                                                       Table->Buckets[BucketIndex]);
             Result.Keyword = &Table->Buckets[BucketIndex]->Data;
 
             ++Table->ElementCount;
@@ -120,7 +127,7 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
     }
     else
     {
-        Table->Buckets[BucketIndex] = AllocateNode(Word, Length, Hash, 0);
+        Table->Buckets[BucketIndex] = AllocateNode(&Table->Arena, Word, Length, Hash);
         Result.Keyword = &Table->Buckets[BucketIndex]->Data;
 
         ++Table->ElementCount;
@@ -192,13 +199,18 @@ KeywordTable_Destroy(keyword_table *Table)
             keyword_table_node *Next = Node->Next;
 
             QueryList_Destroy(&Node->Data.Queries);
+
+#if 0
             free(Node);
+#endif
 
             Node = Next;
         }
     }
 
     free(Table->Buckets);
+
+    DestroyMemoryArena(&Table->Arena);
 
     Table->Buckets = 0;
     Table->BucketCount = 0;

@@ -14,7 +14,7 @@ struct bk_tree_node
     keyword *Keyword;
     bk_tree_node *FirstChild;
     bk_tree_node *NextSibling;
-    s32 DistanceFromParent;
+    u64 DistanceFromParent;
 };
 
 typedef u8 (*match_function_type)(char *A, u8 LengthA, char *B, u8 LengthB);
@@ -22,6 +22,7 @@ typedef u8 (*match_function_type)(char *A, u8 LengthA, char *B, u8 LengthB);
 struct bk_tree
 {
     bk_tree_node *Root;
+    memory_arena Arena;
     match_function_type MatchFunction;
 };
 

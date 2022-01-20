@@ -1,4 +1,89 @@
 //
+// NOTE(philip): Memory
+//
+
+function void *
+PlatformAllocateMemory(u64 Size)
+{
+    void *Memory = mmap(0, Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, 0, 0);
+    return Memory;
+}
+
+function void
+PlatformFreeMemory(void *Memory, u64 Size)
+{
+    munmap(Memory, Size);
+}
+
+function memory_block *
+AllocateMemoryBlock(u64 Size, memory_block *Previous = 0)
+{
+    u64 TotalSize = (Size + sizeof(memory_block));
+    void *Memory = PlatformAllocateMemory(TotalSize);
+
+    memory_block *Block = (memory_block *)Memory;
+    Block->Previous = Previous;
+    Block->Base = (u8 *)Memory + sizeof(memory_block);
+    Block->Size = Size;
+    Block->Used = 0;
+
+    return Block;
+}
+
+function memory_block *
+FreeMemoryBlock(memory_block *Block)
+{
+    memory_block *Previous = Block->Previous;
+
+    void *Memory = Block->Base - sizeof(memory_block);
+    u64 Size = Block->Size + sizeof(memory_block);
+
+    PlatformFreeMemory(Memory, Size);
+
+    return Previous;
+}
+
+function void
+InitializeMemoryArena(memory_arena *Arena, u64 BlockSize)
+{
+    Arena->BlockSize = BlockSize;
+    Arena->CurrentBlock = 0;
+}
+
+function void *
+PushSize(memory_arena *Arena, u64 Size)
+{
+    if (!Arena->CurrentBlock || ((Arena->CurrentBlock->Used + Size) > Arena->CurrentBlock->Size))
+    {
+        Assert(Size <= Arena->BlockSize);
+
+        memory_block *Block = AllocateMemoryBlock(Arena->BlockSize, Arena->CurrentBlock);
+        Arena->CurrentBlock = Block;
+    }
+
+    void *Memory = Arena->CurrentBlock->Base + Arena->CurrentBlock->Used;
+    Arena->CurrentBlock->Used += Size;
+
+    return Memory;
+}
+
+#define PushStruct(Arena, Type) (Type *)PushSize(Arena, sizeof(Type))
+#define PushArray(Arena, Type, Count) (Type *)PushSize(Arena, (Count) * sizeof(Type));
+
+function void
+DestroyMemoryArena(memory_arena *Arena)
+{
+    memory_block *Block = Arena->CurrentBlock;
+    while (Block)
+    {
+        Block = FreeMemoryBlock(Block);
+    }
+
+    Arena->BlockSize = 0;
+    Arena->CurrentBlock = 0;
+}
+
+//
 // NOTE(philip): String matching functions.
 //
 
@@ -53,7 +138,7 @@ EditDistance(char *A, u8 LengthA, char *B, u8 LengthB)
     // NOTE(philip): We know that each word will be stored in a 32 byte long buffer.
     u8 Cache[32] =
     {
-         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
+        0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
         16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
     };
 

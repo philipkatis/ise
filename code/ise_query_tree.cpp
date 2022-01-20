@@ -1,8 +1,15 @@
-/*
+function query_tree
+QueryTree_Create()
+{
+    query_tree Tree = { };
+    InitializeMemoryArena(&Tree.Arena, MB(2));
 
-  NOTE(philip): Returns the height of a node in the tree, if it exists. Otherwise, returns zero.
+    return Tree;
+}
 
-*/
+//
+// NOTE(philip): Returns the height of a node in the tree, if it exists. Otherwise, returns zero.
+//
 
 function u64
 GetNodeHeight(query_tree_node *Node)
@@ -11,11 +18,9 @@ GetNodeHeight(query_tree_node *Node)
     return Height;
 }
 
-/*
-
-  NOTE(philip): Updates the height of a node in the tree.
-
-*/
+//
+// NOTE(philip): Updates the height of a node in the tree.
+//
 
 function void
 UpdateNodeHeight(query_tree_node *Node)
@@ -26,12 +31,10 @@ UpdateNodeHeight(query_tree_node *Node)
     Node->Height = Max(LeftHeight, RightHeight) + 1;
 }
 
-/*
-
-  NOTE(philip): Returns the balance of a node in the tree. Positive values mean the node is right-heavy, negative
-  values mean the node is left-heavy. Zero means the node is perfectly balanced.
-
-*/
+//
+// NOTE(philip): Returns the balance of a node in the tree. Positive values mean the node is right-heavy, negative
+// values mean the node is left-heavy. Zero means the node is perfectly balanced.
+//
 
 function s64
 GetNodeBalance(query_tree_node *Node)
@@ -49,11 +52,9 @@ GetNodeBalance(query_tree_node *Node)
     return Balance;
 }
 
-/*
-
-  NOTE(philip): Rotates a subtree once counter-clockwise, updates the node links and heights.
-
-*/
+//
+//  NOTE(philip): Rotates a subtree once counter-clockwise, updates the node links and heights.
+//
 
 function query_tree_node *
 RotateLeft(query_tree_node *Root)
@@ -68,11 +69,9 @@ RotateLeft(query_tree_node *Root)
     return NewRoot;
 }
 
-/*
-
-  NOTE(philip): Rotates a subtree once clockwise, updates the node links and heights.
-
-*/
+//
+// NOTE(philip): Rotates a subtree once clockwise, updates the node links and heights.
+//
 
 function query_tree_node *
 RotateRight(query_tree_node *Root)
@@ -87,16 +86,44 @@ RotateRight(query_tree_node *Root)
     return NewRoot;
 }
 
-/*
+function query_tree_node *
+AllocateNode(query_tree *Tree, u32 ID)
+{
+    query_tree_node *Node = 0;
 
-  NOTE(philip): Recursively inserts a new node into a subtree, with proper balancing. Returns the new root of the
-  subtree. The new query data location is sent back up the stack by the function parameter. If the query already
-  exists in the subtree, the function parameter flag is set.
+    if (Tree->FreeNode)
+    {
+        Node = Tree->FreeNode;
+        Tree->FreeNode = Node->Next;
 
-*/
+        memset(Node, 0, sizeof(query_tree_node));
+    }
+    else
+    {
+        Node = PushStruct(&Tree->Arena, query_tree_node);
+    }
+
+    Node->Data.ID = ID;
+    Node->Height = 1;
+
+    return Node;
+}
+
+function void
+DeallocateNode(query_tree *Tree, query_tree_node *Node)
+{
+    Node->Next = Tree->FreeNode;
+    Tree->FreeNode = Node;
+}
+
+//
+// NOTE(philip): Recursively inserts a new node into a subtree, with proper balancing. Returns the new root of the
+// subtree. The new query data location is sent back up the stack by the function parameter. If the query already
+// exists in the subtree, the function parameter flag is set.
+//
 
 function query_tree_node *
-Insert(query_tree_node *Root, u32 ID, query **Query, b64 *Exists)
+Insert(query_tree *Tree, query_tree_node *Root, u32 ID, query **Query, b64 *Exists)
 {
     query_tree_node *NewRoot = Root;
 
@@ -104,11 +131,11 @@ Insert(query_tree_node *Root, u32 ID, query **Query, b64 *Exists)
     {
         if (Root->Data.ID > ID)
         {
-            Root->Left = Insert(Root->Left, ID, Query, Exists);
+            Root->Left = Insert(Tree, Root->Left, ID, Query, Exists);
         }
         else if (Root->Data.ID < ID)
         {
-            Root->Right = Insert(Root->Right, ID, Query, Exists);
+            Root->Right = Insert(Tree, Root->Right, ID, Query, Exists);
         }
         else
         {
@@ -146,9 +173,13 @@ Insert(query_tree_node *Root, u32 ID, query **Query, b64 *Exists)
     }
     else
     {
+        NewRoot = AllocateNode(Tree, ID);
+
+#if 0
         NewRoot = (query_tree_node *)calloc(1, sizeof(query_tree_node));
         NewRoot->Data.ID = ID;
         NewRoot->Height = 1;
+#endif
 
         *Query = &NewRoot->Data;
     }
@@ -161,7 +192,7 @@ QueryTree_Insert(query_tree *Tree, u32 ID, u32 KeywordCount, u32 Type, u32 Dista
 {
     query_tree_insert_result Result = { };
 
-    Tree->Root = Insert(Tree->Root, ID, &Result.Query, &Result.Exists);
+    Tree->Root = Insert(Tree, Tree->Root, ID, &Result.Query, &Result.Exists);
     if (Result.Query && !Result.Exists)
     {
         Result.Query->PackedInfo = ((KeywordCount << 5) | (Type << 3) | Distance);
@@ -170,11 +201,9 @@ QueryTree_Insert(query_tree *Tree, u32 ID, u32 KeywordCount, u32 Type, u32 Dista
     return Result;
 }
 
-/*
-
-  NOTE(philip): Recursively searched for a node in the subtree and returns it, if it exists.
-
-*/
+//
+// NOTE(philip): Recursively searched for a node in the subtree and returns it, if it exists.
+//
 
 function query *
 Find(query_tree_node *Root, u32 ID)
@@ -237,15 +266,13 @@ UpdateKeywordQueryLinks(query *Source, query *Destination)
     }
 }
 
-/*
-
-  NOTE(philip): Recursively removes a node from the subtree, if it exists, with proper balancing. Sets the function
-  parameter flag if the node was removed.
-
-*/
+//
+// NOTE(philip): Recursively removes a node from the subtree, if it exists, with proper balancing. Sets the function
+// parameter flag if the node was removed.
+//
 
 function query_tree_node *
-Remove(query_tree_node *Root, u32 ID, b32 *Removed)
+Remove(query_tree *Tree, query_tree_node *Root, u32 ID, b32 *Removed)
 {
     query_tree_node *NewRoot = Root;
 
@@ -255,11 +282,11 @@ Remove(query_tree_node *Root, u32 ID, b32 *Removed)
 
         if (Root->Data.ID > ID)
         {
-            Root->Left = Remove(Root->Left, ID, Removed);
+            Root->Left = Remove(Tree, Root->Left, ID, Removed);
         }
         else if (Root->Data.ID < ID)
         {
-            Root->Right = Remove(Root->Right, ID, Removed);
+            Root->Right = Remove(Tree, Root->Right, ID, Removed);
         }
         else
         {
@@ -274,7 +301,7 @@ Remove(query_tree_node *Root, u32 ID, b32 *Removed)
                 Root->Data = MovingChild->Data;
                 UpdateKeywordQueryLinks(&MovingChild->Data, &Root->Data);
 
-                Root->Right = Remove(Root->Right, MovingChild->Data.ID, 0);
+                Root->Right = Remove(Tree, Root->Right, MovingChild->Data.ID, 0);
             }
             else
             {
@@ -285,14 +312,14 @@ Remove(query_tree_node *Root, u32 ID, b32 *Removed)
                     *Root = *Child;
                     UpdateKeywordQueryLinks(&Child->Data, &Root->Data);
 
-                    free(Child);
+                    DeallocateNode(Tree, Child);
                 }
                 else
                 {
                     NewRoot = 0;
                     CheckForBalance = false;
 
-                    free(Root);
+                    DeallocateNode(Tree, Root);
                 }
             }
 
@@ -340,7 +367,7 @@ function b32
 QueryTree_Remove(query_tree *Tree, u32 ID)
 {
     b32 Removed = false;
-    Tree->Root = Remove(Tree->Root, ID, &Removed);
+    Tree->Root = Remove(Tree, Tree->Root, ID, &Removed);
 
     return Removed;
 }
@@ -512,12 +539,11 @@ QueryTree_Visualize(query_tree *Tree)
     }
 }
 
-/*
+//
+// NOTE(philip): Recursively deallocates the subtree nodes.
+//
 
-  NOTE(philip): Recursively deallocates the subtree nodes.
-
-*/
-
+#if 0
 function void
 DestroyNode(query_tree_node *Node)
 {
@@ -533,14 +559,19 @@ DestroyNode(query_tree_node *Node)
 
     free(Node);
 }
+#endif
 
 function void
 QueryTree_Destroy(query_tree *Tree)
 {
+#if 0
     if (Tree->Root)
     {
         DestroyNode(Tree->Root);
     }
+#endif
+
+    DestroyMemoryArena(&Tree->Arena);
 
     Tree->Root = 0;
 }
