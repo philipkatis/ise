@@ -76,7 +76,7 @@ Test_IsExactMatch(void)
 }
 
 function void
-Test_CalculateHammingDistance(void)
+Test_HammingDistance(void)
 {
     u32 Result = 0;
     char *A = 0;
@@ -87,7 +87,7 @@ Test_CalculateHammingDistance(void)
         A = "";
         B = "";
 
-        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
+        Result = HammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -96,7 +96,7 @@ Test_CalculateHammingDistance(void)
         A = "hello";
         B = "hello";
 
-        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
+        Result = HammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -105,7 +105,7 @@ Test_CalculateHammingDistance(void)
         A = "hello";
         B = "world";
 
-        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
+        Result = HammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 4);
     }
 
@@ -114,7 +114,7 @@ Test_CalculateHammingDistance(void)
         A = "1234567890";
         B = "qwertyuiop";
 
-        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
+        Result = HammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 10);
     }
 
@@ -123,13 +123,13 @@ Test_CalculateHammingDistance(void)
         A = "0000000000000000000000000000001";
         B = "0000000000000000000000000000002";
 
-        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
+        Result = HammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
     }
 }
 
 function void
-Test_CalculateEditDistance(void)
+Test_EditDistance(void)
 {
     u32 Result = 0;
     char *A = 0;
@@ -140,7 +140,7 @@ Test_CalculateEditDistance(void)
         A = "";
         B = "";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -149,7 +149,7 @@ Test_CalculateEditDistance(void)
         A = "hello";
         B = "hello";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -158,7 +158,7 @@ Test_CalculateEditDistance(void)
         A = "hello";
         B = "world";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 4);
     }
 
@@ -167,7 +167,7 @@ Test_CalculateEditDistance(void)
         A = "1234567890";
         B = "qwertyuiop";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 10);
     }
 
@@ -177,25 +177,25 @@ Test_CalculateEditDistance(void)
         A = "kitten";
         B = "sitten";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
 
         A = "sitten";
         B = "sittin";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
 
         A = "sittin";
         B = "sitting";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
 
         A = "bravo";
         B = "raven";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 3);
     }
 
@@ -204,18 +204,18 @@ Test_CalculateEditDistance(void)
         A = "0000000000000000000000000000001";
         B = "0000000000000000000000000000002";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
     }
 }
 
 TEST_LIST =
 {
-    { "Exact Keyword Matching",       Test_IsExactMatch             },
-    { "Hamming Distance Calculation", Test_CalculateHammingDistance },
-    { "Edit Distance Calculation",    Test_CalculateEditDistance    },
-    { "Query Tree",                   QueryTree                     },
-    { "Keyword Table",                KeywordTable                  },
-    { "BK Tree",                      BKTree                        },
+    { "Exact Keyword Matching",       Test_IsExactMatch      },
+    { "Hamming Distance Calculation", Test_HammingDistance   },
+    { "Edit Distance Calculation",    Test_EditDistance      },
+    { "Query Tree",                   QueryTree              },
+    { "Keyword Table",                KeywordTable           },
+    { "BK Tree",                      BKTree                 },
     { 0, 0 }
 };

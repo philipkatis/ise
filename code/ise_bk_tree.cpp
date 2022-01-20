@@ -7,12 +7,12 @@ BKTree_Create(bk_tree_type Type)
     {
         case BKTree_Type_Hamming:
         {
-            Result.MatchFunction = CalculateHammingDistance;
+            Result.MatchFunction = HammingDistance;
         } break;
 
         case BKTree_Type_Edit:
         {
-            Result.MatchFunction = CalculateEditDistance;
+            Result.MatchFunction = EditDistance;
         } break;
 
         default:
@@ -45,8 +45,8 @@ BKTree_Insert(bk_tree *Tree, keyword *Keyword)
         {
             keyword *CurrentKeyword = CurrentNode->Keyword;
 
-            s32 Distance = Tree->MatchFunction(CurrentKeyword->Word, CurrentKeyword->Length,
-                                               Keyword->Word, Keyword->Length);
+            u8 Distance = Tree->MatchFunction(CurrentKeyword->Word, CurrentKeyword->Length,
+                                              Keyword->Word, Keyword->Length);
             b32 DistanceChildExists = false;
 
             for (bk_tree_node *Child = CurrentNode->FirstChild;
@@ -131,8 +131,8 @@ BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold)
          Candidate;
          Candidate = PopCandidate(&Candidates))
     {
-        s32 Distance = Tree->MatchFunction(Candidate->Keyword->Word, Candidate->Keyword->Length,
-                                           Keyword->Word, Keyword->Length);
+        u8 Distance = Tree->MatchFunction(Candidate->Keyword->Word, Candidate->Keyword->Length,
+                                          Keyword->Word, Keyword->Length);
         if (Distance <= DistanceThreshold)
         {
             KeywordList_Insert(&Result, Candidate->Keyword);

@@ -20,7 +20,7 @@ BKTree(void)
         bk_tree Tree = BKTree_Create(BKTree_Type_Hamming);
 
         TEST_CHECK(Tree.Root == 0);
-        TEST_CHECK(Tree.MatchFunction == CalculateHammingDistance);
+        TEST_CHECK(Tree.MatchFunction == HammingDistance);
 
         for (keyword_iterator Iterator = IterateAllKeywords(&Keywords);
              IsValid(&Iterator);
@@ -102,7 +102,7 @@ BKTree(void)
         bk_tree Tree = BKTree_Create(BKTree_Type_Edit);
 
         TEST_CHECK(Tree.Root == 0);
-        TEST_CHECK(Tree.MatchFunction == CalculateEditDistance);
+        TEST_CHECK(Tree.MatchFunction == EditDistance);
 
 
         for (keyword_iterator Iterator = IterateAllKeywords(&Keywords);

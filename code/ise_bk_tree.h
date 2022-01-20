@@ -17,7 +17,7 @@ struct bk_tree_node
     s32 DistanceFromParent;
 };
 
-typedef s32 (*match_function_type)(char *A, u64 LengthA, char *B, u64 LengthB);
+typedef u8 (*match_function_type)(char *A, u8 LengthA, char *B, u8 LengthB);
 
 struct bk_tree
 {
