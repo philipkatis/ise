@@ -1,7 +1,11 @@
+//
+// NOTE(philip): Creates a query tree.
+//
+
 function query_tree
 QueryTree_Create()
 {
-    query_tree Tree = { };
+    query_tree Tree = {0};
     InitializeMemoryArena(&Tree.Arena, MB(2));
 
     return Tree;
@@ -86,6 +90,10 @@ RotateRight(query_tree_node *Root)
     return NewRoot;
 }
 
+//
+// NOTE(philip): Allocates a new node.
+//
+
 function query_tree_node *
 AllocateNode(query_tree *Tree, u32 ID)
 {
@@ -93,6 +101,7 @@ AllocateNode(query_tree *Tree, u32 ID)
 
     if (Tree->FreeNode)
     {
+        // NOTE(philip): If there is a node in the free list, pop it and use it.
         Node = Tree->FreeNode;
         Tree->FreeNode = Node->Next;
 
@@ -100,6 +109,7 @@ AllocateNode(query_tree *Tree, u32 ID)
     }
     else
     {
+        // NOTE(philip): if no node is available, allocate a new one from the arena.
         Node = PushStruct(&Tree->Arena, query_tree_node);
     }
 
@@ -109,9 +119,14 @@ AllocateNode(query_tree *Tree, u32 ID)
     return Node;
 }
 
+//
+// NOTE(philip): Deallocates a node from the tree.
+//
+
 function void
 DeallocateNode(query_tree *Tree, query_tree_node *Node)
 {
+    // NOTE(philip): Push the node onto the free list.
     Node->Next = Tree->FreeNode;
     Tree->FreeNode = Node;
 }
@@ -470,66 +485,6 @@ QueryTree_CompileResult(query_tree *Tree, u32 DocumentID)
     }
 
     return Result;
-}
-
-function void
-VisualizeNode(query_tree_node *Node, u64 Depth = 0)
-{
-    query *Data = &Node->Data;
-
-    PrintTabs(Depth);
-    printf("{\n");
-
-    PrintTabs(Depth + 1);
-    printf("Height: %llu\n", GetNodeHeight(Node));
-
-    PrintTabs(Depth + 1);
-    printf("Balance: %lld\n\n", GetNodeBalance(Node));
-
-    PrintTabs(Depth + 1);
-    printf("Data:\n");
-
-    PrintTabs(Depth + 1);
-    printf("{\n");
-
-    PrintTabs(Depth + 2);
-    printf("ID: %d\n", Data->ID);
-
-    PrintTabs(Depth + 1);
-    printf("}\n");
-
-    if (Node->Left)
-    {
-        printf("\n");
-
-        PrintTabs(Depth + 1);
-        printf("Left Child:\n");
-
-        VisualizeNode(Node->Left, Depth + 1);
-    }
-
-    if (Node->Right)
-    {
-        printf("\n");
-
-        PrintTabs(Depth + 1);
-        printf("Right Child:\n");
-
-        VisualizeNode(Node->Right, Depth + 1);
-    }
-
-    PrintTabs(Depth);
-    printf("}\n");
-}
-
-function void
-QueryTree_Visualize(query_tree *Tree)
-{
-    if (Tree->Root)
-    {
-        printf("Root:\n");
-        VisualizeNode(Tree->Root);
-    }
 }
 
 function void

@@ -53,11 +53,4 @@ struct query_tree_insert_result
     b64 Exists;
 };
 
-function query_tree QueryTree_Create();
-function query_tree_insert_result QueryTree_Insert(query_tree *Tree, u32 ID, u32 KeywordCount, u32 Type, u32 Distance);
-function query *QueryTree_Find(query_tree *Tree, u32 ID);
-function b32 QueryTree_Remove(query_tree *Tree, u32 ID);
-function void QueryTree_Visualize(query_tree *Tree);
-function void QueryTree_Destroy(query_tree *Tree);
-
 #endif

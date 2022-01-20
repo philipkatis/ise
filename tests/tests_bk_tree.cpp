@@ -14,7 +14,7 @@ BKTree(void)
              WordIndex < ArrayCount(Words);
              ++WordIndex)
         {
-            KeywordTable_Insert(&Keywords, Words[WordIndex]);
+            KeywordTable_Insert(&Keywords, Words[WordIndex], strlen(Words[WordIndex]));
         }
 
         bk_tree Tree = BKTree_Create(MatchType_Hamming);
@@ -37,7 +37,7 @@ BKTree(void)
             };
 
             keyword_table SearchValues = KeywordTable_Create(1);
-            keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "helt");
+            keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "helt", strlen("helt"));
 
             keyword_list Matches = BKTree_FindMatches(&Tree, InsertResult.Keyword, 2);
             KeywordTable_Destroy(&SearchValues);
@@ -67,7 +67,7 @@ BKTree(void)
 
         {
             keyword_table SearchValues = KeywordTable_Create(1);
-            keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "opsy");
+            keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "opsy", strlen("opsy"));
 
             keyword_list Matches = BKTree_FindMatches(&Tree, InsertResult.Keyword, 2);
             KeywordTable_Destroy(&SearchValues);
@@ -96,7 +96,7 @@ BKTree(void)
              WordIndex < ArrayCount(Words);
              ++WordIndex)
         {
-            KeywordTable_Insert(&Keywords, Words[WordIndex]);
+            KeywordTable_Insert(&Keywords, Words[WordIndex], strlen(Words[WordIndex]));
         }
 
         bk_tree Tree = BKTree_Create(MatchType_Edit);
@@ -120,7 +120,7 @@ BKTree(void)
             };
 
             keyword_table SearchValues = KeywordTable_Create(1);
-            keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "helt");
+            keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "helt", strlen("helt"));
 
             keyword_list Matches = BKTree_FindMatches(&Tree, InsertResult.Keyword, 2);
             KeywordTable_Destroy(&SearchValues);
@@ -155,7 +155,7 @@ BKTree(void)
             };
 
             keyword_table SearchValues = KeywordTable_Create(1);
-            keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "ops");
+            keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "ops", strlen("ops"));
 
             keyword_list Matches = BKTree_FindMatches(&Tree, InsertResult.Keyword, 2);
             KeywordTable_Destroy(&SearchValues);

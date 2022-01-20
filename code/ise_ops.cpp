@@ -34,9 +34,8 @@ ParseDocument(char *Document)
          Index < WordCount;
          ++Index)
     {
-        // TODO(philip): If we calculate the length of the word outsize of the table and pass it as a parameter,
-        // we can skip an additional iteration over the word.
-        KeywordTable_Insert(&Words, Word);
+        u8 Length = strlen(Word);
+        KeywordTable_Insert(&Words, Word, Length);
 
         while (*Word)
         {
@@ -123,7 +122,7 @@ FindDocumentAnswer(result_queue *Results, keyword_table *Keywords, bk_tree *Hamm
         {
             // NOTE(philip): Look the keyword up in the query keyword table for a possible exact match.
             // TODO(philip): Again in this case, we could also provide the length of the word.
-            keyword *FoundKeyword = KeywordTable_Find(Keywords, DocumentWord->Word);
+            keyword *FoundKeyword = KeywordTable_Find(Keywords, DocumentWord->Word, DocumentWord->Length);
             if (FoundKeyword)
             {
                 // NOTE(philip): If the keyword was found, we need to update the queries that contain it.

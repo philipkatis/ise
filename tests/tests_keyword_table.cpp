@@ -9,7 +9,7 @@ KeywordTable(void)
         TEST_CHECK(Table.BucketCount == 2);
         TEST_CHECK(Table.ElementCount == 0);
 
-        keyword_table_insert_result InsertResult = KeywordTable_Insert(&Table, "hello");
+        keyword_table_insert_result InsertResult = KeywordTable_Insert(&Table, "hello", strlen("hello"));
 
         TEST_CHECK(InsertResult.Keyword != 0);
         TEST_CHECK(InsertResult.Exists == false);
@@ -20,7 +20,7 @@ KeywordTable(void)
         TEST_CHECK(Table.Buckets[1]->Next == 0);
         TEST_CHECK(strcmp(Table.Buckets[1]->Data.Word, "hello") == 0);
 
-        InsertResult = KeywordTable_Insert(&Table, "hello");
+        InsertResult = KeywordTable_Insert(&Table, "hello", strlen("hello"));
 
         TEST_CHECK(InsertResult.Keyword != 0);
         TEST_CHECK(InsertResult.Exists == true);
@@ -37,9 +37,9 @@ KeywordTable(void)
     {
         keyword_table Table = KeywordTable_Create(2);
 
-        keyword_table_insert_result HelloInsertResult = KeywordTable_Insert(&Table, "hello");
-        keyword_table_insert_result WorldInsertResult = KeywordTable_Insert(&Table, "world");
-        keyword_table_insert_result BazingaInsertResult = KeywordTable_Insert(&Table, "bazinga");
+        keyword_table_insert_result HelloInsertResult = KeywordTable_Insert(&Table, "hello", strlen("hello"));
+        keyword_table_insert_result WorldInsertResult = KeywordTable_Insert(&Table, "world", strlen("world"));
+        keyword_table_insert_result BazingaInsertResult = KeywordTable_Insert(&Table, "bazinga", strlen("bazinga"));
 
         TEST_CHECK(Table.BucketCount == 4);
         TEST_CHECK(Table.ElementCount == 3);
@@ -52,10 +52,10 @@ KeywordTable(void)
         TEST_CHECK(Table.Buckets[1]->Next->Next != 0);
         TEST_CHECK(&Table.Buckets[1]->Next->Next->Data == HelloInsertResult.Keyword);
 
-        keyword *Keyword = KeywordTable_Find(&Table, "test");
+        keyword *Keyword = KeywordTable_Find(&Table, "test", strlen("test"));
         TEST_CHECK(Keyword == 0);
 
-        Keyword = KeywordTable_Find(&Table, "bazinga");
+        Keyword = KeywordTable_Find(&Table, "bazinga", strlen("bazinga"));
         TEST_CHECK(Keyword != 0);
 
         KeywordTable_Destroy(&Table);

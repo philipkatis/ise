@@ -15,7 +15,7 @@ DJB2(char *String)
 }
 
 function keyword_table_node *
-AllocateNode(memory_arena *Arena, char *Word, u32 Length, u32 Hash, keyword_table_node *Next = 0)
+AllocateNode(memory_arena *Arena, char *Word, u8 Length, u32 Hash, keyword_table_node *Next = 0)
 {
     keyword_table_node *Node = PushStruct(Arena, keyword_table_node);
 
@@ -71,7 +71,7 @@ Rehash(keyword_table *Table)
 }
 
 function keyword *
-Find(keyword_table *Table, char *Word, u32 Length, u32 Hash, u64 BucketIndex)
+Find(keyword_table *Table, char *Word, u8 Length, u32 Hash, u64 BucketIndex)
 {
     keyword *Result = 0;
 
@@ -91,11 +91,10 @@ Find(keyword_table *Table, char *Word, u32 Length, u32 Hash, u64 BucketIndex)
 }
 
 function keyword_table_insert_result
-KeywordTable_Insert(keyword_table *Table, char *Word)
+KeywordTable_Insert(keyword_table *Table, char *Word, u8 Length)
 {
     keyword_table_insert_result Result = { };
 
-    u32 Length = strlen(Word);
     u32 Hash = DJB2(Word);
     u64 BucketIndex = Hash % Table->BucketCount;
 
@@ -134,11 +133,10 @@ KeywordTable_Insert(keyword_table *Table, char *Word)
 }
 
 function keyword *
-KeywordTable_Find(keyword_table *Table, char *Word)
+KeywordTable_Find(keyword_table *Table, char *Word, u8 Length)
 {
     keyword *Result = 0;
 
-    u32 Length = strlen(Word);
     u32 Hash = DJB2(Word);
     u64 BucketIndex = Hash % Table->BucketCount;
 
@@ -148,39 +146,6 @@ KeywordTable_Find(keyword_table *Table, char *Word)
     }
 
     return Result;
-}
-
-function void
-KeywordTable_Visualize(keyword_table *Table)
-{
-    for (u64 BucketIndex = 0;
-         BucketIndex < Table->BucketCount;
-         ++BucketIndex)
-    {
-        keyword_table_node *BucketHead = Table->Buckets[BucketIndex];
-        if (BucketHead)
-        {
-            printf("%llu: ", BucketIndex);
-
-            for (keyword_table_node *Node = BucketHead;
-                 Node;
-                 Node = Node->Next)
-            {
-                printf("%s", Node->Data.Word);
-
-                if (Node->Next)
-                {
-                    printf(" -> ");
-                }
-            }
-
-            printf("\n");
-        }
-    }
-
-    printf("\nBucket Count: %llu\n", Table->BucketCount);
-    printf("Element Count: %llu\n", Table->ElementCount);
-    printf("Load Factor: %f\n", (f32)Table->ElementCount / (f32)Table->BucketCount);
 }
 
 function void

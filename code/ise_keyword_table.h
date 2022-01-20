@@ -8,12 +8,15 @@ struct __attribute__ ((__packed__)) keyword
     // TODO(philip): If this list becomes a bottleneck, switch to an array that doubles in size.
     query_list Queries;
 
-    u32 Length;
+    u8 Length;
+    u8 Padding01;
+    u16 Padding02;
+
     u32 Hash;
 
     // TODO(philip): We currently have no way if a keyword is in a BK tree, without looking through the query list.
     // I do not suspect this to become a problem, but if it does, use 2 bits in the padding to store that.
-    u64 Padding;
+    u64 Padding03;
 };
 
 struct __attribute__ ((__packed__)) keyword_table_node
@@ -38,12 +41,6 @@ struct keyword_table_insert_result
     b64 Exists;
 };
 
-function keyword_table KeywordTable_Create(u64 InitialBucketCount);
-function keyword_table_insert_result KeywordTable_Insert(keyword_table *Table, char *Word);
-function keyword *KeywordTable_Find(keyword_table *Table, char *Word);
-function void KeywordTable_Visualize(keyword_table *Table);
-function void KeywordTable_Destroy(keyword_table *Table);
-
 struct keyword_iterator
 {
     keyword_table_node *Node;
@@ -51,11 +48,5 @@ struct keyword_iterator
     u32 BucketIndex;
     u32 Index;
 };
-
-function keyword_iterator IterateAllKeywords(keyword_table *Table);
-function b32 IsValid(keyword_iterator *Iterator);
-function void Advance(keyword_iterator *Iterator);
-function keyword *GetValue(keyword_iterator *Iterator);
-function u32 GetIndex(keyword_iterator *Iterator);
 
 #endif

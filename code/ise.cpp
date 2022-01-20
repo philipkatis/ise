@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/mman.h>
 
 #if ISE_MULTI_THREADED
@@ -110,17 +109,17 @@ DestroyIndex(void)
 }
 
 function void
-InsertInBK(u32 Type, keyword *Keyword)
+InsertInBK(match_type Type, keyword *Keyword)
 {
     switch (Type)
     {
-        case 1:
+        case MatchType_Hamming:
         {
             u64 TreeIndex = GetHammingTreeIndex(Keyword->Length);
             BKTree_Insert(&Application.HammingTrees[TreeIndex], Keyword);
         } break;
 
-        case 2:
+        case MatchType_Edit:
         {
             BKTree_Insert(&Application.EditTree, Keyword);
         } break;
@@ -130,9 +129,6 @@ InsertInBK(u32 Type, keyword *Keyword)
 ErrorCode
 StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 {
-    Assert(Type >= 0 && Type <= 2);
-    Assert(Distance >= 0 && Distance <= MAX_DISTANCE_THRESHOLD);
-
     char *Words[MAX_KEYWORD_COUNT_PER_QUERY];
     u32 WordCount = 0;
 
@@ -154,8 +150,6 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
         }
     }
 
-    Assert(WordCount > 0 && WordCount <= MAX_KEYWORD_COUNT_PER_QUERY);
-
     // TODO(philip): This is kind of gross.
     keyword_table QueryWords = KeywordTable_Create(WordCount);
 
@@ -163,7 +157,8 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
          WordIndex < WordCount;
          ++WordIndex)
     {
-        KeywordTable_Insert(&QueryWords, Words[WordIndex]);
+        u8 Length = strlen(Words[WordIndex]);
+        KeywordTable_Insert(&QueryWords, Words[WordIndex], Length);
     }
 
     // NOTE(philip): Insert the query into the tree.
@@ -183,10 +178,11 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
         keyword *Word = GetValue(&Iterator);
 
         // NOTE(philip): Insert the keyword into the keyword hash table.
-        keyword_table_insert_result KeywordInsert = KeywordTable_Insert(&Application.Keywords, Word->Word);
+        keyword_table_insert_result KeywordInsert = KeywordTable_Insert(&Application.Keywords, Word->Word,
+                                                                        Word->Length);
         keyword *Keyword = KeywordInsert.Keyword;
 
-        if (KeywordInsert.Exists && ((Type == 1) || (Type == 2)))
+        if (KeywordInsert.Exists && (Type != 0))
         {
             // NOTE(philip): If the keyword is already in the BK tree, do not attempt to insert it again.
             b32 AlreadyInBK = false;

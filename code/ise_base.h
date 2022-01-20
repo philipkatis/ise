@@ -84,10 +84,9 @@ struct memory_arena
 typedef u32 match_type;
 enum
 {
-    MatchType_None    = 0,
-    MatchType_Exact   = 1,
-    MatchType_Hamming = 2,
-    MatchType_Edit    = 3
+    MatchType_Exact   = 0,
+    MatchType_Hamming = 1,
+    MatchType_Edit    = 2
 };
 
 #endif
