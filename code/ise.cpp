@@ -43,10 +43,6 @@ struct application
     bk_tree EditTree;
 
     result_queue Results;
-
-#if 0
-    answer_stack Answers;
-#endif
 };
 
 global application Application = { };
@@ -91,11 +87,6 @@ DestroyIndex(void)
 #endif
 
     DestroyResultQueue(&Application.Results);
-
-#if 0
-    // NOTE(philip): Destroy the possible answer stack.
-    AnswerStack_Destroy(&Application.Answers);
-#endif
 
     // NOTE(philip): Destroy the edit tree.
     BKTree_Destroy(&Application.EditTree);
@@ -263,11 +254,11 @@ ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
 #if ISE_MULTI_THREADED
-    // TODO(philip): Waste of memory.
-    u8 *WorkData = (u8 *)calloc(1, sizeof(u32) + ((MAX_DOCUMENT_LENGTH + 1) * sizeof(char)));
+    u64 DocumentLength = strlen(String);
+    u8 *WorkData = (u8 *)calloc(1, sizeof(u32) + ((DocumentLength + 1) * sizeof(char)));
 
     memcpy(WorkData, &ID, sizeof(u32));
-    memcpy(WorkData + sizeof(u32), String, MAX_DOCUMENT_LENGTH * sizeof(char));
+    memcpy(WorkData + sizeof(u32), String, DocumentLength * sizeof(char));
 
     // TODO(philip): Better API.
     PushWork(&ThreadPool.Memory->Queue, WorkType_MatchDocument, WorkData);
@@ -294,24 +285,6 @@ GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs)
     *DocumentID = Result.DocumentID;
     *QueryCount = Result.QueryIDCount;
     *QueryIDs = Result.QueryIDs;
-
-#if 0
-    if (Application.Answers.Count)
-    {
-        answer Answer = AnswerStack_Pop(&Application.Answers);
-        qsort(Answer.QueryIDs, Answer.QueryIDCount, sizeof(u32), CompareQueryIDs);
-
-        *DocumentID = Answer.DocumentID;
-        *QueryCount = Answer.QueryIDCount;
-        *QueryIDs = Answer.QueryIDs;
-
-        Result = EC_SUCCESS;
-    }
-    else
-    {
-        Result = EC_NO_AVAIL_RES;
-    }
-#endif
 
     return EC_SUCCESS;
 }

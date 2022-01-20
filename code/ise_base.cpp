@@ -47,52 +47,82 @@ CalculateHammingDistance(char *A, u64 LengthA, char *B, u64 LengthB)
     return Result;
 }
 
+#if 1
+// TODO(philip): Change the types. Too overkill.
+// NOTE(philip): We know that each word will be stored in a 32 byte long buffer.
 function s32
 CalculateEditDistance(char *A, u64 LengthA, char *B, u64 LengthB)
 {
-    #define CACHE_MATRIX_SIZE (MAX_KEYWORD_LENGTH + 1)
-    s32 CacheMatrix[CACHE_MATRIX_SIZE * CACHE_MATRIX_SIZE];
-
-    memset(CacheMatrix, 0, CACHE_MATRIX_SIZE * CACHE_MATRIX_SIZE * sizeof(s32));
-
-    for (u64 Index = 1;
-         Index <= LengthA;
-         ++Index)
+    s32 Cache[32] =
     {
-        CacheMatrix[CACHE_MATRIX_SIZE * 0 + Index] = Index;
-    }
+         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
+        16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
+    };
 
-    for (u64 Index = 1;
-         Index <= LengthB;
-         ++Index)
+    for (u64 IndexA = 0;
+         IndexA < LengthA;
+         ++IndexA)
     {
-        CacheMatrix[CACHE_MATRIX_SIZE * Index + 0] = Index;
-    }
+        s32 PreviousCost = IndexA + 1;
 
-    for (u64 IndexB = 1;
-         IndexB <= LengthB;
-         ++IndexB)
-    {
-        for (u64 IndexA = 1;
-             IndexA <= LengthA;
-             ++IndexA)
+        for (u64 IndexB = 0;
+             IndexB < LengthB;
+             ++IndexB)
         {
-            s32 DeletionDistance  = CacheMatrix[CACHE_MATRIX_SIZE * IndexB + (IndexA - 1)] + 1;
-            s32 InsertionDistance = CacheMatrix[CACHE_MATRIX_SIZE * (IndexB - 1) + IndexA] + 1;
+            s32 Cost = Cache[IndexB];
+            if (A[IndexA] != B[IndexB])
+            {
+                Cost = Min(Min(PreviousCost, Cost), Cache[IndexB + 1]) + 1;
+            }
 
-            b32 RequiresSubstitution = (A[IndexA - 1] != B[IndexB - 1]);
-            s32 SubstitutionDistance = CacheMatrix[CACHE_MATRIX_SIZE * (IndexB - 1) + (IndexA - 1)] +
-                RequiresSubstitution;
-
-            s32 *Distance = &CacheMatrix[CACHE_MATRIX_SIZE * IndexB + IndexA];
-            *Distance = Min(Min(DeletionDistance, InsertionDistance), SubstitutionDistance);
+            Cache[IndexB] = PreviousCost;
+            PreviousCost = Cost;
         }
+
+        Cache[LengthB] = PreviousCost;
     }
 
-    return CacheMatrix[CACHE_MATRIX_SIZE * LengthB + LengthA];
-    #undef CACHE_MATRIX_SIZE
+    return Cache[LengthB];
 }
+#else
 
+#include <emmintrin.h>
+
+function s32
+CalculateEditDistance(char *A, u64 LengthA, char *B, u64 LengthB)
+{
+    u8 Cache[32] =
+    {
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+        16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
+    };
+
+    for (u8 IndexA = 0;
+         IndexA < 32;
+         ++IndexA)
+    {
+        u8 PreviousCost = IndexA + 1;
+
+        for (u8 IndexB = 0;
+             IndexB < 32;
+             ++IndexB)
+        {
+            u8 Cost = Cache[IndexB];
+            if (A[IndexA] != B[IndexB])
+            {
+                Cost = Min(Min(PreviousCost, Cost), Cache[IndexB + 1]) + 1;
+            }
+
+            Cache[IndexB] = PreviousCost;
+            PreviousCost = Cost;
+        }
+
+        Cache[32] = PreviousCost;
+    }
+
+    return Cache[32];
+}
+#endif
 
 //
 // NOTE(philip): Utility functions.
