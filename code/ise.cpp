@@ -1,22 +1,23 @@
+// TODO(philip): Clean up the includes.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
-#include "ise.h"
-
-#if 0
+#if ISE_MULTI_THREADED
 #include <pthread.h>
 #endif
 
+#include "ise.h"
 #include "ise_base.h"
 #include "ise_query_tree.h"
 #include "ise_query_list.h"
 #include "ise_keyword_table.h"
 #include "ise_keyword_list.h"
 #include "ise_bk_tree.h"
-#include "ise_answer.h"
+#include "ise_result_queue.h"
 
-#if 0
+#if ISE_MULTI_THREADED
 #include "ise_thread_pool.h"
 #endif
 
@@ -26,13 +27,12 @@
 #include "ise_keyword_table.cpp"
 #include "ise_keyword_list.cpp"
 #include "ise_bk_tree.cpp"
-#include "ise_answer.cpp"
+#include "ise_result_queue.cpp"
+#include "ise_ops.cpp"
 
-#if 0
+#if ISE_MULTI_THREADED
 #include "ise_thread_pool.cpp"
 #endif
-
-#include "ise_ops.cpp"
 
 struct application
 {
@@ -42,12 +42,16 @@ struct application
     bk_tree HammingTrees[HAMMING_TREE_COUNT];
     bk_tree EditTree;
 
+    result_queue Results;
+
+#if 0
     answer_stack Answers;
+#endif
 };
 
 global application Application = { };
 
-#if 0
+#if ISE_MULTI_THREADED
 global thread_pool ThreadPool = { };
 #endif
 
@@ -68,9 +72,12 @@ InitializeIndex(void)
     // NOTE(philip): Initialize the edit BK tree.
     Application.EditTree = BKTree_Create(BKTree_Type_Edit);
 
-#if 0
-    ThreadPool = ThreadPool_Create(16, &Application.Keywords, Application.HammingTrees, &Application.EditTree,
-                                   &Application.Answers);
+    InitializeResultQueue(&Application.Results);
+
+#if ISE_MULTI_THREADED
+    // TODO(philip): Choose proper thread count.
+    ThreadPool = ThreadPool_Create(4, &Application.Keywords, Application.HammingTrees, &Application.EditTree,
+                                   &Application.Results);
 #endif
 
     return EC_SUCCESS;
@@ -79,12 +86,16 @@ InitializeIndex(void)
 ErrorCode
 DestroyIndex(void)
 {
-#if 0
+#if ISE_MULTI_THREADED
     ThreadPool_Destroy(&ThreadPool);
 #endif
 
+    DestroyResultQueue(&Application.Results);
+
+#if 0
     // NOTE(philip): Destroy the possible answer stack.
     AnswerStack_Destroy(&Application.Answers);
+#endif
 
     // NOTE(philip): Destroy the edit tree.
     BKTree_Destroy(&Application.EditTree);
@@ -151,9 +162,19 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 
     Assert(WordCount > 0 && WordCount <= MAX_KEYWORD_COUNT_PER_QUERY);
 
+    // TODO(philip): This is kind of gross.
+    keyword_table QueryWords = KeywordTable_Create(WordCount);
+
+    for (u32 WordIndex = 0;
+         WordIndex < WordCount;
+         ++WordIndex)
+    {
+        KeywordTable_Insert(&QueryWords, Words[WordIndex]);
+    }
+
     // NOTE(philip): Insert the query into the tree.
-    query_tree_insert_result QueryInsert = QueryTree_Insert(&Application.Queries, ID, WordCount, Type,
-                                                            Distance);
+    query_tree_insert_result QueryInsert = QueryTree_Insert(&Application.Queries, ID, QueryWords.ElementCount,
+                                                            Type, Distance);
     if (QueryInsert.Exists)
     {
         return EC_FAIL;
@@ -161,12 +182,14 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 
     query *Query = QueryInsert.Query;
 
-    for (u32 WordIndex = 0;
-         WordIndex < WordCount;
-         ++WordIndex)
+    for (keyword_iterator Iterator = IterateAllKeywords(&QueryWords);
+         IsValid(&Iterator);
+         Advance(&Iterator))
     {
+        keyword *Word = GetValue(&Iterator);
+
         // NOTE(philip): Insert the keyword into the keyword hash table.
-        keyword_table_insert_result KeywordInsert = KeywordTable_Insert(&Application.Keywords, Words[WordIndex]);
+        keyword_table_insert_result KeywordInsert = KeywordTable_Insert(&Application.Keywords, Word->Word);
         keyword *Keyword = KeywordInsert.Keyword;
 
         if (KeywordInsert.Exists && ((Type == 1) || (Type == 2)))
@@ -197,9 +220,11 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
         }
 
         // NOTE(philip): Insert the keyword into the query and the query into the keyword.
-        Query->Keywords[WordIndex] = Keyword;
+        Query->Keywords[GetIndex(&Iterator)] = Keyword;
         QueryList_Insert(&Keyword->Queries, Query);
     }
+
+    KeywordTable_Destroy(&QueryWords);
 
     return EC_SUCCESS;
 }
@@ -237,11 +262,7 @@ EndQuery(QueryID ID)
 ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
-    // TODO(philip): We need to produce a copy of the document for the multithreaded version.
-    // TODO(philip): Toggle between single and multi-threaded.
-    FindDocumentAnswer(&Application.Answers, &Application.Keywords, Application.HammingTrees, &Application.EditTree,
-                       ID, (char *)String);
-#if 0
+#if ISE_MULTI_THREADED
     // TODO(philip): Waste of memory.
     u8 *WorkData = (u8 *)calloc(1, sizeof(u32) + ((MAX_DOCUMENT_LENGTH + 1) * sizeof(char)));
 
@@ -249,7 +270,10 @@ MatchDocument(DocID ID, const char *String)
     memcpy(WorkData + sizeof(u32), String, MAX_DOCUMENT_LENGTH * sizeof(char));
 
     // TODO(philip): Better API.
-    WorkQueue_Push(&ThreadPool.Memory->Queue, WorkType_MatchDocument, WorkData);
+    PushWork(&ThreadPool.Memory->Queue, WorkType_MatchDocument, WorkData);
+#else
+    FindDocumentAnswer(&Application.Results, &Application.Keywords, Application.HammingTrees, &Application.EditTree,
+                       ID, (char *)String);
 #endif
 
     return EC_SUCCESS;
@@ -264,8 +288,14 @@ CompareQueryIDs(const void *A, const void *B)
 ErrorCode
 GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs)
 {
-    ErrorCode Result = EC_FAIL;
+    // TODO(philip): How do we return no available result?
 
+    result Result = PopResult(&Application.Results);
+    *DocumentID = Result.DocumentID;
+    *QueryCount = Result.QueryIDCount;
+    *QueryIDs = Result.QueryIDs;
+
+#if 0
     if (Application.Answers.Count)
     {
         answer Answer = AnswerStack_Pop(&Application.Answers);
@@ -281,6 +311,7 @@ GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs)
     {
         Result = EC_NO_AVAIL_RES;
     }
+#endif
 
-    return Result;
+    return EC_SUCCESS;
 }

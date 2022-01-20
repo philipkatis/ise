@@ -22,11 +22,11 @@ struct work_queue
     work Data[ISE_WORK_QUEUE_SIZE];
     u32 WriteIndex;
     u32 ReadIndex;
-    u32 PendingWork;
+    u32 Count;
 
     pthread_mutex_t Mutex;
     pthread_cond_t HasSpace;
-    pthread_cond_t IsEmpty;
+    pthread_cond_t HasData;
 };
 
 struct thread_pool_memory
@@ -35,7 +35,7 @@ struct thread_pool_memory
     keyword_table *Keywords;
     bk_tree *HammingTrees;
     bk_tree *EditTree;
-    answer_stack *Answers;
+    result_queue *Results;
 };
 
 struct thread_pool

@@ -1,4 +1,4 @@
-CommonCompileFlags=-Wall -Wno-write-strings -Wno-unused-function -fPIC -Icode
+CommonCompileFlags=-Wall -Wno-write-strings -Wno-unused-function -fPIC -pthread -Icode -DISE_MULTI_THREADED=1
 
 # TODO(philip): Disable exceptions, rtti, etc
 # TODO(philip): Reimplement run/tests.

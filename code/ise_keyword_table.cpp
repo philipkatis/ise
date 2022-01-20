@@ -255,6 +255,7 @@ Advance(keyword_iterator *Iterator)
     }
 
     FindNextKeyword(Iterator);
+    ++Iterator->Index;
 }
 
 function keyword *
@@ -262,4 +263,11 @@ GetValue(keyword_iterator *Iterator)
 {
     Assert(Iterator->Node);
     return &Iterator->Node->Data;
+}
+
+function u32
+GetIndex(keyword_iterator *Iterator)
+{
+    Assert(Iterator->Node);
+    return Iterator->Index;
 }

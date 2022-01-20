@@ -7,7 +7,7 @@
 #include "ise_keyword_table.h"
 #include "ise_keyword_list.h"
 #include "ise_bk_tree.h"
-#include "ise_answer.h"
+#include "ise_result_queue.h"
 
 #include "ise_base.cpp"
 #include "ise_query_tree.cpp"

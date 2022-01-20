@@ -72,7 +72,6 @@ RegisterFoundKeyword(query_tree *MatchingQueries, keyword *Keyword, u32 Type, u3
             u32 KeywordCount = GetQueryKeywordCount(Query);
             query_tree_insert_result InsertResult = QueryTree_Insert(MatchingQueries, Query->ID, KeywordCount,
                                                                      Type, 0);
-
             // TODO(philip): Is this if statement needed? Replace with assert.
             query *Answer = InsertResult.Query;
             if (Answer)
@@ -102,7 +101,7 @@ RegisterFoundKeyword(query_tree *MatchingQueries, keyword *Keyword, u32 Type, u3
 //
 
 function void
-FindDocumentAnswer(answer_stack *Answers, keyword_table *Keywords, bk_tree *HammingTrees, bk_tree *EditTree,
+FindDocumentAnswer(result_queue *Results, keyword_table *Keywords, bk_tree *HammingTrees, bk_tree *EditTree,
          u32 DocumentID, char *Document)
 {
     // NOTE(philip): Parse the document and store it's words in a table.
@@ -183,8 +182,8 @@ FindDocumentAnswer(answer_stack *Answers, keyword_table *Keywords, bk_tree *Hamm
 
     KeywordTable_Destroy(&DocumentWords);
 
-    answer Answer = QueryTree_CompileAnswer(&MatchingQueries, DocumentID);
+    result Result = QueryTree_CompileResult(&MatchingQueries, DocumentID);
     QueryTree_Destroy(&MatchingQueries);
 
-    AnswerStack_Push(Answers, Answer);
+    PushResult(Results, Result);
 }

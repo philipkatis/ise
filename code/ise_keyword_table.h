@@ -48,11 +48,13 @@ struct keyword_iterator
     keyword_table_node *Node;
     keyword_table *Table;
     u32 BucketIndex;
+    u32 Index;
 };
 
 function keyword_iterator IterateAllKeywords(keyword_table *Table);
 function b32 IsValid(keyword_iterator *Iterator);
 function void Advance(keyword_iterator *Iterator);
 function keyword *GetValue(keyword_iterator *Iterator);
+function u32 GetIndex(keyword_iterator *Iterator);
 
 #endif
