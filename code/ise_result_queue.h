@@ -24,23 +24,4 @@ struct result_queue
 #endif
 };
 
-#if 0
-struct answer_stack_node
-{
-    answer Answer;
-    answer_stack_node *Next;
-};
-
-// TODO(philip): Replace with circular buffer.
-struct answer_stack
-{
-    answer_stack_node *Head;
-    u64 Count;
-};
-
-function void AnswerStack_Push(answer_stack *Stack, answer Answer);
-function answer AnswerStack_Pop(answer_stack *Stack);
-function void AnswerStack_Destroy(answer_stack *Stack);
-#endif
-
 #endif

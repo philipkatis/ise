@@ -77,4 +77,17 @@ struct memory_arena
     memory_block *CurrentBlock;
 };
 
+//
+// NOTE(philip): Other
+//
+
+typedef u32 match_type;
+enum
+{
+    MatchType_None    = 0,
+    MatchType_Exact   = 1,
+    MatchType_Hamming = 2,
+    MatchType_Edit    = 3
+};
+
 #endif

@@ -65,11 +65,11 @@ InitializeIndex(void)
          Index < HAMMING_TREE_COUNT;
          ++Index)
     {
-        Application.HammingTrees[Index] = BKTree_Create(BKTree_Type_Hamming);
+        Application.HammingTrees[Index] = BKTree_Create(MatchType_Hamming);
     }
 
     // NOTE(philip): Initialize the edit BK tree.
-    Application.EditTree = BKTree_Create(BKTree_Type_Edit);
+    Application.EditTree = BKTree_Create(MatchType_Edit);
 
     InitializeResultQueue(&Application.Results);
 
@@ -230,7 +230,6 @@ EndQuery(QueryID ID)
     if (Query)
     {
         u32 KeywordCount = GetQueryKeywordCount(Query);
-
         for (u32 KeywordIndex = 0;
              KeywordIndex < KeywordCount;
              ++KeywordIndex)
@@ -238,6 +237,16 @@ EndQuery(QueryID ID)
             // NOTE(philip): Remove the query from the keyword.
             keyword *Keyword = Query->Keywords[KeywordIndex];
             QueryList_Remove(&Keyword->Queries, Query);
+
+            if (!Keyword->Queries.Head)
+            {
+                // TODO(philip): Maybe be more specific of when we remove stuff?
+                // NOTE(philip): If the keyword is not part of any query, deactivate it.
+                BKTree_Deactivate(&Application.HammingTrees[GetHammingTreeIndex(Keyword->Length)], Keyword);
+                BKTree_Deactivate(&Application.EditTree, Keyword);
+
+                // TODO(philip): Remove the keyword from the hash table.
+            }
 
             // TODO(philip): Currenty, keywords that were previously part of queryies are not removed. They remain
             // in the keyword table, as well as the BK trees. This is fine per the assignment, but a proper solution

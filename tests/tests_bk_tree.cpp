@@ -17,10 +17,10 @@ BKTree(void)
             KeywordTable_Insert(&Keywords, Words[WordIndex]);
         }
 
-        bk_tree Tree = BKTree_Create(BKTree_Type_Hamming);
+        bk_tree Tree = BKTree_Create(MatchType_Hamming);
 
         TEST_CHECK(Tree.Root == 0);
-        TEST_CHECK(Tree.MatchFunction == HammingDistance);
+        TEST_CHECK(Tree.MatchFn == HammingDistance);
 
         for (keyword_iterator Iterator = IterateAllKeywords(&Keywords);
              IsValid(&Iterator);
@@ -99,10 +99,10 @@ BKTree(void)
             KeywordTable_Insert(&Keywords, Words[WordIndex]);
         }
 
-        bk_tree Tree = BKTree_Create(BKTree_Type_Edit);
+        bk_tree Tree = BKTree_Create(MatchType_Edit);
 
         TEST_CHECK(Tree.Root == 0);
-        TEST_CHECK(Tree.MatchFunction == EditDistance);
+        TEST_CHECK(Tree.MatchFn == EditDistance);
 
 
         for (keyword_iterator Iterator = IterateAllKeywords(&Keywords);

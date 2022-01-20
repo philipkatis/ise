@@ -1,23 +1,25 @@
 #ifndef ISE_BK_TREE_H
 #define ISE_BK_TREE_H
 
-typedef u32 bk_tree_type;
-enum
-{
-    BKTree_Type_None,
-    BKTree_Type_Hamming,
-    BKTree_Type_Edit
-};
-
 struct bk_tree_node
 {
+    b64 IsActive;
     keyword *Keyword;
+
     bk_tree_node *FirstChild;
     bk_tree_node *NextSibling;
-    u64 DistanceFromParent;
+
+    u8 DistanceFromParent;
+    u8 Padding01;
+    u16 Padding02;
+    u32 Padding03;
+
+    u64 Padding[3];
 };
 
-typedef u8 (*match_function_type)(char *A, u8 LengthA, char *B, u8 LengthB);
+static_assert(sizeof(bk_tree_node) == 64);
+
+typedef u8 (*match_fn)(char *A, u8 LengthA, char *B, u8 LengthB);
 
 struct candidate_stack
 {
@@ -28,15 +30,9 @@ struct candidate_stack
 
 struct bk_tree
 {
-    bk_tree_node *Root;
     memory_arena Arena;
-    match_function_type MatchFunction;
+    bk_tree_node *Root;
+    match_fn MatchFn;
 };
-
-function bk_tree BKTree_Create(bk_tree_type Type);
-function void BKTree_Insert(bk_tree *Tree, keyword *Keyword);
-function keyword_list BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold);
-function void BKTree_Visualize(bk_tree *Tree);
-function void BKTree_Destroy(bk_tree *Tree);
 
 #endif

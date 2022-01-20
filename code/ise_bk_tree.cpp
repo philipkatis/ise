@@ -1,20 +1,19 @@
 function bk_tree
-BKTree_Create(bk_tree_type Type)
+BKTree_Create(match_type Type)
 {
-    bk_tree Tree = { };
-
+    bk_tree Tree = {0};
     InitializeMemoryArena(&Tree.Arena, MB(1));
 
     switch (Type)
     {
-        case BKTree_Type_Hamming:
+        case MatchType_Hamming:
         {
-            Tree.MatchFunction = HammingDistance;
+            Tree.MatchFn = HammingDistance;
         } break;
 
-        case BKTree_Type_Edit:
+        case MatchType_Edit:
         {
-            Tree.MatchFunction = EditDistance;
+            Tree.MatchFn = EditDistance;
         } break;
 
         default:
@@ -27,10 +26,12 @@ BKTree_Create(bk_tree_type Type)
 }
 
 function bk_tree_node *
-AllocateNode(memory_arena *Arena, keyword *Keyword, u64 DistanceFromParent = 0, bk_tree_node *NextSibling = 0)
+AllocateNode(memory_arena *Arena, keyword *Keyword, u8 DistanceFromParent = 0, bk_tree_node *NextSibling = 0)
 {
     bk_tree_node *Node = PushStruct(Arena, bk_tree_node);
+    Node->IsActive = true;
     Node->Keyword = Keyword;
+    Node->FirstChild = 0;
     Node->NextSibling = NextSibling;
     Node->DistanceFromParent = DistanceFromParent;
 
@@ -42,32 +43,40 @@ BKTree_Insert(bk_tree *Tree, keyword *Keyword)
 {
     if (Tree->Root)
     {
-        bk_tree_node *CurrentNode = Tree->Root;
-        while (true)
+        bk_tree_node *Node = Tree->Root;
+        for (;;)
         {
-            keyword *CurrentKeyword = CurrentNode->Keyword;
+            keyword *NodeKeyword = Node->Keyword;
+            u8 Distance = Tree->MatchFn(NodeKeyword->Word, NodeKeyword->Length, Keyword->Word, Keyword->Length);
 
-            u8 Distance = Tree->MatchFunction(CurrentKeyword->Word, CurrentKeyword->Length,
-                                              Keyword->Word, Keyword->Length);
-            b32 DistanceChildExists = false;
-
-            for (bk_tree_node *Child = CurrentNode->FirstChild;
-                 Child;
-                 Child = Child->NextSibling)
+            if (Distance == 0)
             {
-                if (Child->DistanceFromParent == Distance)
+                // NOTE(philip): The keyword is already in the BKTree. So reactivate it.
+                // TODO(philip): When keyword removal from the hash table, update the link here.
+                Node->IsActive = true;
+                break;
+            }
+            else
+            {
+                b32 ChildExists = false;
+                for (bk_tree_node *Child = Node->FirstChild;
+                     Child;
+                     Child = Child->NextSibling)
                 {
-                    CurrentNode = Child;
-                    DistanceChildExists = true;
+                    if (Child->DistanceFromParent == Distance)
+                    {
+                        Node = Child;
+                        ChildExists = true;
 
+                        break;
+                    }
+                }
+
+                if (!ChildExists)
+                {
+                    Node->FirstChild = AllocateNode(&Tree->Arena, Keyword, Distance, Node->FirstChild);
                     break;
                 }
-            }
-
-            if (!DistanceChildExists)
-            {
-                CurrentNode->FirstChild = AllocateNode(&Tree->Arena, Keyword, Distance, CurrentNode->FirstChild);
-                break;
             }
         }
     }
@@ -126,9 +135,9 @@ BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold)
          Candidate;
          Candidate = PopCandidate(&Candidates))
     {
-        u8 Distance = Tree->MatchFunction(Candidate->Keyword->Word, Candidate->Keyword->Length,
-                                          Keyword->Word, Keyword->Length);
-        if (Distance <= DistanceThreshold)
+        u8 Distance = Tree->MatchFn(Candidate->Keyword->Word, Candidate->Keyword->Length,
+                                    Keyword->Word, Keyword->Length);
+        if (Candidate->IsActive && (Distance <= DistanceThreshold))
         {
             KeywordList_Insert(&Result, Candidate->Keyword);
         }
@@ -141,8 +150,8 @@ BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold)
              Child;
              Child = Child->NextSibling)
         {
-            if (((u8)Child->DistanceFromParent >= ChildrenRangeStart) &&
-                ((u8)Child->DistanceFromParent <= ChildrenRangeEnd))
+            if ((Child->DistanceFromParent >= ChildrenRangeStart) &&
+                (Child->DistanceFromParent <= ChildrenRangeEnd))
             {
                 PushCandidate(&Candidates, Child);
             }
@@ -154,37 +163,38 @@ BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold)
     return Result;
 }
 
-function void
-BKTree_VisualizeNode(bk_tree_node *Node, u64 Depth)
-{
-    PrintTabs(Depth);
-    printf("Word: %s, DistanceFromParent: %llu, Depth: %llu\n", Node->Keyword->Word, Node->DistanceFromParent,
-           Depth);
-
-    if (Node->FirstChild)
-    {
-        PrintTabs(Depth);
-        printf("{\n");
-
-        BKTree_VisualizeNode(Node->FirstChild, Depth + 1);
-
-        PrintTabs(Depth);
-        printf("}\n");
-    }
-
-    if (Node->NextSibling)
-    {
-        printf("\n");
-        BKTree_VisualizeNode(Node->NextSibling, Depth);
-    }
-}
+//
+// NOTE(philip): Deactivates a keyword from the tree. DOES NOT REMOVE IT.
+//
 
 function void
-BKTree_Visualize(bk_tree *Tree)
+BKTree_Deactivate(bk_tree *Tree, keyword *Keyword)
 {
-    if (Tree->Root)
+    candidate_stack Candidates = { };
+    for (bk_tree_node *Candidate = Tree->Root;
+         Candidate;
+         Candidate = PopCandidate(&Candidates))
     {
-        BKTree_VisualizeNode(Tree->Root, 0);
+        u8 Distance = Tree->MatchFn(Candidate->Keyword->Word, Candidate->Keyword->Length,
+                                    Keyword->Word, Keyword->Length);
+        if (Distance == 0)
+        {
+            Candidate->IsActive = false;
+            break;
+        }
+        else
+        {
+            for (bk_tree_node *Child = Candidate->FirstChild;
+                 Child;
+                 Child = Child->NextSibling)
+            {
+                if (Child->DistanceFromParent == Distance)
+                {
+                    PushCandidate(&Candidates, Child);
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -192,7 +202,6 @@ function void
 BKTree_Destroy(bk_tree *Tree)
 {
     DestroyMemoryArena(&Tree->Arena);
-
     Tree->Root = 0;
-    Tree->MatchFunction = 0;
+    Tree->MatchFn = 0;
 }
