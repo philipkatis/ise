@@ -1,10 +1,41 @@
 #include "ise_query_tree.h"
 #include "ise_keyword_table.h"
 #include "ise_bk_tree.h"
-#include "ise_answer_stack.h"
 
 #include <stdlib.h>
 #include <string.h>
+
+struct document_answer
+{
+    u32 DocumentID;
+    u32 *Queries;
+    u64 QueryCount;
+};
+
+#define DOCUMENT_ANSWER_STORAGE_SIZE 1024
+
+global document_answer DocumentAnswers[DOCUMENT_ANSWER_STORAGE_SIZE];
+global u64 DocumentAnswerCount = 0;
+
+function void
+PushDocumentAnswer(u32 DocumentID, u64 QueryCount, u32 *Queries)
+{
+    Assert((DocumentAnswerCount + 1) <= DOCUMENT_ANSWER_STORAGE_SIZE);
+
+    document_answer *Answer = DocumentAnswers + DocumentAnswerCount++;
+    Answer->DocumentID = DocumentID;
+    Answer->QueryCount = QueryCount;
+    Answer->Queries = Queries;
+}
+
+function document_answer
+PopDocumentAnswer(void)
+{
+    Assert(DocumentAnswerCount > 0);
+
+    document_answer Answer = DocumentAnswers[--DocumentAnswerCount];
+    return Answer;
+}
 
 #define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
 #define GetHammingTreeIndex(Length) (Length - MIN_KEYWORD_LENGTH)
@@ -16,8 +47,6 @@ struct application
 
     bk_tree HammingTrees[HAMMING_TREE_COUNT];
     bk_tree EditTree;
-
-    answer_stack Answers;
 };
 
 global application Application = { };
@@ -45,9 +74,6 @@ InitializeIndex(void)
 ErrorCode
 DestroyIndex(void)
 {
-    // NOTE(philip): Destroy the possible answer stack.
-    AnswerStack_Destroy(&Application.Answers);
-
     // NOTE(philip): Destroy the edit tree.
     BKTree_Destroy(&Application.EditTree);
 
@@ -319,6 +345,12 @@ LookForMatchingQueries(query_tree *PossibleAnswers, u32 Type, u32 Threshold, key
     }
 }
 
+function s32
+CompareQueryIDs(const void *A, const void *B)
+{
+    return (*(s32 *)A - *(s32 *)B);
+}
+
 ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
@@ -430,49 +462,34 @@ MatchDocument(DocID ID, const char *String)
 
     KeywordTable_Destroy(&DocumentWords);
 
-    answer Answer = { };
-    Answer.DocumentID = ID;
-
-    // NOTE(philip): Compile the answered queries. This will be deallocated by the client.
-    Answer.QueryIDCount = CountAnsweredQueries(&PossibleAnswers);
-    if (Answer.QueryIDCount)
     {
-        Answer.QueryIDs = (u32 *)calloc(1, Answer.QueryIDCount * sizeof(u32));
-        CompileAnsweredQueries(&PossibleAnswers, Answer.QueryIDs);
+        u64 QueryCount = CountAnsweredQueries(&PossibleAnswers);
+        u32 *Queries = 0;
+
+        if (QueryCount)
+        {
+            Queries = (u32 *)calloc(1, QueryCount * sizeof(u32));
+            CompileAnsweredQueries(&PossibleAnswers, Queries);
+
+            qsort(Queries, QueryCount, sizeof(u32), CompareQueryIDs);
+        }
+
+        PushDocumentAnswer(ID, QueryCount, Queries);
     }
 
     QueryTree_Destroy(&PossibleAnswers);
-    AnswerStack_Push(&Application.Answers, Answer);
 
     return EC_SUCCESS;
 }
 
-function s32
-CompareQueryIDs(const void *A, const void *B)
-{
-    return (*(s32 *)A - *(s32 *)B);
-}
-
 ErrorCode
-GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs)
+GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **Queries)
 {
-    ErrorCode Result = EC_FAIL;
+    document_answer Answer = PopDocumentAnswer();
 
-    if (Application.Answers.Count)
-    {
-        answer Answer = AnswerStack_Pop(&Application.Answers);
-        qsort(Answer.QueryIDs, Answer.QueryIDCount, sizeof(u32), CompareQueryIDs);
+    *DocumentID = Answer.DocumentID;
+    *QueryCount = Answer.QueryCount;
+    *Queries    = Answer.Queries;
 
-        *DocumentID = Answer.DocumentID;
-        *QueryCount = Answer.QueryIDCount;
-        *QueryIDs = Answer.QueryIDs;
-
-        Result = EC_SUCCESS;
-    }
-    else
-    {
-        Result = EC_NO_AVAIL_RES;
-    }
-
-    return Result;
+    return EC_SUCCESS;
 }
