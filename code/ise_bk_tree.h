@@ -20,7 +20,7 @@ struct bk_tree_node
     s32 DistanceFromParent;
 };
 
-typedef s32 (*match_function_type)(char *A, u64 LengthA, char *B, u64 LengthB);
+typedef u64 (*match_function_type)(char *A, u64 LengthA, char *B, u64 LengthB);
 
 struct bk_tree
 {
@@ -32,12 +32,5 @@ bk_tree BKTree_Create(bk_tree_type Type);
 void BKTree_Insert(bk_tree *Tree, keyword *Keyword);
 keyword_list BKTree_FindMatches(bk_tree *Tree, keyword *Keyword, s32 DistanceThreshold);
 void BKTree_Destroy(bk_tree *Tree);
-
-#if ISE_DEBUG
-    void _BKTree_Visualize(bk_tree *Tree);
-    #define BKTree_Visualize(Tree) _BKTree_Visualize((Tree))
-#else
-    #define BKTree_Visualize(Tree)
-#endif
 
 #endif

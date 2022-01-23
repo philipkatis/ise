@@ -1,5 +1,8 @@
 #include "acutest.h"
 
+#include "ise_base.h"
+#include "ise_base.cpp"
+
 #include "tests_query_tree.cpp"
 #include "tests_keyword_table.cpp"
 #include "tests_bk_tree.cpp"
@@ -7,7 +10,7 @@
 function void
 Test_IsExactMatch(void)
 {
-    u32 Result = 0;
+    b32 Result = 0;
     char *A = 0;
     char *B = 0;
 
@@ -16,7 +19,7 @@ Test_IsExactMatch(void)
         A = "";
         B = "";
 
-        Result = IsExactMatch(A, strlen(A), B, strlen(B));
+        Result = StringCompare(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
     }
 
@@ -25,7 +28,7 @@ Test_IsExactMatch(void)
         A = "hello";
         B = "hello";
 
-        Result = IsExactMatch(A, strlen(A), B, strlen(B));
+        Result = StringCompare(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
     }
 
@@ -34,7 +37,7 @@ Test_IsExactMatch(void)
         A = "hello";
         B = "world";
 
-        Result = IsExactMatch(A, strlen(A), B, strlen(B));
+        Result = StringCompare(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -43,7 +46,7 @@ Test_IsExactMatch(void)
         A = "000x00010f001";
         B = "rgjahrg";
 
-        Result = IsExactMatch(A, strlen(A), B, strlen(B));
+        Result = StringCompare(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -52,7 +55,7 @@ Test_IsExactMatch(void)
         A = "0000000000000000000000000000001";
         B = "0000000000000000000000000000002";
 
-        Result = IsExactMatch(A, strlen(A), B, strlen(B));
+        Result = StringCompare(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 }
@@ -60,7 +63,7 @@ Test_IsExactMatch(void)
 function void
 Test_CalculateHammingDistance(void)
 {
-    u32 Result = 0;
+    u64 Result = 0;
     char *A = 0;
     char *B = 0;
 
@@ -69,7 +72,7 @@ Test_CalculateHammingDistance(void)
         A = "";
         B = "";
 
-        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
+        Result = HammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -78,7 +81,7 @@ Test_CalculateHammingDistance(void)
         A = "hello";
         B = "hello";
 
-        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
+        Result = HammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -87,7 +90,7 @@ Test_CalculateHammingDistance(void)
         A = "hello";
         B = "world";
 
-        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
+        Result = HammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 4);
     }
 
@@ -96,7 +99,7 @@ Test_CalculateHammingDistance(void)
         A = "1234567890";
         B = "qwertyuiop";
 
-        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
+        Result = HammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 10);
     }
 
@@ -105,7 +108,7 @@ Test_CalculateHammingDistance(void)
         A = "0000000000000000000000000000001";
         B = "0000000000000000000000000000002";
 
-        Result = CalculateHammingDistance(A, strlen(A), B, strlen(B));
+        Result = HammingDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
     }
 }
@@ -113,7 +116,7 @@ Test_CalculateHammingDistance(void)
 function void
 Test_CalculateEditDistance(void)
 {
-    u32 Result = 0;
+    u64 Result = 0;
     char *A = 0;
     char *B = 0;
 
@@ -122,7 +125,7 @@ Test_CalculateEditDistance(void)
         A = "";
         B = "";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -131,7 +134,7 @@ Test_CalculateEditDistance(void)
         A = "hello";
         B = "hello";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 0);
     }
 
@@ -140,7 +143,7 @@ Test_CalculateEditDistance(void)
         A = "hello";
         B = "world";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 4);
     }
 
@@ -149,7 +152,7 @@ Test_CalculateEditDistance(void)
         A = "1234567890";
         B = "qwertyuiop";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 10);
     }
 
@@ -159,25 +162,25 @@ Test_CalculateEditDistance(void)
         A = "kitten";
         B = "sitten";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
 
         A = "sitten";
         B = "sittin";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
 
         A = "sittin";
         B = "sitting";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
 
         A = "bravo";
         B = "raven";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 3);
     }
 
@@ -186,7 +189,7 @@ Test_CalculateEditDistance(void)
         A = "0000000000000000000000000000001";
         B = "0000000000000000000000000000002";
 
-        Result = CalculateEditDistance(A, strlen(A), B, strlen(B));
+        Result = EditDistance(A, strlen(A), B, strlen(B));
         TEST_CHECK(Result == 1);
     }
 }

@@ -17,9 +17,6 @@ setup:
 clean:
 	rm -r -f build
 
-ise_match: code/ise_match.cpp | setup
-	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
-
 ise_query_tree: code/ise_query_tree.cpp | setup
 	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
 
@@ -44,8 +41,8 @@ ise_tests: tests/tests.cpp | setup
 ise_example: example/example.cpp | setup
 	g++ $(CompileFlags) -c example/example.cpp -o build/$@.o
 
-build_ise: ise_match ise_query_tree ise_query_list ise_keyword_list ise_keyword_table ise_bk_tree ise | setup
-	g++ $(CompileFlags) -shared build/ise_match.o build/ise_query_list.o build/ise_query_tree.o build/ise_keyword_list.o build/ise_keyword_table.o build/ise_bk_tree.o build/ise.o -o build/libcore.so
+build_ise: ise_query_tree ise_query_list ise_keyword_list ise_keyword_table ise_bk_tree ise | setup
+	g++ $(CompileFlags) -shared build/ise_query_list.o build/ise_query_tree.o build/ise_keyword_list.o build/ise_keyword_table.o build/ise_bk_tree.o build/ise.o -o build/libcore.so
 
 build_tests: ise_tests | setup
 	g++ $(CompileFlags) build/ise_tests.o -Lbuild -lcore -o build/tests -Wl,-rpath=build

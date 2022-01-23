@@ -1,6 +1,7 @@
 #include "ise_bk_tree.h"
 #include "ise_keyword_table.h"
-#include "ise_match.h"
+
+#include "ise_base.cpp"
 
 #include <stdlib.h>
 
@@ -13,12 +14,12 @@ BKTree_Create(bk_tree_type Type)
     {
         case BKTree_Type_Hamming:
         {
-            Result.MatchFunction = CalculateHammingDistance;
+            Result.MatchFunction = HammingDistance;
         } break;
 
         case BKTree_Type_Edit:
         {
-            Result.MatchFunction = CalculateEditDistance;
+            Result.MatchFunction = EditDistance;
         } break;
 
         default:
@@ -189,50 +190,3 @@ BKTree_Destroy(bk_tree *Tree)
     Tree->Root = 0;
     Tree->MatchFunction = 0;
 }
-
-#if ISE_DEBUG
-    function void
-    PrintTabs(u64 Count)
-    {
-        for (u64 Index = 0;
-             Index < Count;
-             ++Index)
-        {
-            printf("    ");
-        }
-    }
-
-    function void
-    BKTree_VisualizeNode(bk_tree_node *Node, u64 Depth)
-    {
-        PrintTabs(Depth);
-        printf("Word: %s, DistanceFromParent: %d, Depth: %llu\n", Node->Keyword->Word, Node->DistanceFromParent,
-               Depth);
-
-        if (Node->FirstChild)
-        {
-            PrintTabs(Depth);
-            printf("{\n");
-
-            BKTree_VisualizeNode(Node->FirstChild, Depth + 1);
-
-            PrintTabs(Depth);
-            printf("}\n");
-        }
-
-        if (Node->NextSibling)
-        {
-            printf("\n");
-            BKTree_VisualizeNode(Node->NextSibling, Depth);
-        }
-    }
-
-    void
-    _BKTree_Visualize(bk_tree *Tree)
-    {
-        if (Tree->Root)
-        {
-            BKTree_VisualizeNode(Tree->Root, 0);
-        }
-    }
-#endif
