@@ -1,7 +1,5 @@
-#include "ise_bk_tree.h"
-
 function void
-BKTree(void)
+KeywordTree(void)
 {
     // NOTE(philip): Hamming Tree.
     {
@@ -12,14 +10,15 @@ BKTree(void)
 
         keyword_table Keywords = KeywordTable_Create(64);
 
-        for (u64 WordIndex = 0;
-             WordIndex < ArrayCount(Words);
-             ++WordIndex)
+        for (u64 Index = 0;
+             Index < ArrayCount(Words);
+             ++Index)
         {
-            KeywordTable_Insert(&Keywords, Words[WordIndex]);
+            KeywordTable_Insert(&Keywords, Words[Index]);
         }
 
-        bk_tree Tree = BKTree_Create(BKTree_Type_Hamming);
+        keyword_tree Tree;
+        InitializeKeywordTree(&Tree, KeywordTreeType_Hamming);
 
         TEST_CHECK(Tree.Root == 0);
 
@@ -28,7 +27,7 @@ BKTree(void)
              Advance(&Iterator))
         {
             keyword *Keyword = GetValue(&Iterator);
-            BKTree_Insert(&Tree, Keyword);
+            InsertIntoKeywordTree(&Tree, Keyword);
         }
 
         {
@@ -40,7 +39,7 @@ BKTree(void)
             keyword_table SearchValues = KeywordTable_Create(1);
             keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "helt");
 
-            keyword_list Matches = BKTree_FindMatches(&Tree, InsertResult.Keyword, 2);
+            keyword_list Matches = FindMatchesInKeywordTree(&Tree, InsertResult.Keyword, 2);
             KeywordTable_Destroy(&SearchValues);
 
             for (u64 SolutionIndex = 0;
@@ -70,7 +69,7 @@ BKTree(void)
             keyword_table SearchValues = KeywordTable_Create(1);
             keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "opsy");
 
-            keyword_list Matches = BKTree_FindMatches(&Tree, InsertResult.Keyword, 2);
+            keyword_list Matches = FindMatchesInKeywordTree(&Tree, InsertResult.Keyword, 2);
             KeywordTable_Destroy(&SearchValues);
 
             TEST_CHECK(Matches.Head == 0);
@@ -78,7 +77,7 @@ BKTree(void)
             KeywordList_Destroy(&Matches);
         }
 
-        BKTree_Destroy(&Tree);
+        DestroyKeywordTree(&Tree);
         TEST_CHECK(Tree.Root == 0);
 
         KeywordTable_Destroy(&Keywords);
@@ -100,7 +99,8 @@ BKTree(void)
             KeywordTable_Insert(&Keywords, Words[WordIndex]);
         }
 
-        bk_tree Tree = BKTree_Create(BKTree_Type_Edit);
+        keyword_tree Tree;
+        InitializeKeywordTree(&Tree, KeywordTreeType_Edit);
 
         TEST_CHECK(Tree.Root == 0);
 
@@ -109,7 +109,7 @@ BKTree(void)
              Advance(&Iterator))
         {
             keyword *Keyword = GetValue(&Iterator);
-            BKTree_Insert(&Tree, Keyword);
+            InsertIntoKeywordTree(&Tree, Keyword);
         }
 
         {
@@ -121,7 +121,7 @@ BKTree(void)
             keyword_table SearchValues = KeywordTable_Create(1);
             keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "helt");
 
-            keyword_list Matches = BKTree_FindMatches(&Tree, InsertResult.Keyword, 2);
+            keyword_list Matches = FindMatchesInKeywordTree(&Tree, InsertResult.Keyword, 2);
             KeywordTable_Destroy(&SearchValues);
 
             for (u64 SolutionIndex = 0;
@@ -156,7 +156,7 @@ BKTree(void)
             keyword_table SearchValues = KeywordTable_Create(1);
             keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "ops");
 
-            keyword_list Matches = BKTree_FindMatches(&Tree, InsertResult.Keyword, 2);
+            keyword_list Matches = FindMatchesInKeywordTree(&Tree, InsertResult.Keyword, 2);
             KeywordTable_Destroy(&SearchValues);
 
             for (u64 SolutionIndex = 0;
@@ -182,7 +182,7 @@ BKTree(void)
             KeywordList_Destroy(&Matches);
         }
 
-        BKTree_Destroy(&Tree);
+        DestroyKeywordTree(&Tree);
         KeywordTable_Destroy(&Keywords);
     }
 }

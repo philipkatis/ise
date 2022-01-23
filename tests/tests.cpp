@@ -1,11 +1,16 @@
 #include "acutest.h"
 
 #include "ise_base.h"
+#include "ise_keyword_table.h"
+#include "ise_keyword_list.h"
+#include "ise_keyword.h"
+
 #include "ise_base.cpp"
+#include "ise_keyword.cpp"
 
 #include "tests_query_tree.cpp"
 #include "tests_keyword_table.cpp"
-#include "tests_bk_tree.cpp"
+#include "tests_keyword.cpp"
 
 function void
 Test_IsExactMatch(void)
@@ -201,6 +206,6 @@ TEST_LIST =
     { "Edit Distance Calculation",    Test_CalculateEditDistance    },
     { "Query Tree",                   QueryTree                     },
     { "Keyword Table",                KeywordTable                  },
-    { "BK Tree",                      BKTree                        },
+    { "Keyword Tree",                 KeywordTree                   },
     { 0, 0 }
 };

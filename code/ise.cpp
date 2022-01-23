@@ -1,9 +1,15 @@
-#include "ise_query_tree.h"
-#include "ise_keyword_table.h"
-#include "ise_bk_tree.h"
-
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+
+#include "ise_query_tree.h"
+#include "ise_keyword_table.h"
+#include "ise_keyword_list.h"
+
+#include "ise_keyword.h"
+
+#include "ise_base.cpp"
+#include "ise_keyword.cpp"
 
 struct document_answer
 {
@@ -45,8 +51,8 @@ struct application
     query_tree Queries;
     keyword_table Keywords;
 
-    bk_tree HammingTrees[HAMMING_TREE_COUNT];
-    bk_tree EditTree;
+    keyword_tree HammingTrees[HAMMING_TREE_COUNT];
+    keyword_tree EditTree;
 };
 
 global application Application = { };
@@ -62,11 +68,10 @@ InitializeIndex(void)
          Index < HAMMING_TREE_COUNT;
          ++Index)
     {
-        Application.HammingTrees[Index] = BKTree_Create(BKTree_Type_Hamming);
+        InitializeKeywordTree(Application.HammingTrees + Index, KeywordTreeType_Hamming);
     }
 
-    // NOTE(philip): Initialize the edit BK tree.
-    Application.EditTree = BKTree_Create(BKTree_Type_Edit);
+    InitializeKeywordTree(&Application.EditTree, KeywordTreeType_Edit);
 
     return EC_SUCCESS;
 }
@@ -74,15 +79,14 @@ InitializeIndex(void)
 ErrorCode
 DestroyIndex(void)
 {
-    // NOTE(philip): Destroy the edit tree.
-    BKTree_Destroy(&Application.EditTree);
+    DestroyKeywordTree(&Application.EditTree);
 
     // NOTE(philip): Destroy the hamming BK trees.
     for (u64 Index = 0;
          Index < HAMMING_TREE_COUNT;
          ++Index)
     {
-        BKTree_Destroy(&Application.HammingTrees[Index]);
+        DestroyKeywordTree(Application.HammingTrees + Index);
     }
 
     // NOTE(philip): Destroy the keyword table and the query tree.
@@ -100,12 +104,12 @@ InsertInBK(u32 Type, keyword *Keyword)
         case 1:
         {
             u64 TreeIndex = GetHammingTreeIndex(Keyword->Length);
-            BKTree_Insert(&Application.HammingTrees[TreeIndex], Keyword);
+            InsertIntoKeywordTree(Application.HammingTrees + TreeIndex, Keyword);
         } break;
 
         case 2:
         {
-            BKTree_Insert(&Application.EditTree, Keyword);
+            InsertIntoKeywordTree(&Application.EditTree, Keyword);
         } break;
     }
 }
@@ -415,8 +419,7 @@ MatchDocument(DocID ID, const char *String)
 
         // NOTE(philip): Approximate matching.
         {
-            // NOTE(philip): Find the hamming tree we want to search.
-            bk_tree *HammingTree = &Application.HammingTrees[GetHammingTreeIndex(DocumentWord->Length)];
+            keyword_tree *HammingTree = Application.HammingTrees + GetHammingTreeIndex(DocumentWord->Length);
 
             // NOTE(philip): Go through all the thresholds.
             for (u32 Threshold = 1;
@@ -425,8 +428,7 @@ MatchDocument(DocID ID, const char *String)
             {
                 // NOTE(philip): Hamming tree.
                 {
-                    // NOTE(philip): Find the matches.
-                    keyword_list FoundKeywords = BKTree_FindMatches(HammingTree, DocumentWord, Threshold);
+                    keyword_list FoundKeywords = FindMatchesInKeywordTree(HammingTree, DocumentWord, Threshold);
 
                     // NOTE(philip): Go through all the keywords and update the queries.
                     for (keyword_list_node *Node = FoundKeywords.Head;
@@ -442,8 +444,7 @@ MatchDocument(DocID ID, const char *String)
 
                 // NOTE(philip): Edit tree.
                 {
-                    // NOTE(philip): Find the matches.
-                    keyword_list FoundKeywords = BKTree_FindMatches(&Application.EditTree, DocumentWord, Threshold);
+                    keyword_list FoundKeywords = FindMatchesInKeywordTree(&Application.EditTree, DocumentWord, Threshold);
 
                     // NOTE(philip): Go through all the keywords and update the queries.
                     for (keyword_list_node *Node = FoundKeywords.Head;
