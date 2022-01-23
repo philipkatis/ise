@@ -1,16 +1,9 @@
-# Suppress the output of all commands.
-.SILENT:
-
-# The additional include directories we want to search.
 IncludeDirectories=-Icode -Ithird_party/acutest/include
 
-# The compile flags we want to use through all our g++ calls.
-CompileFlags=-g -Wall -Wno-address-of-packed-member -Wno-write-strings -O3 -DISE_DEBUG=0 $(IncludeDirectories)
+CompileFlags=-g -Wall -Wno-address-of-packed-member -Wno-write-strings -O2 -DISE_DEBUG=0 $(IncludeDirectories)
 
-# The default target that builds all the executables.
-all: build_lib build_tests build_example | setup
+build_all: build_ise build_tests build_example | setup
 
-# This command runs the test application.
 run: build/example
 	./build/example
 
@@ -18,20 +11,12 @@ run: build/example
 tests: build/tests
 	./build/tests
 
-# This command runs valgrind and cheks for any memory errors.
-valgrind: build/example
-	valgrind ./build/example
-
-# This target deletes the output directory.
-.PHONY: clean
-clean:
-	rm -rf build
-
-# This target sets up the output directory.
 setup:
 	mkdir -p build
 
-# These targets build all the translation units separately into object files.
+clean:
+	rm -r -f build
+
 ise_match: code/ise_match.cpp | setup
 	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
 
@@ -62,14 +47,11 @@ ise_tests: tests/tests.cpp | setup
 ise_example: example/example.cpp | setup
 	g++ $(CompileFlags) -c example/example.cpp -o build/$@.o
 
-# This target builds the core library.
-build_lib: ise_match ise_answer_stack ise_query_tree ise_query_list ise_keyword_list ise_keyword_table ise_bk_tree ise | setup
+build_ise: ise_match ise_answer_stack ise_query_tree ise_query_list ise_keyword_list ise_keyword_table ise_bk_tree ise | setup
 	g++ $(CompileFlags) -shared build/ise_match.o build/ise_answer_stack.o build/ise_query_list.o build/ise_query_tree.o build/ise_keyword_list.o build/ise_keyword_table.o build/ise_bk_tree.o build/ise.o -o build/libcore.so
 
-# This target builds the unit tests application.
 build_tests: ise_tests | setup
 	g++ $(CompileFlags) build/ise_tests.o -Lbuild -lcore -o build/tests -Wl,-rpath=build
 
-# This target builds the example.
 build_example: ise_example | setup
 	g++ $(CompileFlags) build/ise_example.o -Lbuild -lcore -o build/example -Wl,-rpath=build
