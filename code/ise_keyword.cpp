@@ -96,10 +96,10 @@ InsertIntoKeywordTree(keyword_tree *Tree, keyword *Keyword)
     }
 }
 
-function keyword_list
-FindMatchesInKeywordTree(keyword_tree *Tree, keyword *Keyword, u64 DistanceThreshold)
+function void
+FindMatchesInKeywordTree(keyword_tree *Tree, keyword *Keyword, u64 *MatchCount, keyword_tree_match *Matches)
 {
-    keyword_list Matches = { };
+    *MatchCount = 0;
 
     for (keyword_tree_node *Subtree = Tree->Root;
          Subtree;
@@ -108,13 +108,17 @@ FindMatchesInKeywordTree(keyword_tree *Tree, keyword *Keyword, u64 DistanceThres
         u64 Distance = Tree->CalculateDistance(Subtree->Data->Word, Subtree->Data->Length,
                                                Keyword->Word, Keyword->Length);
 
-        if (Distance <= DistanceThreshold)
+        if (Distance <= MAX_DISTANCE_THRESHOLD)
         {
-            KeywordList_Insert(&Matches, Subtree->Data);
+            Assert((*MatchCount + 1) <= KEYWORD_TREE_MATCH_STORAGE_SIZE);
+
+            keyword_tree_match *Match = Matches + (*MatchCount)++;
+            Match->Keyword = Subtree->Data;
+            Match->Distance = Distance;
         }
 
-        u64 SearchRangeStart = (((s64)(Distance - DistanceThreshold) > 0) ? (Distance - DistanceThreshold) : 1);
-        u64 SearchRangeEnd = Distance + DistanceThreshold;
+        u64 SearchRangeStart = (((s64)(Distance - MAX_DISTANCE_THRESHOLD) > 0) ? (Distance - MAX_DISTANCE_THRESHOLD) : 1);
+        u64 SearchRangeEnd = Distance + MAX_DISTANCE_THRESHOLD;
 
         for (keyword_tree_node *Child = Subtree->FirstChild;
              Child;
@@ -126,8 +130,6 @@ FindMatchesInKeywordTree(keyword_tree *Tree, keyword *Keyword, u64 DistanceThres
             }
         }
     }
-
-    return Matches;
 }
 
 function void

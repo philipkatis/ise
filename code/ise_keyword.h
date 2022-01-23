@@ -28,6 +28,12 @@ struct keyword_tree_candidate_array
     keyword_tree_node **Data;
 };
 
+struct keyword_tree_match
+{
+    keyword* Keyword;
+    u64 Distance;
+};
+
 struct keyword_tree
 {
     keyword_tree_node *Root;

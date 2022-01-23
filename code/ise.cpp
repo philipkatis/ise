@@ -8,6 +8,8 @@
 
 #include "ise_keyword.h"
 
+#define KEYWORD_TREE_MATCH_STORAGE_SIZE 1024
+
 #include "ise_base.cpp"
 #include "ise_keyword.cpp"
 
@@ -22,6 +24,9 @@ struct document_answer
 
 global document_answer DocumentAnswers[DOCUMENT_ANSWER_STORAGE_SIZE];
 global u64 DocumentAnswerCount = 0;
+
+global keyword_tree_match KeywordTreeMatches[KEYWORD_TREE_MATCH_STORAGE_SIZE];
+global u64 KeywordTreeMatchCount = 0;
 
 function void
 PushDocumentAnswer(u32 DocumentID, u64 QueryCount, u32 *Queries)
@@ -310,38 +315,35 @@ CompileAnsweredQueries(query_tree *Tree, u32 *Result)
 }
 
 function void
-LookForMatchingQueries(query_tree *PossibleAnswers, u32 Type, u32 Threshold, keyword *Keyword)
+LookForMatchingQueries(query_tree *PossibleAnswers, u32 Type, keyword *Keyword, u64 Distance)
 {
-    if (Keyword)
+    // NOTE(philip): If it exists go through the queries it is part of.
+    for (query_list_node *Node = Keyword->Queries.Head;
+         Node;
+         Node = Node->Next)
     {
-        // NOTE(philip): If it exists go through the queries it is part of.
-        for (query_list_node *Node = Keyword->Queries.Head;
-             Node;
-             Node = Node->Next)
+        // NOTE(philip): Stop by every query that satisfies the search results.
+        query *Query = Node->Query;
+        if ((GetQueryType(Query) == Type) && (GetQueryDistance(Query) >= Distance))
         {
-            // NOTE(philip): Stop by every query that satisfies the search results.
-            query *Query = Node->Query;
-            if ((GetQueryType(Query) == Type) && (GetQueryDistance(Query) == Threshold))
-            {
-                // NOTE(philip): Insert that query in the possible answer query tree.
-                u32 KeywordCount = GetQueryKeywordCount(Query);
-                query_tree_insert_result InsertResult = QueryTree_Insert(PossibleAnswers, Query->ID, KeywordCount,
-                                                                         Type, 0);
-                query *PossibleAnswer = InsertResult.Query;
+            // NOTE(philip): Insert that query in the possible answer query tree.
+            u32 KeywordCount = GetQueryKeywordCount(Query);
+            query_tree_insert_result InsertResult = QueryTree_Insert(PossibleAnswers, Query->ID, KeywordCount,
+                                                                     Type, 0);
+            query *PossibleAnswer = InsertResult.Query;
 
-                if (PossibleAnswer)
+            if (PossibleAnswer)
+            {
+                // NOTE(philip): Go through all the keywords that the query has.
+                for (u32 KeywordIndex = 0;
+                     KeywordIndex < KeywordCount;
+                     ++KeywordIndex)
                 {
-                    // NOTE(philip): Go through all the keywords that the query has.
-                    for (u32 KeywordIndex = 0;
-                         KeywordIndex < KeywordCount;
-                         ++KeywordIndex)
+                    if (Query->Keywords[KeywordIndex] == Keyword)
                     {
-                        if (Query->Keywords[KeywordIndex] == Keyword)
-                        {
-                            // NOTE(philip): Find the index of the found query and set the flag.
-                            PossibleAnswer->HasKeywordFlags[KeywordIndex] = true;
-                            break;
-                        }
+                        // NOTE(philip): Find the index of the found query and set the flag.
+                        PossibleAnswer->HasKeywordFlags[KeywordIndex] = true;
+                        break;
                     }
                 }
             }
@@ -414,49 +416,37 @@ MatchDocument(DocID ID, const char *String)
         {
             // NOTE(philip): Find the word in keyword table.
             keyword *FoundKeyword = KeywordTable_Find(&Application.Keywords, DocumentWord->Word);
-            LookForMatchingQueries(&PossibleAnswers, 0, 0, FoundKeyword);
+
+            if (FoundKeyword)
+            {
+                LookForMatchingQueries(&PossibleAnswers, 0, FoundKeyword, 0);
+            }
         }
 
         // NOTE(philip): Approximate matching.
         {
             keyword_tree *HammingTree = Application.HammingTrees + GetHammingTreeIndex(DocumentWord->Length);
 
-            // NOTE(philip): Go through all the thresholds.
-            for (u32 Threshold = 1;
-                 Threshold <= MAX_DISTANCE_THRESHOLD;
-                 ++Threshold)
+            KeywordTreeMatchCount = 0;
+            FindMatchesInKeywordTree(HammingTree, DocumentWord, &KeywordTreeMatchCount, KeywordTreeMatches);
+
+            for (u64 Index = 0;
+                 Index < KeywordTreeMatchCount;
+                 ++Index)
             {
-                // NOTE(philip): Hamming tree.
-                {
-                    keyword_list FoundKeywords = FindMatchesInKeywordTree(HammingTree, DocumentWord, Threshold);
+                keyword_tree_match *Match = KeywordTreeMatches + Index;
+                LookForMatchingQueries(&PossibleAnswers, 1, Match->Keyword, Match->Distance);
+            }
 
-                    // NOTE(philip): Go through all the keywords and update the queries.
-                    for (keyword_list_node *Node = FoundKeywords.Head;
-                         Node;
-                         Node = Node->Next)
-                    {
-                        keyword *FoundKeyword = Node->Keyword;
-                        LookForMatchingQueries(&PossibleAnswers, 1, Threshold, FoundKeyword);
-                    }
+            KeywordTreeMatchCount = 0;
+            FindMatchesInKeywordTree(&Application.EditTree, DocumentWord, &KeywordTreeMatchCount, KeywordTreeMatches);
 
-                    KeywordList_Destroy(&FoundKeywords);
-                }
-
-                // NOTE(philip): Edit tree.
-                {
-                    keyword_list FoundKeywords = FindMatchesInKeywordTree(&Application.EditTree, DocumentWord, Threshold);
-
-                    // NOTE(philip): Go through all the keywords and update the queries.
-                    for (keyword_list_node *Node = FoundKeywords.Head;
-                         Node;
-                         Node = Node->Next)
-                    {
-                        keyword *FoundKeyword = Node->Keyword;
-                        LookForMatchingQueries(&PossibleAnswers, 2, Threshold, FoundKeyword);
-                    }
-
-                    KeywordList_Destroy(&FoundKeywords);
-                }
+            for (u64 Index = 0;
+                 Index < KeywordTreeMatchCount;
+                 ++Index)
+            {
+                keyword_tree_match *Match = KeywordTreeMatches + Index;
+                LookForMatchingQueries(&PossibleAnswers, 2, Match->Keyword, Match->Distance);
             }
         }
     }

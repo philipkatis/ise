@@ -5,6 +5,8 @@
 #include "ise_keyword_list.h"
 #include "ise_keyword.h"
 
+#define KEYWORD_TREE_MATCH_STORAGE_SIZE 1024
+
 #include "ise_base.cpp"
 #include "ise_keyword.cpp"
 

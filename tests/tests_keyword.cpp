@@ -1,3 +1,6 @@
+global keyword_tree_match KeywordTreeMatches[KEYWORD_TREE_MATCH_STORAGE_SIZE];
+global u64 KeywordTreeMatchCount = 0;
+
 function void
 KeywordTree(void)
 {
@@ -39,7 +42,7 @@ KeywordTree(void)
             keyword_table SearchValues = KeywordTable_Create(1);
             keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "helt");
 
-            keyword_list Matches = FindMatchesInKeywordTree(&Tree, InsertResult.Keyword, 2);
+            FindMatchesInKeywordTree(&Tree, InsertResult.Keyword, &KeywordTreeMatchCount, KeywordTreeMatches);
             KeywordTable_Destroy(&SearchValues);
 
             for (u64 SolutionIndex = 0;
@@ -48,11 +51,12 @@ KeywordTree(void)
             {
                 b32 Found = false;
 
-                for (keyword_list_node *Node = Matches.Head;
-                     Node;
-                     Node = Node->Next)
+                for (u64 Index = 0;
+                     Index < KeywordTreeMatchCount;
+                     ++Index)
                 {
-                    if (strcmp(Node->Keyword->Word, Solutions[SolutionIndex]) == 0)
+                    keyword_tree_match *Match = KeywordTreeMatches + Index;
+                    if (strcmp(Match->Keyword->Word, Solutions[SolutionIndex]) == 0)
                     {
                         Found = true;
                         break;
@@ -61,20 +65,14 @@ KeywordTree(void)
 
                 TEST_CHECK(Found == true);
             }
-
-            KeywordList_Destroy(&Matches);
         }
 
         {
             keyword_table SearchValues = KeywordTable_Create(1);
             keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "opsy");
 
-            keyword_list Matches = FindMatchesInKeywordTree(&Tree, InsertResult.Keyword, 2);
+            FindMatchesInKeywordTree(&Tree, InsertResult.Keyword, &KeywordTreeMatchCount, KeywordTreeMatches);
             KeywordTable_Destroy(&SearchValues);
-
-            TEST_CHECK(Matches.Head == 0);
-
-            KeywordList_Destroy(&Matches);
         }
 
         DestroyKeywordTree(&Tree);
@@ -121,7 +119,7 @@ KeywordTree(void)
             keyword_table SearchValues = KeywordTable_Create(1);
             keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "helt");
 
-            keyword_list Matches = FindMatchesInKeywordTree(&Tree, InsertResult.Keyword, 2);
+            FindMatchesInKeywordTree(&Tree, InsertResult.Keyword, &KeywordTreeMatchCount, KeywordTreeMatches);
             KeywordTable_Destroy(&SearchValues);
 
             for (u64 SolutionIndex = 0;
@@ -130,11 +128,12 @@ KeywordTree(void)
             {
                 b32 Found = false;
 
-                for (keyword_list_node *Node = Matches.Head;
-                     Node;
-                     Node = Node->Next)
+                for (u64 Index = 0;
+                     Index < KeywordTreeMatchCount;
+                     ++Index)
                 {
-                    if (strcmp(Node->Keyword->Word, Solutions[SolutionIndex]) == 0)
+                    keyword_tree_match *Match = KeywordTreeMatches + Index;
+                    if (strcmp(Match->Keyword->Word, Solutions[SolutionIndex]) == 0)
                     {
                         Found = true;
                         break;
@@ -143,8 +142,6 @@ KeywordTree(void)
 
                 TEST_CHECK(Found == true);
             }
-
-            KeywordList_Destroy(&Matches);
         }
 
         {
@@ -156,7 +153,7 @@ KeywordTree(void)
             keyword_table SearchValues = KeywordTable_Create(1);
             keyword_table_insert_result InsertResult = KeywordTable_Insert(&SearchValues, "ops");
 
-            keyword_list Matches = FindMatchesInKeywordTree(&Tree, InsertResult.Keyword, 2);
+            FindMatchesInKeywordTree(&Tree, InsertResult.Keyword, &KeywordTreeMatchCount, KeywordTreeMatches);
             KeywordTable_Destroy(&SearchValues);
 
             for (u64 SolutionIndex = 0;
@@ -165,11 +162,12 @@ KeywordTree(void)
             {
                 b32 Found = false;
 
-                for (keyword_list_node *Node = Matches.Head;
-                     Node;
-                     Node = Node->Next)
+                for (u64 Index = 0;
+                     Index < KeywordTreeMatchCount;
+                     ++Index)
                 {
-                    if (strcmp(Node->Keyword->Word, Solutions[SolutionIndex]) == 0)
+                    keyword_tree_match *Match = KeywordTreeMatches + Index;
+                    if (strcmp(Match->Keyword->Word, Solutions[SolutionIndex]) == 0)
                     {
                         Found = true;
                         break;
@@ -178,8 +176,6 @@ KeywordTree(void)
 
                 TEST_CHECK(Found == true);
             }
-
-            KeywordList_Destroy(&Matches);
         }
 
         DestroyKeywordTree(&Tree);
