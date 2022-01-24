@@ -1,8 +1,6 @@
 #include "acutest.h"
 
 #include "ise_base.h"
-
-#include "ise_query_list.h"
 #include "ise_keyword.h"
 
 #define KEYWORD_TREE_MATCH_STORAGE_SIZE 1024

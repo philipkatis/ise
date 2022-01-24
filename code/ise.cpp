@@ -146,9 +146,7 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
                  ++WordIndex)
             {
                 keyword *Keyword = InsertIntoKeywordTable(&Application.Keywords, Words[WordIndex]);
-
                 Query->Keywords[WordIndex] = Keyword;
-                QueryList_Insert(&Keyword->Queries, Query);
             }
         } break;
 
@@ -169,7 +167,6 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
                 }
 
                 Query->Keywords[WordIndex] = Keyword;
-                QueryList_Insert(&Keyword->Queries, Query);
             }
         } break;
 
@@ -188,7 +185,6 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
                 }
 
                 Query->Keywords[WordIndex] = Keyword;
-                QueryList_Insert(&Keyword->Queries, Query);
             }
         } break;
     }
@@ -202,23 +198,6 @@ EndQuery(QueryID ID)
     query *Query = QueryTree_Find(&Application.Queries, ID);
     if (Query)
     {
-        u32 KeywordCount = GetQueryKeywordCount(Query);
-
-        for (u32 KeywordIndex = 0;
-             KeywordIndex < KeywordCount;
-             ++KeywordIndex)
-        {
-            // NOTE(philip): Remove the query from the keyword.
-            keyword *Keyword = Query->Keywords[KeywordIndex];
-            QueryList_Remove(&Keyword->Queries, Query);
-
-            // TODO(philip): Currenty, keywords that were previously part of queryies are not removed. They remain
-            // in the keyword table, as well as the BK trees. This is fine per the assignment, but a proper solution
-            // would be to evict them. Hash table removal is easy. BK tree removal on the other hand would require
-            // either a complete rebuild or a rebuild of the subtree after the keyword. Another solution is at
-            // a certain moment (based on a load factor), rebuild the entire tree. But these would happen here.
-        }
-
         // NOTE(philip): Remove the query from the tree.
         QueryTree_Remove(&Application.Queries, ID);
     }
@@ -310,39 +289,50 @@ CompileAnsweredQueries(query_tree *Tree, u32 *Result)
 }
 
 function void
-LookForMatchingQueries(query_tree *PossibleAnswers, u32 Type, keyword *Keyword, u64 Distance)
+LookForMatchingQueries_(query_tree_node *Node, query_tree *PossibleAnswers, u32 Type, keyword *Keyword, u32 Distance)
 {
-    // NOTE(philip): If it exists go through the queries it is part of.
-    for (query_list_node *Node = Keyword->Queries.Head;
-         Node;
-         Node = Node->Next)
-    {
-        // NOTE(philip): Stop by every query that satisfies the search results.
-        query *Query = Node->Query;
-        if ((GetQueryType(Query) == Type) && (GetQueryDistance(Query) >= Distance))
-        {
-            // NOTE(philip): Insert that query in the possible answer query tree.
-            u32 KeywordCount = GetQueryKeywordCount(Query);
-            query_tree_insert_result InsertResult = QueryTree_Insert(PossibleAnswers, Query->ID, KeywordCount,
-                                                                     Type, 0);
-            query *PossibleAnswer = InsertResult.Query;
+    query *Query = &Node->Data;
 
-            if (PossibleAnswer)
+    if ((GetQueryType(Query) == Type) && (GetQueryDistance(Query) >= Distance))
+    {
+        u64 KeywordCount = GetQueryKeywordCount(Query);
+
+        for (u64 Index = 0;
+             Index < KeywordCount;
+             ++Index)
+        {
+            if (Query->Keywords[Index] == Keyword)
             {
-                // NOTE(philip): Go through all the keywords that the query has.
-                for (u32 KeywordIndex = 0;
-                     KeywordIndex < KeywordCount;
-                     ++KeywordIndex)
+                query_tree_insert_result InsertResult = QueryTree_Insert(PossibleAnswers, Query->ID, KeywordCount,
+                                                                         Type, 0);
+                query *PossibleAnswer = InsertResult.Query;
+                if (PossibleAnswer)
                 {
-                    if (Query->Keywords[KeywordIndex] == Keyword)
-                    {
-                        // NOTE(philip): Find the index of the found query and set the flag.
-                        PossibleAnswer->HasKeywordFlags[KeywordIndex] = true;
-                        break;
-                    }
+                    PossibleAnswer->HasKeywordFlags[Index] = true;
                 }
+
+                // NOTE(philip): Don't break here. Duplicate words.
             }
         }
+    }
+
+    if (Node->Left)
+    {
+        LookForMatchingQueries_(Node->Left, PossibleAnswers, Type, Keyword, Distance);
+    }
+
+    if (Node->Right)
+    {
+        LookForMatchingQueries_(Node->Right, PossibleAnswers, Type, Keyword, Distance);
+    }
+}
+
+function void
+LookForMatchingQueries(query_tree *Queries, query_tree *PossibleAnswers, u32 Type, keyword *Keyword, u32 Distance)
+{
+    if (Queries->Root)
+    {
+        LookForMatchingQueries_(Queries->Root, PossibleAnswers, Type, Keyword, Distance);
     }
 }
 
@@ -409,7 +399,7 @@ MatchDocument(DocID ID, const char *String)
         keyword *Keyword = FindKeywordInTable(&Application.Keywords, DocumentWord);
         if (Keyword)
         {
-            LookForMatchingQueries(&PossibleAnswers, 0, Keyword, 0);
+            LookForMatchingQueries(&Application.Queries, &PossibleAnswers, 0, Keyword, 0);
         }
 
         keyword_tree *HammingTree = Application.HammingTrees + GetHammingTreeIndex(DocumentWord->Length);
@@ -422,7 +412,7 @@ MatchDocument(DocID ID, const char *String)
              ++Index)
         {
             keyword_tree_match *Match = KeywordTreeMatches + Index;
-            LookForMatchingQueries(&PossibleAnswers, 1, Match->Keyword, Match->Distance);
+            LookForMatchingQueries(&Application.Queries, &PossibleAnswers, 1, Match->Keyword, Match->Distance);
         }
 
         KeywordTreeMatchCount = 0;
@@ -433,7 +423,7 @@ MatchDocument(DocID ID, const char *String)
              ++Index)
         {
             keyword_tree_match *Match = KeywordTreeMatches + Index;
-            LookForMatchingQueries(&PossibleAnswers, 2, Match->Keyword, Match->Distance);
+            LookForMatchingQueries(&Application.Queries, &PossibleAnswers, 2, Match->Keyword, Match->Distance);
         }
     }
 

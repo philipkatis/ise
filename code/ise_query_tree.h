@@ -2,7 +2,6 @@
 #define ISE_QUERY_TREE_H
 
 #include "ise.h"
-#include "ise_query_list.h"
 #include "ise_keyword.h"
 
 struct __attribute__ ((__packed__)) query

@@ -211,36 +211,6 @@ QueryTree_Find(query_tree *Tree, u32 ID)
     return Query;
 }
 
-// TODO(philip): Maybe, probably, should do something better.
-// NOTE(philip): Due to the way node removal works in AVL trees, there are some cases where the memory address of
-// the query data might change. This invalidates the links from keywords to queries. There is not an attractive way
-// to fix this without switching away from recursive functions. So currently when the memory address changes we
-// go through the keywords and update the broken links.
-
-struct query_list_node;
-
-function void
-UpdateKeywordQueryLinks(query *Source, query *Destination)
-{
-    u32 KeywordCount = GetQueryKeywordCount(Source);
-    for (u32 KeywordIndex = 0;
-         KeywordIndex < KeywordCount;
-         ++KeywordIndex)
-    {
-        keyword *Keyword = Source->Keywords[KeywordIndex];
-        for (query_list_node *Node = Keyword->Queries.Head;
-             Node;
-             Node = Node->Next)
-        {
-            if (Node->Query == Source)
-            {
-                Node->Query = Destination;
-                break;
-            }
-        }
-    }
-}
-
 /*
 
   NOTE(philip): Recursively removes a node from the subtree, if it exists, with proper balancing. Sets the function
@@ -276,8 +246,6 @@ Remove(query_tree_node *Root, u32 ID, b32 *Removed)
                 }
 
                 Root->Data = MovingChild->Data;
-                UpdateKeywordQueryLinks(&MovingChild->Data, &Root->Data);
-
                 Root->Right = Remove(Root->Right, MovingChild->Data.ID, 0);
             }
             else
@@ -287,8 +255,6 @@ Remove(query_tree_node *Root, u32 ID, b32 *Removed)
                 if (Child)
                 {
                     *Root = *Child;
-                    UpdateKeywordQueryLinks(&Child->Data, &Root->Data);
-
                     free(Child);
                 }
                 else

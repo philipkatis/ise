@@ -10,13 +10,13 @@
 struct __attribute__ ((__packed__)) keyword
 {
     char Word[MAX_KEYWORD_LENGTH + 1];
-
-    query_list Queries;
     u32 Length;
     u32 Hash;
 
     b32 IsInHammingTree;
     b32 IsInEditTree;
+
+    u64 Padding;
 };
 
 struct __attribute__ ((__packed__)) keyword_table_node
