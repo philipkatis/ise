@@ -7,11 +7,10 @@
 #include "ise_query.h"
 #include "ise.h"
 
-#define KEYWORD_TREE_MATCH_STORAGE_SIZE 1024
-
 #include "ise_base.cpp"
 #include "ise_keyword.cpp"
 #include "ise_query.cpp"
+#include "ise_work.cpp"
 
 struct document_answer
 {
@@ -24,6 +23,8 @@ struct document_answer
 
 global document_answer DocumentAnswers[DOCUMENT_ANSWER_STORAGE_SIZE];
 global u64 DocumentAnswerCount = 0;
+
+#define KEYWORD_TREE_MATCH_STORAGE_SIZE 1024
 
 global keyword_tree_match KeywordTreeMatches[KEYWORD_TREE_MATCH_STORAGE_SIZE];
 global u64 KeywordTreeMatchCount = 0;
@@ -49,7 +50,6 @@ PopDocumentAnswer(void)
 }
 
 #define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
-#define GetHammingTreeIndex(Length) (Length - MIN_KEYWORD_LENGTH)
 
 struct application
 {
@@ -103,85 +103,8 @@ DestroyIndex(void)
 ErrorCode
 StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 {
-    char *Words[MAX_KEYWORD_COUNT_PER_QUERY];
-    u32 WordCount = 0;
-
-    // NOTE(philip): Count and split the words from the input.
-    {
-        Words[WordCount] = (char*)String;
-        ++WordCount;
-
-        for (char *Character = (char *)String;
-             *Character;
-             ++Character)
-        {
-            if (*Character == ' ')
-            {
-                *Character = 0;
-                Words[WordCount] = Character + 1;
-                ++WordCount;
-            }
-        }
-    }
-
-    query *Query = InsertIntoQueryTree(&Application.Queries, ID, WordCount, Type, Distance);
-
-    switch (Type)
-    {
-        case 0:
-        {
-            for (u32 WordIndex = 0;
-                 WordIndex < WordCount;
-                 ++WordIndex)
-            {
-                keyword *Keyword = InsertIntoKeywordTable(&Application.Keywords, Words[WordIndex]);\
-                ++Keyword->InstanceCount;
-
-                Query->Keywords[WordIndex] = Keyword;
-            }
-        } break;
-
-        case 1:
-        {
-            for (u32 WordIndex = 0;
-                 WordIndex < WordCount;
-                 ++WordIndex)
-            {
-                keyword *Keyword = InsertIntoKeywordTable(&Application.Keywords, Words[WordIndex]);
-
-                if (Keyword->HammingInstanceCount == 0)
-                {
-                    keyword_tree *Tree = Application.HammingTrees + GetHammingTreeIndex(Keyword->Length);
-                    InsertIntoKeywordTree(Tree, Keyword);
-                }
-
-                ++Keyword->InstanceCount;
-                ++Keyword->HammingInstanceCount;
-
-                Query->Keywords[WordIndex] = Keyword;
-            }
-        } break;
-
-        case 2:
-        {
-            for (u32 WordIndex = 0;
-                 WordIndex < WordCount;
-                 ++WordIndex)
-            {
-                keyword *Keyword = InsertIntoKeywordTable(&Application.Keywords, Words[WordIndex]);
-
-                if (Keyword->EditInstanceCount == 0)
-                {
-                    InsertIntoKeywordTree(&Application.EditTree, Keyword);
-                }
-
-                ++Keyword->InstanceCount;
-                ++Keyword->EditInstanceCount;
-
-                Query->Keywords[WordIndex] = Keyword;
-            }
-        } break;
-    }
+    RegisterQuery(&Application.Queries, &Application.Keywords, Application.HammingTrees, &Application.EditTree,
+                  ID, Type, Distance, (char *)String);
 
     return EC_SUCCESS;
 }
@@ -189,80 +112,7 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 ErrorCode
 EndQuery(QueryID ID)
 {
-    query *Query = FindQueryInTree(&Application.Queries, ID);
-
-    query_type Type = GetType(Query);
-    u64 KeywordCount = GetKeywordCount(Query);
-
-    switch (Type)
-    {
-        case QueryType_Exact:
-        {
-            for (u64 Index = 0;
-                 Index < KeywordCount;
-                 ++Index)
-            {
-                keyword *Keyword = Query->Keywords[Index];
-
-                --Keyword->InstanceCount;
-
-                if (Keyword->InstanceCount == 0)
-                {
-
-                }
-            }
-        } break;
-
-        case QueryType_Hamming:
-        {
-            for (u64 Index = 0;
-                 Index < KeywordCount;
-                 ++Index)
-            {
-                keyword *Keyword = Query->Keywords[Index];
-
-                --Keyword->HammingInstanceCount;
-                --Keyword->InstanceCount;
-
-                if (Keyword->HammingInstanceCount == 0)
-                {
-                    keyword_tree *Tree = Application.HammingTrees + GetHammingTreeIndex(Keyword->Length);
-                    RemoveFromKeywordTree(Tree, Keyword);
-                }
-
-                if (Keyword->InstanceCount == 0)
-                {
-
-                }
-            }
-        } break;
-
-        case QueryType_Edit:
-        {
-            for (u64 Index = 0;
-                 Index < KeywordCount;
-                 ++Index)
-            {
-                keyword *Keyword = Query->Keywords[Index];
-
-                --Keyword->EditInstanceCount;
-                --Keyword->InstanceCount;
-
-                if (Keyword->EditInstanceCount == 0)
-                {
-                    RemoveFromKeywordTree(&Application.EditTree, Keyword);
-                }
-
-                if (Keyword->InstanceCount == 0)
-                {
-
-                }
-            }
-        } break;
-    }
-
-    RemoveFromQueryTree(&Application.Queries, ID);
-
+    UnregisterQuery(&Application.Queries, Application.HammingTrees, &Application.EditTree, ID);
     return EC_SUCCESS;
 }
 
@@ -463,10 +313,11 @@ MatchDocument(DocID ID, const char *String)
             LookForMatchingQueries(&Application.Queries, &PossibleAnswers, 0, Keyword, 0);
         }
 
-        keyword_tree *HammingTree = Application.HammingTrees + GetHammingTreeIndex(DocumentWord->Length);
+        keyword_tree *HammingTree = Application.HammingTrees + GetHammingTreeIndex(DocumentWord);
 
         KeywordTreeMatchCount = 0;
-        FindMatchesInKeywordTree(HammingTree, DocumentWord, &KeywordTreeMatchCount, KeywordTreeMatches);
+        FindMatchesInKeywordTree(HammingTree, DocumentWord, &KeywordTreeMatchCount, KEYWORD_TREE_MATCH_STORAGE_SIZE,
+                                 KeywordTreeMatches);
 
         for (u64 Index = 0;
              Index < KeywordTreeMatchCount;
@@ -477,7 +328,8 @@ MatchDocument(DocID ID, const char *String)
         }
 
         KeywordTreeMatchCount = 0;
-        FindMatchesInKeywordTree(&Application.EditTree, DocumentWord, &KeywordTreeMatchCount, KeywordTreeMatches);
+        FindMatchesInKeywordTree(&Application.EditTree, DocumentWord, &KeywordTreeMatchCount,
+                                 KEYWORD_TREE_MATCH_STORAGE_SIZE, KeywordTreeMatches);
 
         for (u64 Index = 0;
              Index < KeywordTreeMatchCount;

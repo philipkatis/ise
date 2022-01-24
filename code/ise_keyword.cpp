@@ -321,7 +321,8 @@ InsertIntoKeywordTree(keyword_tree *Tree, keyword *Keyword)
 }
 
 function void
-FindMatchesInKeywordTree(keyword_tree *Tree, keyword *Keyword, u64 *MatchCount, keyword_tree_match *Matches)
+FindMatchesInKeywordTree(keyword_tree *Tree, keyword *Keyword, u64 *MatchCount, u64 MatchCapacity,
+                         keyword_tree_match *Matches)
 {
     *MatchCount = 0;
 
@@ -334,7 +335,7 @@ FindMatchesInKeywordTree(keyword_tree *Tree, keyword *Keyword, u64 *MatchCount, 
 
         if (Subtree->IsActive && (Distance <= MAX_DISTANCE_THRESHOLD))
         {
-            Assert((*MatchCount + 1) <= KEYWORD_TREE_MATCH_STORAGE_SIZE);
+            Assert((*MatchCount + 1) <= MatchCapacity);
 
             keyword_tree_match *Match = Matches + (*MatchCount)++;
             Match->Keyword = Subtree->Data;

@@ -4,8 +4,6 @@
 #include "ise_keyword.h"
 #include "ise_query.h"
 
-#define KEYWORD_TREE_MATCH_STORAGE_SIZE 1024
-
 #include "ise_base.cpp"
 #include "ise_keyword.cpp"
 #include "ise_query.cpp"
@@ -256,6 +254,8 @@ KeywordTable(void)
     }
 }
 
+#define KEYWORD_TREE_MATCH_STORAGE_SIZE 1024
+
 global keyword_tree_match KeywordTreeMatches[KEYWORD_TREE_MATCH_STORAGE_SIZE];
 global u64 KeywordTreeMatchCount = 0;
 
@@ -302,7 +302,8 @@ KeywordTree(void)
             InitializeKeywordTable(&SearchValues, 1);
 
             keyword *Keyword = InsertIntoKeywordTable(&SearchValues, "helt");
-            FindMatchesInKeywordTree(&Tree, Keyword, &KeywordTreeMatchCount, KeywordTreeMatches);
+            FindMatchesInKeywordTree(&Tree, Keyword, &KeywordTreeMatchCount, KEYWORD_TREE_MATCH_STORAGE_SIZE,
+                                     KeywordTreeMatches);
 
             DestroyKeywordTable(&SearchValues);
 
@@ -333,7 +334,8 @@ KeywordTree(void)
             InitializeKeywordTable(&SearchValues, 1);
 
             keyword *Keyword = InsertIntoKeywordTable(&SearchValues, "opsy");
-            FindMatchesInKeywordTree(&Tree, Keyword, &KeywordTreeMatchCount, KeywordTreeMatches);
+            FindMatchesInKeywordTree(&Tree, Keyword, &KeywordTreeMatchCount, KEYWORD_TREE_MATCH_STORAGE_SIZE,
+                                     KeywordTreeMatches);
 
             DestroyKeywordTable(&SearchValues);
         }
@@ -384,7 +386,8 @@ KeywordTree(void)
             InitializeKeywordTable(&SearchValues, 1);
 
             keyword *Keyword = InsertIntoKeywordTable(&SearchValues, "helt");
-            FindMatchesInKeywordTree(&Tree, Keyword, &KeywordTreeMatchCount, KeywordTreeMatches);
+            FindMatchesInKeywordTree(&Tree, Keyword, &KeywordTreeMatchCount, KEYWORD_TREE_MATCH_STORAGE_SIZE,
+                                     KeywordTreeMatches);
 
             DestroyKeywordTable(&SearchValues);
 
@@ -420,7 +423,8 @@ KeywordTree(void)
             InitializeKeywordTable(&SearchValues, 1);
 
             keyword *Keyword = InsertIntoKeywordTable(&SearchValues, "ops");
-            FindMatchesInKeywordTree(&Tree, Keyword, &KeywordTreeMatchCount, KeywordTreeMatches);
+            FindMatchesInKeywordTree(&Tree, Keyword, &KeywordTreeMatchCount, KEYWORD_TREE_MATCH_STORAGE_SIZE,
+                                     KeywordTreeMatches);
 
             DestroyKeywordTable(&SearchValues);
 
