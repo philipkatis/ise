@@ -2,12 +2,20 @@ IncludeDirectories=-Icode -Ithird_party/acutest/include
 
 CompileFlags=-g -Wall -Wno-address-of-packed-member -Wno-write-strings -DISE_DEBUG=1 $(IncludeDirectories)
 
-build_all: build_ise build_tests build_example | setup
+build_all: build_ise build_tests build_example
+
+build_ise: $(wildcard code/*.cpp) $(wildcard code/*.h) | setup
+	g++ $(CompileFlags) -shared code/ise.cpp -o build/libcore.so
+
+build_tests: $(wildcard tests/*.cpp) $(wildcard tests/*.h) | setup
+	g++ $(CompileFlags) tests/tests.cpp -Lbuild -lcore -o build/tests -Wl,-rpath=build
+
+build_example: $(wildcard example/*.cpp) $(wildcard example/*.h) | setup
+	g++ $(CompileFlags) example/example.cpp -Lbuild -lcore -o build/example -Wl,-rpath=build
 
 run: build/example
 	./build/example
 
-#  This command runs the unit tests.
 tests: build/tests
 	./build/tests
 
@@ -16,21 +24,3 @@ setup:
 
 clean:
 	rm -r -f build
-
-ise: code/ise.cpp | setup
-	g++ $(CompileFlags) -c code/$@.cpp -o build/$@.o
-
-ise_tests: tests/tests.cpp | setup
-	g++ $(CompileFlags) -c tests/tests.cpp -o build/$@.o
-
-ise_example: example/example.cpp | setup
-	g++ $(CompileFlags) -c example/example.cpp -o build/$@.o
-
-build_ise: ise | setup
-	g++ $(CompileFlags) -shared build/ise.o -o build/libcore.so
-
-build_tests: ise_tests | setup
-	g++ $(CompileFlags) build/ise_tests.o -Lbuild -lcore -o build/tests -Wl,-rpath=build
-
-build_example: ise_example | setup
-	g++ $(CompileFlags) build/ise_example.o -Lbuild -lcore -o build/example -Wl,-rpath=build
