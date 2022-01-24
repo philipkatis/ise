@@ -24,6 +24,22 @@ StringCompare(char *StringA, u64 LengthA, char *StringB, u64 LengthB)
     return Equal;
 }
 
+// NOTE(philip): DBJ2 String Hashing
+function u32
+StringHash(char *String)
+{
+    u32 Hash = 5381;
+
+    for (char *Character = String;
+         *Character;
+         ++Character)
+    {
+        Hash = ((Hash << 5) + Hash) + *Character;
+    }
+
+    return Hash;
+}
+
 function u64
 HammingDistance(char *StringA, u64 LengthA, char *StringB, u64 LengthB)
 {

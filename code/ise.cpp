@@ -3,7 +3,6 @@
 #include <stdio.h>
 
 #include "ise_query_tree.h"
-#include "ise_keyword_table.h"
 
 #include "ise_keyword.h"
 
@@ -64,8 +63,7 @@ global application Application = { };
 ErrorCode
 InitializeIndex(void)
 {
-    // NOTE(philip): Initialize the keyword table.
-    Application.Keywords = KeywordTable_Create(1024);
+    InitializeKeywordTable(&Application.Keywords, 1024);
 
     // NOTE(philip): Initialize the hamming BK trees.
     for (u64 Index = 0;
@@ -93,29 +91,11 @@ DestroyIndex(void)
         DestroyKeywordTree(Application.HammingTrees + Index);
     }
 
-    // NOTE(philip): Destroy the keyword table and the query tree.
-    KeywordTable_Destroy(&Application.Keywords);
+    DestroyKeywordTable(&Application.Keywords);
+
     QueryTree_Destroy(&Application.Queries);
 
     return EC_SUCCESS;
-}
-
-function void
-InsertInBK(u32 Type, keyword *Keyword)
-{
-    switch (Type)
-    {
-        case 1:
-        {
-            u64 TreeIndex = GetHammingTreeIndex(Keyword->Length);
-            InsertIntoKeywordTree(Application.HammingTrees + TreeIndex, Keyword);
-        } break;
-
-        case 2:
-        {
-            InsertIntoKeywordTree(&Application.EditTree, Keyword);
-        } break;
-    }
 }
 
 ErrorCode
@@ -157,44 +137,60 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 
     query *Query = QueryInsert.Query;
 
-    for (u32 WordIndex = 0;
-         WordIndex < WordCount;
-         ++WordIndex)
+    switch (Type)
     {
-        // NOTE(philip): Insert the keyword into the keyword hash table.
-        keyword_table_insert_result KeywordInsert = KeywordTable_Insert(&Application.Keywords, Words[WordIndex]);
-        keyword *Keyword = KeywordInsert.Keyword;
-
-        if (KeywordInsert.Exists && ((Type == 1) || (Type == 2)))
+        case 0:
         {
-            // NOTE(philip): If the keyword is already in the BK tree, do not attempt to insert it again.
-            b32 AlreadyInBK = false;
-
-            // TODO(philip): If we choose to use the occupancy flags, use them here.
-            for (query_list_node *Node = Keyword->Queries.Head;
-                 Node;
-                 Node = Node->Next)
+            for (u32 WordIndex = 0;
+                 WordIndex < WordCount;
+                 ++WordIndex)
             {
-                if (GetQueryType(Node->Query) == (u8)Type)
+                keyword *Keyword = InsertIntoKeywordTable(&Application.Keywords, Words[WordIndex]);
+
+                Query->Keywords[WordIndex] = Keyword;
+                QueryList_Insert(&Keyword->Queries, Query);
+            }
+        } break;
+
+        case 1:
+        {
+            for (u32 WordIndex = 0;
+                 WordIndex < WordCount;
+                 ++WordIndex)
+            {
+                keyword *Keyword = InsertIntoKeywordTable(&Application.Keywords, Words[WordIndex]);
+
+                if (!Keyword->IsInHammingTree)
                 {
-                    AlreadyInBK = true;
-                    break;
+                    keyword_tree *Tree = Application.HammingTrees + GetHammingTreeIndex(Keyword->Length);
+                    InsertIntoKeywordTree(Tree, Keyword);
+
+                    Keyword->IsInHammingTree = true;
                 }
-            }
 
-            if (!AlreadyInBK)
-            {
-                InsertInBK(Type, Keyword);
+                Query->Keywords[WordIndex] = Keyword;
+                QueryList_Insert(&Keyword->Queries, Query);
             }
-        }
-        else
+        } break;
+
+        case 2:
         {
-            InsertInBK(Type, Keyword);
-        }
+            for (u32 WordIndex = 0;
+                 WordIndex < WordCount;
+                 ++WordIndex)
+            {
+                keyword *Keyword = InsertIntoKeywordTable(&Application.Keywords, Words[WordIndex]);
 
-        // NOTE(philip): Insert the keyword into the query and the query into the keyword.
-        Query->Keywords[WordIndex] = Keyword;
-        QueryList_Insert(&Keyword->Queries, Query);
+                if (!Keyword->IsInEditTree)
+                {
+                    InsertIntoKeywordTree(&Application.EditTree, Keyword);
+                    Keyword->IsInEditTree = true;
+                }
+
+                Query->Keywords[WordIndex] = Keyword;
+                QueryList_Insert(&Keyword->Queries, Query);
+            }
+        } break;
     }
 
     return EC_SUCCESS;
@@ -375,9 +371,8 @@ MatchDocument(DocID ID, const char *String)
         }
     }
 
-    // TODO(philip): This is currently a waste of memory. If it becomes a problem, switch to a more specific
-    // data structure.
-    keyword_table DocumentWords = KeywordTable_Create(WordCount);
+    keyword_table DocumentWords;
+    InitializeKeywordTable(&DocumentWords, WordCount);
 
     // NOTE(philip): Put the document words in the hash table to deduplicate them.
     {
@@ -387,7 +382,7 @@ MatchDocument(DocID ID, const char *String)
              WordIndex < WordCount;
              ++WordIndex)
         {
-            KeywordTable_Insert(&DocumentWords, Word);
+            InsertIntoKeywordTable(&DocumentWords, Word);
 
             while (*Word)
             {
@@ -405,52 +400,44 @@ MatchDocument(DocID ID, const char *String)
     // data structure.
     query_tree PossibleAnswers = { };
 
-    for (keyword_iterator Iterator = IterateAllKeywords(&DocumentWords);
+    for (keyword_table_iterator Iterator = IterateKeywordTable(&DocumentWords);
          IsValid(&Iterator);
          Advance(&Iterator))
     {
         keyword *DocumentWord = GetValue(&Iterator);
 
-        // NOTE(philip): Exact matching.
+        keyword *Keyword = FindKeywordInTable(&Application.Keywords, DocumentWord);
+        if (Keyword)
         {
-            // NOTE(philip): Find the word in keyword table.
-            keyword *FoundKeyword = KeywordTable_Find(&Application.Keywords, DocumentWord->Word);
-
-            if (FoundKeyword)
-            {
-                LookForMatchingQueries(&PossibleAnswers, 0, FoundKeyword, 0);
-            }
+            LookForMatchingQueries(&PossibleAnswers, 0, Keyword, 0);
         }
 
-        // NOTE(philip): Approximate matching.
+        keyword_tree *HammingTree = Application.HammingTrees + GetHammingTreeIndex(DocumentWord->Length);
+
+        KeywordTreeMatchCount = 0;
+        FindMatchesInKeywordTree(HammingTree, DocumentWord, &KeywordTreeMatchCount, KeywordTreeMatches);
+
+        for (u64 Index = 0;
+             Index < KeywordTreeMatchCount;
+             ++Index)
         {
-            keyword_tree *HammingTree = Application.HammingTrees + GetHammingTreeIndex(DocumentWord->Length);
+            keyword_tree_match *Match = KeywordTreeMatches + Index;
+            LookForMatchingQueries(&PossibleAnswers, 1, Match->Keyword, Match->Distance);
+        }
 
-            KeywordTreeMatchCount = 0;
-            FindMatchesInKeywordTree(HammingTree, DocumentWord, &KeywordTreeMatchCount, KeywordTreeMatches);
+        KeywordTreeMatchCount = 0;
+        FindMatchesInKeywordTree(&Application.EditTree, DocumentWord, &KeywordTreeMatchCount, KeywordTreeMatches);
 
-            for (u64 Index = 0;
-                 Index < KeywordTreeMatchCount;
-                 ++Index)
-            {
-                keyword_tree_match *Match = KeywordTreeMatches + Index;
-                LookForMatchingQueries(&PossibleAnswers, 1, Match->Keyword, Match->Distance);
-            }
-
-            KeywordTreeMatchCount = 0;
-            FindMatchesInKeywordTree(&Application.EditTree, DocumentWord, &KeywordTreeMatchCount, KeywordTreeMatches);
-
-            for (u64 Index = 0;
-                 Index < KeywordTreeMatchCount;
-                 ++Index)
-            {
-                keyword_tree_match *Match = KeywordTreeMatches + Index;
-                LookForMatchingQueries(&PossibleAnswers, 2, Match->Keyword, Match->Distance);
-            }
+        for (u64 Index = 0;
+             Index < KeywordTreeMatchCount;
+             ++Index)
+        {
+            keyword_tree_match *Match = KeywordTreeMatches + Index;
+            LookForMatchingQueries(&PossibleAnswers, 2, Match->Keyword, Match->Distance);
         }
     }
 
-    KeywordTable_Destroy(&DocumentWords);
+    DestroyKeywordTable(&DocumentWords);
 
     {
         u64 QueryCount = CountAnsweredQueries(&PossibleAnswers);

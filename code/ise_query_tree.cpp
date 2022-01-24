@@ -1,5 +1,4 @@
 #include "ise_query_tree.h"
-#include "ise_keyword_table.h"
 
 #include <stdlib.h>
 
