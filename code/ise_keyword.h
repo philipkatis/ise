@@ -14,10 +14,10 @@ struct __attribute__ ((__packed__)) keyword
     u32 Length;
     u32 Hash;
 
-    b32 IsInHammingTree;
-    b32 IsInEditTree;
-
-    u64 Padding;
+    u32 InstanceCount;
+    u32 HammingInstanceCount;
+    u32 EditInstanceCount;
+    u32 Padding;
 };
 
 struct __attribute__ ((__packed__)) keyword_table_node
@@ -25,6 +25,8 @@ struct __attribute__ ((__packed__)) keyword_table_node
     keyword Data;
     keyword_table_node *Next;
 };
+
+static_assert(sizeof(keyword_table_node) == 64);
 
 struct keyword_table
 {
@@ -55,16 +57,17 @@ struct __attribute__ ((__packed__)) keyword_tree_node
 {
     keyword *Data;
 
+    b64 IsActive;
     keyword_tree_node *NextSibling;
     keyword_tree_node *FirstChild;
     u64 DistanceFromParent;
 
-    u64 Padding[4];
+    u64 Padding[3];
 };
 
 typedef u64 keyword_tree_calculate_distance(char *StringA, u64 LengthA, char *StringB, u64 LengthB);
 
-struct keyword_tree_candidate_array
+struct keyword_tree_candidate_stack
 {
     u64 Capacity;
     u64 Count;
@@ -83,7 +86,7 @@ struct keyword_tree
 {
     keyword_tree_node *Root;
     keyword_tree_calculate_distance *CalculateDistance;
-    keyword_tree_candidate_array Candidates;
+    keyword_tree_candidate_stack Candidates;
 };
 
 #endif

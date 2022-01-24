@@ -1,6 +1,6 @@
 IncludeDirectories=-Icode -Ithird_party/acutest/include
 
-CompileFlags=-g -Wall -Wno-address-of-packed-member -Wno-write-strings -DISE_DEBUG=0 -O2 $(IncludeDirectories)
+CompileFlags=-g -Wall -Wno-address-of-packed-member -Wno-write-strings -DISE_DEBUG=1 $(IncludeDirectories)
 
 build_all: build_ise build_tests build_example | setup
 

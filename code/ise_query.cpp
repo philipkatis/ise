@@ -138,6 +138,37 @@ InsertIntoQueryTree(query_tree *Tree, u32 ID, u64 KeywordCount, query_type Type,
     return Query;
 }
 
+function query *
+FindQueryInSubtree(query_tree_node *Subtree, u32 ID)
+{
+    query *Query = 0;
+
+    if (Subtree)
+    {
+        if (Subtree->Data.ID > ID)
+        {
+            Query = FindQueryInSubtree(Subtree->Left, ID);
+        }
+        else if (Subtree->Data.ID < ID)
+        {
+            Query = FindQueryInSubtree(Subtree->Right, ID);
+        }
+        else
+        {
+            Query = &Subtree->Data;
+        }
+    }
+
+    return Query;
+}
+
+function query *
+FindQueryInTree(query_tree *Tree, u32 ID)
+{
+    query *Query = FindQueryInSubtree(Tree->Root, ID);
+    return Query;
+}
+
 function query_tree_node *
 RemoveFromSubtree(query_tree_node *Subtree, u32 ID)
 {

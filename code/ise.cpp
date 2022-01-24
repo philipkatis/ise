@@ -103,9 +103,6 @@ DestroyIndex(void)
 ErrorCode
 StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 {
-    Assert(Type >= 0 && Type <= 2);
-    Assert(Distance >= 0 && Distance <= MAX_DISTANCE_THRESHOLD);
-
     char *Words[MAX_KEYWORD_COUNT_PER_QUERY];
     u32 WordCount = 0;
 
@@ -127,8 +124,6 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
         }
     }
 
-    Assert(WordCount > 0 && WordCount <= MAX_KEYWORD_COUNT_PER_QUERY);
-
     query *Query = InsertIntoQueryTree(&Application.Queries, ID, WordCount, Type, Distance);
 
     switch (Type)
@@ -139,7 +134,9 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
                  WordIndex < WordCount;
                  ++WordIndex)
             {
-                keyword *Keyword = InsertIntoKeywordTable(&Application.Keywords, Words[WordIndex]);
+                keyword *Keyword = InsertIntoKeywordTable(&Application.Keywords, Words[WordIndex]);\
+                ++Keyword->InstanceCount;
+
                 Query->Keywords[WordIndex] = Keyword;
             }
         } break;
@@ -152,13 +149,14 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
             {
                 keyword *Keyword = InsertIntoKeywordTable(&Application.Keywords, Words[WordIndex]);
 
-                if (!Keyword->IsInHammingTree)
+                if (Keyword->HammingInstanceCount == 0)
                 {
                     keyword_tree *Tree = Application.HammingTrees + GetHammingTreeIndex(Keyword->Length);
                     InsertIntoKeywordTree(Tree, Keyword);
-
-                    Keyword->IsInHammingTree = true;
                 }
+
+                ++Keyword->InstanceCount;
+                ++Keyword->HammingInstanceCount;
 
                 Query->Keywords[WordIndex] = Keyword;
             }
@@ -172,11 +170,13 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
             {
                 keyword *Keyword = InsertIntoKeywordTable(&Application.Keywords, Words[WordIndex]);
 
-                if (!Keyword->IsInEditTree)
+                if (Keyword->EditInstanceCount == 0)
                 {
                     InsertIntoKeywordTree(&Application.EditTree, Keyword);
-                    Keyword->IsInEditTree = true;
                 }
+
+                ++Keyword->InstanceCount;
+                ++Keyword->EditInstanceCount;
 
                 Query->Keywords[WordIndex] = Keyword;
             }
@@ -189,6 +189,78 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 ErrorCode
 EndQuery(QueryID ID)
 {
+    query *Query = FindQueryInTree(&Application.Queries, ID);
+
+    query_type Type = GetType(Query);
+    u64 KeywordCount = GetKeywordCount(Query);
+
+    switch (Type)
+    {
+        case QueryType_Exact:
+        {
+            for (u64 Index = 0;
+                 Index < KeywordCount;
+                 ++Index)
+            {
+                keyword *Keyword = Query->Keywords[Index];
+
+                --Keyword->InstanceCount;
+
+                if (Keyword->InstanceCount == 0)
+                {
+
+                }
+            }
+        } break;
+
+        case QueryType_Hamming:
+        {
+            for (u64 Index = 0;
+                 Index < KeywordCount;
+                 ++Index)
+            {
+                keyword *Keyword = Query->Keywords[Index];
+
+                --Keyword->HammingInstanceCount;
+                --Keyword->InstanceCount;
+
+                if (Keyword->HammingInstanceCount == 0)
+                {
+                    keyword_tree *Tree = Application.HammingTrees + GetHammingTreeIndex(Keyword->Length);
+                    RemoveFromKeywordTree(Tree, Keyword);
+                }
+
+                if (Keyword->InstanceCount == 0)
+                {
+
+                }
+            }
+        } break;
+
+        case QueryType_Edit:
+        {
+            for (u64 Index = 0;
+                 Index < KeywordCount;
+                 ++Index)
+            {
+                keyword *Keyword = Query->Keywords[Index];
+
+                --Keyword->EditInstanceCount;
+                --Keyword->InstanceCount;
+
+                if (Keyword->EditInstanceCount == 0)
+                {
+                    RemoveFromKeywordTree(&Application.EditTree, Keyword);
+                }
+
+                if (Keyword->InstanceCount == 0)
+                {
+
+                }
+            }
+        } break;
+    }
+
     RemoveFromQueryTree(&Application.Queries, ID);
 
     return EC_SUCCESS;
