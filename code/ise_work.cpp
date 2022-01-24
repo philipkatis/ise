@@ -295,46 +295,54 @@ CompareQueryIDs(const void *A, const void *B)
     return (*(s32 *)A - *(s32 *)B);
 }
 
-struct document_answer
-{
-    u32 DocumentID;
-    u32 *Queries;
-    u64 QueryCount;
-};
-
-#define DOCUMENT_ANSWER_STORAGE_SIZE 1024
-
-global document_answer DocumentAnswers[DOCUMENT_ANSWER_STORAGE_SIZE];
-global u64 DocumentAnswerCount = 0;
-
 #define KEYWORD_TREE_MATCH_STORAGE_SIZE 1024
 
 global keyword_tree_match KeywordTreeMatches[KEYWORD_TREE_MATCH_STORAGE_SIZE];
 global u64 KeywordTreeMatchCount = 0;
 
-function void
-PushDocumentAnswer(u32 DocumentID, u64 QueryCount, u32 *Queries)
-{
-    Assert((DocumentAnswerCount + 1) <= DOCUMENT_ANSWER_STORAGE_SIZE);
+#define DOCUMENT_ANSWER_STORAGE_SIZE 1024
 
-    document_answer *Answer = DocumentAnswers + DocumentAnswerCount++;
+function void
+InitializeDocumentAnswerStack(document_answer_stack *Stack)
+{
+    Stack->Capacity = DOCUMENT_ANSWER_STORAGE_SIZE;
+    Stack->Count = 0;
+    Stack->Data = (document_answer *)calloc(1, Stack->Capacity * sizeof(document_answer));
+}
+
+function void
+PushToDocumentAnswerStack(document_answer_stack *Stack, u32 DocumentID, u64 QueryCount, u32 *Queries)
+{
+    Assert((Stack->Count + 1) <= Stack->Capacity);
+
+    document_answer *Answer = Stack->Data + Stack->Count++;
     Answer->DocumentID = DocumentID;
     Answer->QueryCount = QueryCount;
     Answer->Queries = Queries;
 }
 
 function document_answer
-PopDocumentAnswer(void)
+PopFromDocumentAnswerStack(document_answer_stack *Stack)
 {
-    Assert(DocumentAnswerCount > 0);
+    Assert(Stack->Count > 0);
 
-    document_answer Answer = DocumentAnswers[--DocumentAnswerCount];
+    document_answer Answer = Stack->Data[--Stack->Count];
     return Answer;
 }
 
 function void
+DestroyDocumentAnswerStack(document_answer_stack *Stack)
+{
+    free(Stack->Data);
+
+    Stack->Capacity = 0;
+    Stack->Count = 0;
+    Stack->Data = 0;
+}
+
+function void
 GenerateDocumentAnswers(query_tree *Queries, keyword_table *Keywords, keyword_tree *HammingTrees,
-                       keyword_tree *EditTree, u32 ID, char *String)
+                       keyword_tree *EditTree, document_answer_stack *DocumentAnswers, u32 ID, char *String)
 {
     u64 WordCount = 1;
 
@@ -423,6 +431,6 @@ GenerateDocumentAnswers(query_tree *Queries, keyword_table *Keywords, keyword_tr
         qsort(MachedQueries, MachedQueryCount, sizeof(u32), CompareQueryIDs);
     }
 
-    PushDocumentAnswer(ID, MachedQueryCount, MachedQueries);
+    PushToDocumentAnswerStack(DocumentAnswers, ID, MachedQueryCount, MachedQueries);
     DestroyQueryTree(&Matches);
 }

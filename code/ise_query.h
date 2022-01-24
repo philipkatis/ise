@@ -15,7 +15,7 @@ struct __attribute__ ((__packed__)) query
 {
     union
     {
-        keyword *Keywords[MAX_KEYWORD_COUNT_PER_QUERY];
+        struct keyword *Keywords[MAX_KEYWORD_COUNT_PER_QUERY];
         b64 HasKeywords[MAX_KEYWORD_COUNT_PER_QUERY];
     };
 

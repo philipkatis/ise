@@ -3,13 +3,14 @@
 #include <stdio.h>
 
 #include "ise_base.h"
-#include "ise_keyword.h"
 #include "ise_query.h"
+#include "ise_keyword.h"
+#include "ise_work.h"
 #include "ise.h"
 
 #include "ise_base.cpp"
-#include "ise_keyword.cpp"
 #include "ise_query.cpp"
+#include "ise_keyword.cpp"
 #include "ise_work.cpp"
 
 #define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
@@ -17,10 +18,12 @@
 struct application
 {
     query_tree Queries;
-    keyword_table Keywords;
 
+    keyword_table Keywords;
     keyword_tree HammingTrees[HAMMING_TREE_COUNT];
     keyword_tree EditTree;
+
+    document_answer_stack DocumentAnswers;
 };
 
 global application Application = { };
@@ -31,7 +34,6 @@ InitializeIndex(void)
     InitializeQueryTree(&Application.Queries);
     InitializeKeywordTable(&Application.Keywords, 1024);
 
-    // NOTE(philip): Initialize the hamming BK trees.
     for (u64 Index = 0;
          Index < HAMMING_TREE_COUNT;
          ++Index)
@@ -40,6 +42,7 @@ InitializeIndex(void)
     }
 
     InitializeKeywordTree(&Application.EditTree, KeywordTreeType_Edit);
+    InitializeDocumentAnswerStack(&Application.DocumentAnswers);
 
     return EC_SUCCESS;
 }
@@ -47,9 +50,9 @@ InitializeIndex(void)
 ErrorCode
 DestroyIndex(void)
 {
+    DestroyDocumentAnswerStack(&Application.DocumentAnswers);
     DestroyKeywordTree(&Application.EditTree);
 
-    // NOTE(philip): Destroy the hamming BK trees.
     for (u64 Index = 0;
          Index < HAMMING_TREE_COUNT;
          ++Index)
@@ -83,7 +86,7 @@ ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
     GenerateDocumentAnswers(&Application.Queries, &Application.Keywords, Application.HammingTrees,
-                            &Application.EditTree, ID, (char *)String);
+                            &Application.EditTree, &Application.DocumentAnswers, ID, (char *)String);
 
     return EC_SUCCESS;
 }
@@ -91,7 +94,7 @@ MatchDocument(DocID ID, const char *String)
 ErrorCode
 GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **Queries)
 {
-    document_answer Answer = PopDocumentAnswer();
+    document_answer Answer = PopFromDocumentAnswerStack(&Application.DocumentAnswers);
 
     *DocumentID = Answer.DocumentID;
     *QueryCount = Answer.QueryCount;
