@@ -5,6 +5,7 @@
 // NOTE(philip): Keyword Hash Table
 //
 
+#define MIN_KEYWORD_LENGTH 4
 #define MAX_KEYWORD_LENGTH 31
 
 struct __attribute__ ((__packed__)) keyword

@@ -2,14 +2,16 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "ise_query_tree.h"
-
+#include "ise_base.h"
 #include "ise_keyword.h"
+#include "ise_query.h"
+#include "ise.h"
 
 #define KEYWORD_TREE_MATCH_STORAGE_SIZE 1024
 
 #include "ise_base.cpp"
 #include "ise_keyword.cpp"
+#include "ise_query.cpp"
 
 struct document_answer
 {
@@ -63,6 +65,7 @@ global application Application = { };
 ErrorCode
 InitializeIndex(void)
 {
+    InitializeQueryTree(&Application.Queries);
     InitializeKeywordTable(&Application.Keywords, 1024);
 
     // NOTE(philip): Initialize the hamming BK trees.
@@ -92,8 +95,7 @@ DestroyIndex(void)
     }
 
     DestroyKeywordTable(&Application.Keywords);
-
-    QueryTree_Destroy(&Application.Queries);
+    DestroyQueryTree(&Application.Queries);
 
     return EC_SUCCESS;
 }
@@ -127,15 +129,7 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 
     Assert(WordCount > 0 && WordCount <= MAX_KEYWORD_COUNT_PER_QUERY);
 
-    // NOTE(philip): Insert the query into the tree.
-    query_tree_insert_result QueryInsert = QueryTree_Insert(&Application.Queries, ID, WordCount, Type,
-                                                            Distance);
-    if (QueryInsert.Exists)
-    {
-        return EC_FAIL;
-    }
-
-    query *Query = QueryInsert.Query;
+    query *Query = InsertIntoQueryTree(&Application.Queries, ID, WordCount, Type, Distance);
 
     switch (Type)
     {
@@ -195,12 +189,7 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 ErrorCode
 EndQuery(QueryID ID)
 {
-    query *Query = QueryTree_Find(&Application.Queries, ID);
-    if (Query)
-    {
-        // NOTE(philip): Remove the query from the tree.
-        QueryTree_Remove(&Application.Queries, ID);
-    }
+    RemoveFromQueryTree(&Application.Queries, ID);
 
     return EC_SUCCESS;
 }
@@ -209,13 +198,13 @@ function b32
 IsAnswer(query *Query)
 {
     b32 Result = true;
-    u32 KeywordCount = GetQueryKeywordCount(Query);
+    u32 KeywordCount = GetKeywordCount(Query);
 
     for (u32 KeywordIndex = 0;
          KeywordIndex < KeywordCount;
          ++KeywordIndex)
     {
-        if (!Query->HasKeywordFlags[KeywordIndex])
+        if (!Query->HasKeywords[KeywordIndex])
         {
             Result = false;
             break;
@@ -293,9 +282,10 @@ LookForMatchingQueries_(query_tree_node *Node, query_tree *PossibleAnswers, u32 
 {
     query *Query = &Node->Data;
 
-    if ((GetQueryType(Query) == Type) && (GetQueryDistance(Query) >= Distance))
+    if ((GetType(Query) == Type) && (GetDistanceThreshold(Query) >= Distance))
     {
-        u64 KeywordCount = GetQueryKeywordCount(Query);
+        u64 KeywordCount = GetKeywordCount(Query);
+        query *PossibleAnswer = 0;
 
         for (u64 Index = 0;
              Index < KeywordCount;
@@ -303,13 +293,12 @@ LookForMatchingQueries_(query_tree_node *Node, query_tree *PossibleAnswers, u32 
         {
             if (Query->Keywords[Index] == Keyword)
             {
-                query_tree_insert_result InsertResult = QueryTree_Insert(PossibleAnswers, Query->ID, KeywordCount,
-                                                                         Type, 0);
-                query *PossibleAnswer = InsertResult.Query;
-                if (PossibleAnswer)
+                if (!PossibleAnswer)
                 {
-                    PossibleAnswer->HasKeywordFlags[Index] = true;
+                    PossibleAnswer = InsertIntoQueryTree(PossibleAnswers, Query->ID, KeywordCount, Type, 0);
                 }
+
+                PossibleAnswer->HasKeywords[Index] = true;
 
                 // NOTE(philip): Don't break here. Duplicate words.
             }
@@ -444,7 +433,7 @@ MatchDocument(DocID ID, const char *String)
         PushDocumentAnswer(ID, QueryCount, Queries);
     }
 
-    QueryTree_Destroy(&PossibleAnswers);
+    DestroyQueryTree(&PossibleAnswers);
 
     return EC_SUCCESS;
 }
