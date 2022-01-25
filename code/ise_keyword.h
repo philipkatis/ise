@@ -45,7 +45,7 @@ struct keyword_table_iterator
 };
 
 //
-// NOTE(philip): Keyword Tree Node Stack
+// NOTE(philip): Keyword BK-Tree Node Stack
 //
 
 struct keyword_tree_node_stack
@@ -53,6 +53,23 @@ struct keyword_tree_node_stack
     u64 Capacity;
     u64 Count;
     struct keyword_tree_node **Data;
+};
+
+//
+// NOTE(philip): Keyword BK-Tree Match Stack
+//
+
+struct keyword_tree_match
+{
+    keyword *Keyword;
+    u64 Distance;
+};
+
+struct keyword_tree_match_stack
+{
+    u64 Capacity;
+    u64 Count;
+    keyword_tree_match *Data;
 };
 
 //
@@ -81,12 +98,6 @@ struct __attribute__ ((__packed__)) keyword_tree_node
 typedef u64 keyword_tree_calculate_distance(char *StringA, u64 LengthA, char *StringB, u64 LengthB);
 
 #define MAX_DISTANCE_THRESHOLD 3
-
-struct keyword_tree_match
-{
-    keyword* Keyword;
-    u64 Distance;
-};
 
 struct keyword_tree
 {

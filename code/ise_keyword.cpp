@@ -210,15 +210,15 @@ GetValue(keyword_table_iterator *Iterator)
 }
 
 //
-// NOTE(philip): Keyword Tree Node Stack
+// NOTE(philip): Keyword BK-Tree Node Stack
 //
 
-#define KEYWORD_TREE_NODE_STACK_STORAGE_SIZE 1024
+#define NODE_STACK_STORAGE_SIZE 1024
 
 function void
 InitializeKeywordTreeNodeStack(keyword_tree_node_stack *Stack)
 {
-    Stack->Capacity = KEYWORD_TREE_NODE_STACK_STORAGE_SIZE;
+    Stack->Capacity = NODE_STACK_STORAGE_SIZE;
     Stack->Count = 0;
     Stack->Data = (keyword_tree_node **)calloc(1, Stack->Capacity * sizeof(keyword_tree_node *));
 }
@@ -251,6 +251,59 @@ ResetKeywordTreeNodeStack(keyword_tree_node_stack *Stack)
 
 function void
 DestroyKeywordTreeNodeStack(keyword_tree_node_stack *Stack)
+{
+    free(Stack->Data);
+
+    Stack->Capacity = 0;
+    Stack->Count = 0;
+    Stack->Data = 0;
+}
+
+//
+// NOTE(philip): Keyword BK-Tree Match Stack
+//
+
+#define MATCH_STACK_STORAGE_SIZE 4096
+
+function void
+InitializeKeywordTreeMatchStack(keyword_tree_match_stack *Stack)
+{
+    Stack->Capacity = MATCH_STACK_STORAGE_SIZE;
+    Stack->Count = 0;
+    Stack->Data = (keyword_tree_match *)calloc(1, Stack->Capacity * sizeof(keyword_tree_match));
+}
+
+function void
+PushIntoKeywordTreeMatchStack(keyword_tree_match_stack *Stack, keyword *Keyword, u64 Distance)
+{
+    Assert((Stack->Count + 1) <= Stack->Capacity);
+
+    keyword_tree_match *Match = Stack->Data + Stack->Count++;
+    Match->Keyword = Keyword;
+    Match->Distance = Distance;
+}
+
+function keyword_tree_match *
+PopFromKeywordTreeMatchStack(keyword_tree_match_stack *Stack)
+{
+    keyword_tree_match *Match = 0;
+
+    if (Stack->Count)
+    {
+        Match = Stack->Data + --Stack->Count;
+    }
+
+    return Match;
+}
+
+function void
+ResetKeywordTreeMatchStack(keyword_tree_match_stack *Stack)
+{
+    Stack->Count = 0;
+}
+
+function void
+DestroyKeywordTreeMatchStack(keyword_tree_match_stack *Stack)
 {
     free(Stack->Data);
 
@@ -333,11 +386,11 @@ InsertIntoKeywordTree(keyword_tree *Tree, keyword *Keyword)
 }
 
 function void
-FindMatchesInKeywordTree(keyword_tree *Tree, keyword_tree_node_stack *Candidates, keyword *Keyword, u64 *MatchCount, u64 MatchCapacity,
-                         keyword_tree_match *Matches)
+FindMatchesInKeywordTree(keyword_tree *Tree, keyword_tree_node_stack *Candidates, keyword_tree_match_stack *Matches,
+                         keyword *Keyword)
 {
     ResetKeywordTreeNodeStack(Candidates);
-    *MatchCount = 0;
+    ResetKeywordTreeMatchStack(Matches);
 
     for (keyword_tree_node *Subtree = Tree->Root;
          Subtree;
@@ -348,11 +401,7 @@ FindMatchesInKeywordTree(keyword_tree *Tree, keyword_tree_node_stack *Candidates
 
         if (Subtree->IsActive && (Distance <= MAX_DISTANCE_THRESHOLD))
         {
-            Assert((*MatchCount + 1) <= MatchCapacity);
-
-            keyword_tree_match *Match = Matches + (*MatchCount)++;
-            Match->Keyword = Subtree->Data;
-            Match->Distance = Distance;
+            PushIntoKeywordTreeMatchStack(Matches, Subtree->Data, Distance);
         }
 
         u64 SearchRangeStart = (((s64)(Distance - MAX_DISTANCE_THRESHOLD) > 0) ? (Distance - MAX_DISTANCE_THRESHOLD) : 1);

@@ -254,16 +254,14 @@ KeywordTable(void)
     }
 }
 
-#define KEYWORD_TREE_MATCH_STORAGE_SIZE 1024
-
-global keyword_tree_match KeywordTreeMatches[KEYWORD_TREE_MATCH_STORAGE_SIZE];
-global u64 KeywordTreeMatchCount = 0;
-
 function void
 KeywordTree(void)
 {
     keyword_tree_node_stack NodeStack;
     InitializeKeywordTreeNodeStack(&NodeStack);
+
+    keyword_tree_match_stack MatchStack;
+    InitializeKeywordTreeMatchStack(&MatchStack);
 
     // NOTE(philip): Hamming Tree.
     {
@@ -298,15 +296,15 @@ KeywordTree(void)
         {
             char *Solutions[4] =
             {
-                Words[0], Words[4], Words[8], Words[9]
+                Words[9], Words[8], Words[4], Words[0]
+                // Words[0], Words[4], Words[8], Words[9]
             };
 
             keyword_table SearchValues;
             InitializeKeywordTable(&SearchValues, 1);
 
             keyword *Keyword = InsertIntoKeywordTable(&SearchValues, "helt");
-            FindMatchesInKeywordTree(&Tree, &NodeStack, Keyword, &KeywordTreeMatchCount,
-                                     KEYWORD_TREE_MATCH_STORAGE_SIZE, KeywordTreeMatches);
+            FindMatchesInKeywordTree(&Tree, &NodeStack, &MatchStack, Keyword);
 
             DestroyKeywordTable(&SearchValues);
 
@@ -317,10 +315,10 @@ KeywordTree(void)
                 b32 Found = false;
 
                 for (u64 Index = 0;
-                     Index < KeywordTreeMatchCount;
+                     Index < MatchStack.Count;
                      ++Index)
                 {
-                    keyword_tree_match *Match = KeywordTreeMatches + Index;
+                    keyword_tree_match *Match = MatchStack.Data + Index;
                     if (strcmp(Match->Keyword->Word, Solutions[SolutionIndex]) == 0)
                     {
                         Found = true;
@@ -337,8 +335,7 @@ KeywordTree(void)
             InitializeKeywordTable(&SearchValues, 1);
 
             keyword *Keyword = InsertIntoKeywordTable(&SearchValues, "opsy");
-            FindMatchesInKeywordTree(&Tree, &NodeStack, Keyword, &KeywordTreeMatchCount,
-                                     KEYWORD_TREE_MATCH_STORAGE_SIZE, KeywordTreeMatches);
+            FindMatchesInKeywordTree(&Tree, &NodeStack, &MatchStack, Keyword);
 
             DestroyKeywordTable(&SearchValues);
         }
@@ -389,8 +386,7 @@ KeywordTree(void)
             InitializeKeywordTable(&SearchValues, 1);
 
             keyword *Keyword = InsertIntoKeywordTable(&SearchValues, "helt");
-            FindMatchesInKeywordTree(&Tree, &NodeStack, Keyword, &KeywordTreeMatchCount,
-                                     KEYWORD_TREE_MATCH_STORAGE_SIZE, KeywordTreeMatches);
+            FindMatchesInKeywordTree(&Tree, &NodeStack, &MatchStack, Keyword);
 
             DestroyKeywordTable(&SearchValues);
 
@@ -401,10 +397,10 @@ KeywordTree(void)
                 b32 Found = false;
 
                 for (u64 Index = 0;
-                     Index < KeywordTreeMatchCount;
+                     Index < MatchStack.Count;
                      ++Index)
                 {
-                    keyword_tree_match *Match = KeywordTreeMatches + Index;
+                    keyword_tree_match *Match = MatchStack.Data + Index;
                     if (strcmp(Match->Keyword->Word, Solutions[SolutionIndex]) == 0)
                     {
                         Found = true;
@@ -426,8 +422,7 @@ KeywordTree(void)
             InitializeKeywordTable(&SearchValues, 1);
 
             keyword *Keyword = InsertIntoKeywordTable(&SearchValues, "ops");
-            FindMatchesInKeywordTree(&Tree, &NodeStack, Keyword, &KeywordTreeMatchCount,
-                                     KEYWORD_TREE_MATCH_STORAGE_SIZE, KeywordTreeMatches);
+            FindMatchesInKeywordTree(&Tree, &NodeStack, &MatchStack, Keyword);
 
             DestroyKeywordTable(&SearchValues);
 
@@ -438,10 +433,10 @@ KeywordTree(void)
                 b32 Found = false;
 
                 for (u64 Index = 0;
-                     Index < KeywordTreeMatchCount;
+                     Index < MatchStack.Count;
                      ++Index)
                 {
-                    keyword_tree_match *Match = KeywordTreeMatches + Index;
+                    keyword_tree_match *Match = MatchStack.Data + Index;
                     if (strcmp(Match->Keyword->Word, Solutions[SolutionIndex]) == 0)
                     {
                         Found = true;
@@ -457,6 +452,7 @@ KeywordTree(void)
         DestroyKeywordTable(&Keywords);
     }
 
+    DestroyKeywordTreeMatchStack(&MatchStack);
     DestroyKeywordTreeNodeStack(&NodeStack);
 }
 

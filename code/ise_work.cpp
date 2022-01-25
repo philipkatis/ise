@@ -75,12 +75,8 @@ DestroyDocumentAnswerQueue(document_answer_queue *Queue)
 
 #define GetHammingTreeIndex(Keyword) ((Keyword)->Length - MIN_KEYWORD_LENGTH)
 
-#define KEYWORD_TREE_MATCH_STORAGE_SIZE 4096
-
-global keyword_tree_match KeywordTreeMatches[KEYWORD_TREE_MATCH_STORAGE_SIZE];
-global u64 KeywordTreeMatchCount = 0;
-
 global keyword_tree_node_stack KeywordTreeNodeStack;
+global keyword_tree_match_stack KeywordTreeMatchStack;
 
 function void
 RegisterQuery(u32 ID, query_type Type, u64 DistanceThreshold, char *String)
@@ -427,25 +423,21 @@ GenerateDocumentAnswers(u32 ID, char *String)
         }
 
         keyword_tree *Tree = GlobalContext.HammingTrees + GetHammingTreeIndex(Word);
-        FindMatchesInKeywordTree(Tree, &KeywordTreeNodeStack, Word, &KeywordTreeMatchCount,
-                                 KEYWORD_TREE_MATCH_STORAGE_SIZE, KeywordTreeMatches);
+        FindMatchesInKeywordTree(Tree, &KeywordTreeNodeStack, &KeywordTreeMatchStack, Word);
 
-        for (u64 Index = 0;
-             Index < KeywordTreeMatchCount;
-             ++Index)
+        for (keyword_tree_match *Match = PopFromKeywordTreeMatchStack(&KeywordTreeMatchStack);
+             Match;
+             Match = PopFromKeywordTreeMatchStack(&KeywordTreeMatchStack))
         {
-            keyword_tree_match *Match = KeywordTreeMatches + Index;
             LookForMatchingQueries(&GlobalContext.Queries, &Matches, 1, Match->Keyword, Match->Distance);
         }
 
-        FindMatchesInKeywordTree(&GlobalContext.EditTree, &KeywordTreeNodeStack, Word, &KeywordTreeMatchCount,
-                                 KEYWORD_TREE_MATCH_STORAGE_SIZE, KeywordTreeMatches);
+        FindMatchesInKeywordTree(&GlobalContext.EditTree, &KeywordTreeNodeStack, &KeywordTreeMatchStack, Word);
 
-        for (u64 Index = 0;
-             Index < KeywordTreeMatchCount;
-             ++Index)
+        for (keyword_tree_match *Match = PopFromKeywordTreeMatchStack(&KeywordTreeMatchStack);
+             Match;
+             Match = PopFromKeywordTreeMatchStack(&KeywordTreeMatchStack))
         {
-            keyword_tree_match *Match = KeywordTreeMatches + Index;
             LookForMatchingQueries(&GlobalContext.Queries, &Matches, 2, Match->Keyword, Match->Distance);
         }
     }
@@ -494,6 +486,7 @@ InitializeGlobalContext(void)
     InitializeDocumentAnswerQueue(&GlobalContext.DocumentAnswers);
 
     InitializeKeywordTreeNodeStack(&KeywordTreeNodeStack);
+    InitializeKeywordTreeMatchStack(&KeywordTreeMatchStack);
 
     InitializeQueryTreeNodeStack(&QueryTreeNodeStack);
 }
@@ -503,6 +496,7 @@ DestroyGlobalContext(void)
 {
     DestroyQueryTreeNodeStack(&QueryTreeNodeStack);
 
+    DestroyKeywordTreeMatchStack(&KeywordTreeMatchStack);
     DestroyKeywordTreeNodeStack(&KeywordTreeNodeStack);
 
     DestroyDocumentAnswerQueue(&GlobalContext.DocumentAnswers);
