@@ -1,4 +1,0 @@
-s 1 1 2 1 suasa
-m 1 1 susan
-r 1 0
-s 2 0 0 1 sup

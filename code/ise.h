@@ -1,36 +1,36 @@
 #ifndef ISE_H
 #define ISE_H
 
-#include "ise_base.h"
+//
+// NOTE(philip): ISE Interface
+//
 
-#define MAX_DOCUMENT_LENGTH         (1 << 22)
+#define MAX_DOCUMENT_LENGTH (1 << 22)
 
-typedef u32 QueryID;
-typedef u32 DocID;
+typedef unsigned int QueryID;
+typedef unsigned int DocID;
 
-typedef u32 MatchType;
-enum
+enum MatchType
 {
     MT_EXACT_MATCH,
     MT_HAMMING_DIST,
     MT_EDIT_DIST
 };
 
-typedef u32 ErrorCode;
-enum
+enum ErrorCode
 {
     EC_SUCCESS,
     EC_NO_AVAIL_RES,
     EC_FAIL
 };
 
-ErrorCode InitializeIndex();
-ErrorCode DestroyIndex();
+ErrorCode InitializeIndex(void);
+ErrorCode DestroyIndex(void);
 
-ErrorCode StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance);
+ErrorCode StartQuery(QueryID ID, const char *String, MatchType Type, unsigned int DistanceThreshold);
 ErrorCode EndQuery(QueryID ID);
 
 ErrorCode MatchDocument(DocID ID, const char *String);
-ErrorCode GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **QueryIDs);
+ErrorCode GetNextAvailRes(DocID *DocumentID, unsigned int *QueryCount, QueryID **Queries);
 
 #endif

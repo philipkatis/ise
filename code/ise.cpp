@@ -13,64 +13,24 @@
 #include "ise_keyword.cpp"
 #include "ise_work.cpp"
 
-#define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
-
-struct application
-{
-    query_tree Queries;
-
-    keyword_table Keywords;
-    keyword_tree HammingTrees[HAMMING_TREE_COUNT];
-    keyword_tree EditTree;
-
-    document_answer_stack DocumentAnswers;
-};
-
-global application Application = { };
-
 ErrorCode
 InitializeIndex(void)
 {
-    InitializeQueryTree(&Application.Queries);
-    InitializeKeywordTable(&Application.Keywords, 1024);
-
-    for (u64 Index = 0;
-         Index < HAMMING_TREE_COUNT;
-         ++Index)
-    {
-        InitializeKeywordTree(Application.HammingTrees + Index, KeywordTreeType_Hamming);
-    }
-
-    InitializeKeywordTree(&Application.EditTree, KeywordTreeType_Edit);
-    InitializeDocumentAnswerStack(&Application.DocumentAnswers);
-
+    InitializeGlobalContext();
     return EC_SUCCESS;
 }
 
 ErrorCode
 DestroyIndex(void)
 {
-    DestroyDocumentAnswerStack(&Application.DocumentAnswers);
-    DestroyKeywordTree(&Application.EditTree);
-
-    for (u64 Index = 0;
-         Index < HAMMING_TREE_COUNT;
-         ++Index)
-    {
-        DestroyKeywordTree(Application.HammingTrees + Index);
-    }
-
-    DestroyKeywordTable(&Application.Keywords);
-    DestroyQueryTree(&Application.Queries);
-
+    DestroyGlobalContext();
     return EC_SUCCESS;
 }
 
 ErrorCode
 StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 {
-    RegisterQuery(&Application.Queries, &Application.Keywords, Application.HammingTrees, &Application.EditTree,
-                  ID, Type, Distance, (char *)String);
+    RegisterQuery(ID, Type, Distance, (char *)String);
 
     return EC_SUCCESS;
 }
@@ -78,27 +38,20 @@ StartQuery(QueryID ID, const char *String, MatchType Type, u32 Distance)
 ErrorCode
 EndQuery(QueryID ID)
 {
-    UnregisterQuery(&Application.Queries, Application.HammingTrees, &Application.EditTree, ID);
+    UnregisterQuery(ID);
     return EC_SUCCESS;
 }
 
 ErrorCode
 MatchDocument(DocID ID, const char *String)
 {
-    GenerateDocumentAnswers(&Application.Queries, &Application.Keywords, Application.HammingTrees,
-                            &Application.EditTree, &Application.DocumentAnswers, ID, (char *)String);
-
+    GenerateDocumentAnswers(ID, (char *)String);
     return EC_SUCCESS;
 }
 
 ErrorCode
 GetNextAvailRes(DocID *DocumentID, u32 *QueryCount, QueryID **Queries)
 {
-    document_answer Answer = PopFromDocumentAnswerStack(&Application.DocumentAnswers);
-
-    *DocumentID = Answer.DocumentID;
-    *QueryCount = Answer.QueryCount;
-    *Queries    = Answer.Queries;
-
+    FetchDocumentAnswer(DocumentID, QueryCount, Queries);
     return EC_SUCCESS;
 }
