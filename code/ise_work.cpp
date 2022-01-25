@@ -1,3 +1,79 @@
+//
+// NOTE(philip): Document Answer Queue
+//
+
+function void
+InitializeDocumentAnswerQueue(document_answer_queue *Queue)
+{
+    Queue->ReadIndex = 0;
+    Queue->WriteIndex = 0;
+    Queue->Count = 0;
+
+    Queue->Mutex = Platform.CreateMutex();
+    Queue->HasSpace = Platform.CreateConditionVariable();
+    Queue->HasData = Platform.CreateConditionVariable();
+}
+
+function void
+PushToDocumentAnswerQueue(document_answer_queue *Queue, u32 ID, u64 QueryCount, u32 *Queries)
+{
+    Platform.LockMutex(Queue->Mutex);
+
+    while (Queue->Count == DOCUMENT_ANSWER_BUFFER_SIZE)
+    {
+        Platform.BlockOnConditionVariable(Queue->HasSpace, Queue->Mutex);
+    }
+
+    document_answer *Answer = Queue->Data + Queue->WriteIndex;
+    Answer->ID = ID;
+    Answer->QueryCount = QueryCount;
+    Answer->Queries = Queries;
+
+    Queue->WriteIndex = (((Queue->WriteIndex + 1) < DOCUMENT_ANSWER_BUFFER_SIZE) ? (Queue->WriteIndex + 1) : 0);
+    ++Queue->Count;
+
+    Platform.SignalConditionVariable(Queue->HasData);
+    Platform.UnlockMutex(Queue->Mutex);
+}
+
+function document_answer
+PopFromDocumentAnswerQueue(document_answer_queue *Queue)
+{
+    Platform.LockMutex(Queue->Mutex);
+
+    while (Queue->Count == 0)
+    {
+        Platform.BlockOnConditionVariable(Queue->HasData, Queue->Mutex);
+    }
+
+    document_answer Answer = Queue->Data[Queue->ReadIndex];
+
+    Queue->ReadIndex = (((Queue->ReadIndex + 1) < DOCUMENT_ANSWER_BUFFER_SIZE) ? (Queue->ReadIndex + 1) : 0);
+    --Queue->Count;
+
+    Platform.SignalConditionVariable(Queue->HasSpace);
+    Platform.UnlockMutex(Queue->Mutex);
+
+    return Answer;
+}
+
+function void
+DestroyDocumentAnswerQueue(document_answer_queue *Queue)
+{
+    Platform.DestroyMutex(Queue->Mutex);
+    Platform.DestroyConditionVariable(Queue->HasSpace);
+    Platform.DestroyConditionVariable(Queue->HasData);
+
+    Queue->ReadIndex = 0;
+    Queue->WriteIndex = 0;
+    Queue->Count = 0;
+
+    Queue->Mutex = 0;
+    Queue->HasSpace = 0;
+    Queue->HasData = 0;
+}
+
+
 #define GetHammingTreeIndex(Keyword) ((Keyword)->Length - MIN_KEYWORD_LENGTH)
 
 function void
@@ -297,46 +373,6 @@ CompareQueryIDs(const void *A, const void *B)
 global keyword_tree_match KeywordTreeMatches[KEYWORD_TREE_MATCH_STORAGE_SIZE];
 global u64 KeywordTreeMatchCount = 0;
 
-#define DOCUMENT_ANSWER_STORAGE_SIZE 1024
-
-function void
-InitializeDocumentAnswerStack(document_answer_stack *Stack)
-{
-    Stack->Capacity = DOCUMENT_ANSWER_STORAGE_SIZE;
-    Stack->Count = 0;
-    Stack->Data = (document_answer *)calloc(1, Stack->Capacity * sizeof(document_answer));
-}
-
-function void
-PushToDocumentAnswerStack(document_answer_stack *Stack, u32 DocumentID, u64 QueryCount, u32 *Queries)
-{
-    Assert((Stack->Count + 1) <= Stack->Capacity);
-
-    document_answer *Answer = Stack->Data + Stack->Count++;
-    Answer->ID = DocumentID;
-    Answer->QueryCount = QueryCount;
-    Answer->Queries = Queries;
-}
-
-function document_answer
-PopFromDocumentAnswerStack(document_answer_stack *Stack)
-{
-    Assert(Stack->Count > 0);
-
-    document_answer Answer = Stack->Data[--Stack->Count];
-    return Answer;
-}
-
-function void
-DestroyDocumentAnswerStack(document_answer_stack *Stack)
-{
-    free(Stack->Data);
-
-    Stack->Capacity = 0;
-    Stack->Count = 0;
-    Stack->Data = 0;
-}
-
 function void
 GenerateDocumentAnswers(u32 ID, char *String)
 {
@@ -426,14 +462,14 @@ GenerateDocumentAnswers(u32 ID, char *String)
         qsort(MachedQueries, MachedQueryCount, sizeof(u32), CompareQueryIDs);
     }
 
-    PushToDocumentAnswerStack(&GlobalContext.DocumentAnswers, ID, MachedQueryCount, MachedQueries);
+    PushToDocumentAnswerQueue(&GlobalContext.DocumentAnswers, ID, MachedQueryCount, MachedQueries);
     DestroyQueryTree(&Matches);
 }
 
 function void
 FetchDocumentAnswer(u32 *ID, u32 *QueryCount, u32 **Queries)
 {
-    document_answer Answer = PopFromDocumentAnswerStack(&GlobalContext.DocumentAnswers);
+    document_answer Answer = PopFromDocumentAnswerQueue(&GlobalContext.DocumentAnswers);
 
     *ID = Answer.ID;
     *QueryCount = Answer.QueryCount;
@@ -454,7 +490,7 @@ InitializeGlobalContext(void)
     }
 
     InitializeKeywordTree(&GlobalContext.EditTree, KeywordTreeType_Edit);
-    InitializeDocumentAnswerStack(&GlobalContext.DocumentAnswers);
+    InitializeDocumentAnswerQueue(&GlobalContext.DocumentAnswers);
 
     InitializeQueryTreeNodeStack(&QueryTreeNodeStack);
 }
@@ -464,7 +500,7 @@ DestroyGlobalContext(void)
 {
     DestroyQueryTreeNodeStack(&QueryTreeNodeStack);
 
-    DestroyDocumentAnswerStack(&GlobalContext.DocumentAnswers);
+    DestroyDocumentAnswerQueue(&GlobalContext.DocumentAnswers);
     DestroyKeywordTree(&GlobalContext.EditTree);
 
     for (u64 Index = 0;

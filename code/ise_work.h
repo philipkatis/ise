@@ -1,18 +1,30 @@
 #ifndef ISE_WORK_H
 #define ISE_WORK_H
 
+//
+// NOTE(philip): Document Answer Queue
+//
+
 struct document_answer
 {
     u32 ID;
-    u32 *Queries;
     u64 QueryCount;
+    u32 *Queries;
 };
 
-struct document_answer_stack
+#define DOCUMENT_ANSWER_BUFFER_SIZE 1024
+
+struct document_answer_queue
 {
-    u64 Capacity;
+    document_answer Data[DOCUMENT_ANSWER_BUFFER_SIZE];
+
+    u64 ReadIndex;
+    u64 WriteIndex;
     u64 Count;
-    document_answer *Data;
+
+    platform_mutex Mutex;
+    platform_condition_variable HasSpace;
+    platform_condition_variable HasData;
 };
 
 #define HAMMING_TREE_COUNT (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
@@ -25,7 +37,7 @@ struct context
     keyword_tree HammingTrees[HAMMING_TREE_COUNT];
     keyword_tree EditTree;
 
-    document_answer_stack DocumentAnswers;
+    document_answer_queue DocumentAnswers;
 };
 
 global context GlobalContext = { };
