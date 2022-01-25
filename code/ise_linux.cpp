@@ -22,13 +22,6 @@ LinuxDestroyThread(platform_thread Thread)
 {
 }
 
-function platform_thread_id
-LinuxGetThreadID(void)
-{
-    platform_thread_id ThreadID = gettid();
-    return ThreadID;
-}
-
 //
 // NOTE(philip): Mutex
 //
@@ -150,7 +143,6 @@ InitializePlatform(void)
     Platform.CreateThread = LinuxCreateThread;
     Platform.WaitForThread = LinuxWaitForThread;
     Platform.DestroyThread = LinuxDestroyThread;
-    Platform.GetThreadID = LinuxGetThreadID;
 
     // NOTE(philip): Mutex
     Platform.CreateMutex = LinuxCreateMutex;

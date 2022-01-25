@@ -1,7 +1,6 @@
 #ifndef ISE_LINUX_H
 #define ISE_LINUX_H
 
-#include <unistd.h>
 #include <pthread.h>
 
 //

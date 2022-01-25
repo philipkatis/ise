@@ -13,8 +13,6 @@ typedef platform_handle platform_condition_variable;
 
 typedef void *platform_thread_entry_point(void *Arguments);
 
-typedef u64 platform_thread_id;
-
 //
 // NOTE(philip): Platform Functions
 //
@@ -23,7 +21,6 @@ typedef u64 platform_thread_id;
 typedef platform_thread platform_create_thread(platform_thread_entry_point *EntryPoint, void *Arguments);
 typedef void platform_wait_for_thread(platform_thread Thread);
 typedef void platform_destroy_thread(platform_thread Thread);
-typedef platform_thread_id platform_get_thread_id(void);
 
 // NOTE(philip): Mutex
 typedef platform_mutex platform_create_mutex(void);
@@ -47,7 +44,6 @@ struct platform_api
     platform_create_thread *CreateThread;
     platform_wait_for_thread *WaitForThread;
     platform_destroy_thread *DestroyThread;
-    platform_get_thread_id *GetThreadID;
 
     // NOTE(philip): Mutex
     platform_create_mutex *CreateMutex;
