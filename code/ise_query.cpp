@@ -1,3 +1,43 @@
+#define QUERY_TREE_NODE_STACK_STORAGE_SIZE 1024
+
+function void
+InitializeQueryTreeNodeStack(query_tree_node_stack *Stack)
+{
+    Stack->Capacity = QUERY_TREE_NODE_STACK_STORAGE_SIZE;
+    Stack->Count = 0;
+    Stack->Data = (query_tree_node **)calloc(1, Stack->Capacity * sizeof(query_tree_node *));
+}
+
+function void
+PushIntoQueryTreeNodeStack(query_tree_node_stack *Stack, query_tree_node *Candidate)
+{
+    Assert((Stack->Count + 1) <= Stack->Capacity);
+    Stack->Data[Stack->Count++] = Candidate;
+}
+
+function query_tree_node *
+PopFromQueryTreeNodeStack(query_tree_node_stack *Stack)
+{
+    query_tree_node *Candidate = 0;
+
+    if (Stack->Count)
+    {
+        Candidate = Stack->Data[--Stack->Count];
+    }
+
+    return Candidate;
+}
+
+function void
+DestroyQueryTreeNodeStack(query_tree_node_stack *Stack)
+{
+    free(Stack->Data);
+
+    Stack->Capacity = 0;
+    Stack->Count = 0;
+    Stack->Data = 0;
+}
+
 function void
 InitializeQueryTree(query_tree *Tree)
 {

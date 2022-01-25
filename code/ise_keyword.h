@@ -67,7 +67,7 @@ struct __attribute__ ((__packed__)) keyword_tree_node
 
 typedef u64 keyword_tree_calculate_distance(char *StringA, u64 LengthA, char *StringB, u64 LengthB);
 
-struct keyword_tree_candidate_stack
+struct keyword_tree_node_stack
 {
     u64 Capacity;
     u64 Count;
@@ -86,7 +86,7 @@ struct keyword_tree
 {
     keyword_tree_node *Root;
     keyword_tree_calculate_distance *CalculateDistance;
-    keyword_tree_candidate_stack Candidates;
+    keyword_tree_node_stack Candidates;
 };
 
 #endif

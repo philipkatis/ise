@@ -37,6 +37,13 @@ struct __attribute__ ((__packed__)) query_tree_node
     u16 Height;
 };
 
+struct query_tree_node_stack
+{
+    u64 Capacity;
+    u64 Count;
+    query_tree_node **Data;
+};
+
 struct query_tree
 {
     query_tree_node *Root;

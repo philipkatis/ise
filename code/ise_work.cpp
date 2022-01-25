@@ -240,51 +240,49 @@ CompileAnsweredQueries(query_tree *Tree, u32 *Result)
     }
 }
 
-function void
-LookForMatchingQueries_(query_tree_node *Node, query_tree *PossibleAnswers, u32 Type, keyword *Keyword, u32 Distance)
-{
-    query *Query = &Node->Data;
-
-    if ((GetType(Query) == Type) && (GetDistanceThreshold(Query) >= Distance))
-    {
-        u64 KeywordCount = GetKeywordCount(Query);
-        query *PossibleAnswer = 0;
-
-        for (u64 Index = 0;
-             Index < KeywordCount;
-             ++Index)
-        {
-            if (Query->Keywords[Index] == Keyword)
-            {
-                if (!PossibleAnswer)
-                {
-                    PossibleAnswer = InsertIntoQueryTree(PossibleAnswers, Query->ID, KeywordCount, Type, 0);
-                }
-
-                PossibleAnswer->HasKeywords[Index] = true;
-
-                // NOTE(philip): Don't break here. Duplicate words.
-            }
-        }
-    }
-
-    if (Node->Left)
-    {
-        LookForMatchingQueries_(Node->Left, PossibleAnswers, Type, Keyword, Distance);
-    }
-
-    if (Node->Right)
-    {
-        LookForMatchingQueries_(Node->Right, PossibleAnswers, Type, Keyword, Distance);
-    }
-}
+global query_tree_node_stack QueryTreeNodeStack = { };
 
 function void
 LookForMatchingQueries(query_tree *Queries, query_tree *PossibleAnswers, u32 Type, keyword *Keyword, u32 Distance)
 {
-    if (Queries->Root)
+    for (query_tree_node *Node = Queries->Root;
+         Node;
+         Node = PopFromQueryTreeNodeStack(&QueryTreeNodeStack))
     {
-        LookForMatchingQueries_(Queries->Root, PossibleAnswers, Type, Keyword, Distance);
+        query *Query = &Node->Data;
+
+        if ((GetType(Query) == Type) && (GetDistanceThreshold(Query) >= Distance))
+        {
+            u64 KeywordCount = GetKeywordCount(Query);
+            query *PossibleAnswer = 0;
+
+            for (u64 Index = 0;
+                 Index < KeywordCount;
+                 ++Index)
+            {
+                if (Query->Keywords[Index] == Keyword)
+                {
+                    if (!PossibleAnswer)
+                    {
+                        PossibleAnswer = InsertIntoQueryTree(PossibleAnswers, Query->ID, KeywordCount, Type, 0);
+                    }
+
+                    PossibleAnswer->HasKeywords[Index] = true;
+
+                    // NOTE(philip): Don't break here. Duplicate words.
+                }
+            }
+        }
+
+        if (Node->Left)
+        {
+            PushIntoQueryTreeNodeStack(&QueryTreeNodeStack, Node->Left);
+        }
+
+        if (Node->Right)
+        {
+            PushIntoQueryTreeNodeStack(&QueryTreeNodeStack, Node->Right);
+        }
     }
 }
 
@@ -415,7 +413,6 @@ GenerateDocumentAnswers(u32 ID, char *String)
         }
     }
 
-
     DestroyKeywordTable(&Words);
 
     u64 MachedQueryCount = CountAnsweredQueries(&Matches);
@@ -458,11 +455,15 @@ InitializeGlobalContext(void)
 
     InitializeKeywordTree(&GlobalContext.EditTree, KeywordTreeType_Edit);
     InitializeDocumentAnswerStack(&GlobalContext.DocumentAnswers);
+
+    InitializeQueryTreeNodeStack(&QueryTreeNodeStack);
 }
 
 function void
 DestroyGlobalContext(void)
 {
+    DestroyQueryTreeNodeStack(&QueryTreeNodeStack);
+
     DestroyDocumentAnswerStack(&GlobalContext.DocumentAnswers);
     DestroyKeywordTree(&GlobalContext.EditTree);
 

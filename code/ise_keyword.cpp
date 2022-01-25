@@ -209,25 +209,25 @@ GetValue(keyword_table_iterator *Iterator)
 // NOTE(philip): Keyword BK-Tree
 //
 
-#define KEYWORD_TREE_CANDIDATE_STACK_STORAGE_SIZE 1024
+#define KEYWORD_TREE_NODE_STACK_STORAGE_SIZE 1024
 
 function void
-InitializeKeywordTreeCandidateStack(keyword_tree_candidate_stack *Stack)
+InitializeKeywordTreeNodeStack(keyword_tree_node_stack *Stack)
 {
-    Stack->Capacity = KEYWORD_TREE_CANDIDATE_STACK_STORAGE_SIZE;
+    Stack->Capacity = KEYWORD_TREE_NODE_STACK_STORAGE_SIZE;
     Stack->Count = 0;
     Stack->Data = (keyword_tree_node **)calloc(1, Stack->Capacity * sizeof(keyword_tree_node *));
 }
 
 function void
-PushCandidate(keyword_tree_candidate_stack *Stack, keyword_tree_node *Candidate)
+PushIntoKeywordTreeNodeStack(keyword_tree_node_stack *Stack, keyword_tree_node *Candidate)
 {
     Assert((Stack->Count + 1) <= Stack->Capacity);
     Stack->Data[Stack->Count++] = Candidate;
 }
 
 function keyword_tree_node *
-PopCandidate(keyword_tree_candidate_stack *Stack)
+PopFromKeywordTreeNodeStack(keyword_tree_node_stack *Stack)
 {
     keyword_tree_node *Candidate = 0;
 
@@ -240,7 +240,7 @@ PopCandidate(keyword_tree_candidate_stack *Stack)
 }
 
 function void
-DestroyKeywordTreeCandidateStack(keyword_tree_candidate_stack *Stack)
+DestroyKeywordTreeNodeStack(keyword_tree_node_stack *Stack)
 {
     free(Stack->Data);
 
@@ -267,7 +267,7 @@ InitializeKeywordTree(keyword_tree *Tree, keyword_tree_type Type)
         } break;
     }
 
-    InitializeKeywordTreeCandidateStack(&Tree->Candidates);
+    InitializeKeywordTreeNodeStack(&Tree->Candidates);
 }
 
 function void
@@ -328,7 +328,7 @@ FindMatchesInKeywordTree(keyword_tree *Tree, keyword *Keyword, u64 *MatchCount, 
 
     for (keyword_tree_node *Subtree = Tree->Root;
          Subtree;
-         Subtree = PopCandidate(&Tree->Candidates))
+         Subtree = PopFromKeywordTreeNodeStack(&Tree->Candidates))
     {
         u64 Distance = Tree->CalculateDistance(Subtree->Data->Word, Subtree->Data->Length,
                                                Keyword->Word, Keyword->Length);
@@ -351,7 +351,7 @@ FindMatchesInKeywordTree(keyword_tree *Tree, keyword *Keyword, u64 *MatchCount, 
         {
             if ((Child->DistanceFromParent >= SearchRangeStart) && (Child->DistanceFromParent <= SearchRangeEnd))
             {
-                PushCandidate(&Tree->Candidates, Child);
+                PushIntoKeywordTreeNodeStack(&Tree->Candidates, Child);
             }
         }
     }
@@ -362,7 +362,7 @@ RemoveFromKeywordTree(keyword_tree *Tree, keyword *Keyword)
 {
     for (keyword_tree_node *Subtree = Tree->Root;
          Subtree;
-         Subtree = PopCandidate(&Tree->Candidates))
+         Subtree = PopFromKeywordTreeNodeStack(&Tree->Candidates))
     {
         if (Subtree->Data == Keyword)
         {
@@ -375,7 +375,7 @@ RemoveFromKeywordTree(keyword_tree *Tree, keyword *Keyword)
                  Child;
                  Child = Child->NextSibling)
             {
-                PushCandidate(&Tree->Candidates, Child);
+                PushIntoKeywordTreeNodeStack(&Tree->Candidates, Child);
             }
         }
     }
@@ -411,5 +411,5 @@ DestroyKeywordTree(keyword_tree *Tree)
     Tree->Root = 0;
     Tree->CalculateDistance = 0;
 
-    DestroyKeywordTreeCandidateStack(&Tree->Candidates);
+    DestroyKeywordTreeNodeStack(&Tree->Candidates);
 }
