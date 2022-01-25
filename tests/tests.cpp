@@ -262,6 +262,9 @@ global u64 KeywordTreeMatchCount = 0;
 function void
 KeywordTree(void)
 {
+    keyword_tree_node_stack NodeStack;
+    InitializeKeywordTreeNodeStack(&NodeStack);
+
     // NOTE(philip): Hamming Tree.
     {
         char *Words[10] =
@@ -302,8 +305,8 @@ KeywordTree(void)
             InitializeKeywordTable(&SearchValues, 1);
 
             keyword *Keyword = InsertIntoKeywordTable(&SearchValues, "helt");
-            FindMatchesInKeywordTree(&Tree, Keyword, &KeywordTreeMatchCount, KEYWORD_TREE_MATCH_STORAGE_SIZE,
-                                     KeywordTreeMatches);
+            FindMatchesInKeywordTree(&Tree, &NodeStack, Keyword, &KeywordTreeMatchCount,
+                                     KEYWORD_TREE_MATCH_STORAGE_SIZE, KeywordTreeMatches);
 
             DestroyKeywordTable(&SearchValues);
 
@@ -334,8 +337,8 @@ KeywordTree(void)
             InitializeKeywordTable(&SearchValues, 1);
 
             keyword *Keyword = InsertIntoKeywordTable(&SearchValues, "opsy");
-            FindMatchesInKeywordTree(&Tree, Keyword, &KeywordTreeMatchCount, KEYWORD_TREE_MATCH_STORAGE_SIZE,
-                                     KeywordTreeMatches);
+            FindMatchesInKeywordTree(&Tree, &NodeStack, Keyword, &KeywordTreeMatchCount,
+                                     KEYWORD_TREE_MATCH_STORAGE_SIZE, KeywordTreeMatches);
 
             DestroyKeywordTable(&SearchValues);
         }
@@ -386,8 +389,8 @@ KeywordTree(void)
             InitializeKeywordTable(&SearchValues, 1);
 
             keyword *Keyword = InsertIntoKeywordTable(&SearchValues, "helt");
-            FindMatchesInKeywordTree(&Tree, Keyword, &KeywordTreeMatchCount, KEYWORD_TREE_MATCH_STORAGE_SIZE,
-                                     KeywordTreeMatches);
+            FindMatchesInKeywordTree(&Tree, &NodeStack, Keyword, &KeywordTreeMatchCount,
+                                     KEYWORD_TREE_MATCH_STORAGE_SIZE, KeywordTreeMatches);
 
             DestroyKeywordTable(&SearchValues);
 
@@ -423,8 +426,8 @@ KeywordTree(void)
             InitializeKeywordTable(&SearchValues, 1);
 
             keyword *Keyword = InsertIntoKeywordTable(&SearchValues, "ops");
-            FindMatchesInKeywordTree(&Tree, Keyword, &KeywordTreeMatchCount, KEYWORD_TREE_MATCH_STORAGE_SIZE,
-                                     KeywordTreeMatches);
+            FindMatchesInKeywordTree(&Tree, &NodeStack, Keyword, &KeywordTreeMatchCount,
+                                     KEYWORD_TREE_MATCH_STORAGE_SIZE, KeywordTreeMatches);
 
             DestroyKeywordTable(&SearchValues);
 
@@ -453,8 +456,9 @@ KeywordTree(void)
         DestroyKeywordTree(&Tree);
         DestroyKeywordTable(&Keywords);
     }
-}
 
+    DestroyKeywordTreeNodeStack(&NodeStack);
+}
 
 function u32 *
 ValidateNodePreOrder(query_tree_node *Node, u32 *Solutions)
