@@ -1,17 +1,15 @@
-IncludeDirectories=-Icode -Ithird_party/acutest/include
-
-CompileFlags=-g -Wall -Wno-address-of-packed-member -Wno-write-strings -DISE_DEBUG=1 $(IncludeDirectories)
+CommonCompilerFlags=-Wall -Wno-address-of-packed-member -Wno-write-strings -pthread -DISE_LINUX=1 -DISE_DEBUG=1 -g
 
 build_all: build_ise build_tests build_example
 
 build_ise: $(wildcard code/*.cpp) $(wildcard code/*.h) | setup
-	g++ $(CompileFlags) -shared code/ise.cpp -o build/libcore.so
+	g++ $(CommonCompilerFlags) -shared code/ise.cpp -o build/libcore.so
 
 build_tests: $(wildcard tests/*.cpp) $(wildcard tests/*.h) | setup
-	g++ $(CompileFlags) tests/tests.cpp -Lbuild -lcore -o build/tests -Wl,-rpath=build
+	g++ $(CommonCompilerFlags) -Icode -Ithird_party/acutest/include tests/tests.cpp -Lbuild -lcore -o build/tests -Wl,-rpath=build
 
 build_example: $(wildcard example/*.cpp) $(wildcard example/*.h) | setup
-	g++ $(CompileFlags) example/example.cpp -Lbuild -lcore -o build/example -Wl,-rpath=build
+	g++ $(CommonCompilerFlags) -Icode example/example.cpp -Lbuild -lcore -o build/example -Wl,-rpath=build
 
 run: build/example
 	./build/example
