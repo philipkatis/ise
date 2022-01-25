@@ -1,42 +1,76 @@
-#define QUERY_TREE_NODE_STACK_STORAGE_SIZE 1024
+//
+// NOTE(phlip): Query
+//
 
 function void
-InitializeQueryTreeNodeStack(query_tree_node_stack *Stack)
+UpdateQueryLocation(query *Source, query *Destination)
 {
-    Stack->Capacity = QUERY_TREE_NODE_STACK_STORAGE_SIZE;
-    Stack->Count = 0;
-    Stack->Data = (query_tree_node **)calloc(1, Stack->Capacity * sizeof(query_tree_node *));
-}
+    u64 KeywordCount = GetKeywordCount(Source);
 
-function void
-PushIntoQueryTreeNodeStack(query_tree_node_stack *Stack, query_tree_node *Candidate)
-{
-    Assert((Stack->Count + 1) <= Stack->Capacity);
-    Stack->Data[Stack->Count++] = Candidate;
-}
-
-function query_tree_node *
-PopFromQueryTreeNodeStack(query_tree_node_stack *Stack)
-{
-    query_tree_node *Candidate = 0;
-
-    if (Stack->Count)
+    for (u32 Index = 0;
+         Index < KeywordCount;
+         ++Index)
     {
-        Candidate = Stack->Data[--Stack->Count];
-    }
+        keyword *Keyword = Source->Keywords[Index];
 
-    return Candidate;
+        for (query_list_node *Node = Keyword->Queries.Head;
+             Node;
+             Node = Node->Next)
+        {
+            if (Node->Data == Source)
+            {
+                Node->Data = Destination;
+                break;
+            }
+        }
+    }
+}
+
+//
+// NOTE(philip): Query List
+//
+
+function void
+InsertIntoQueryList(query_list *List, query *Data)
+{
+    query_list_node *Node = (query_list_node *)calloc(1, sizeof(query_list_node));
+    Node->Data = Data;
+
+    Node->Next = List->Head;
+    List->Head = Node;
 }
 
 function void
-DestroyQueryTreeNodeStack(query_tree_node_stack *Stack)
+RemoveFromQueryList(query_list *List, query *Query)
 {
-    free(Stack->Data);
+    query_list_node *Previous = 0;
 
-    Stack->Capacity = 0;
-    Stack->Count = 0;
-    Stack->Data = 0;
+    for (query_list_node *Node = List->Head;
+         Node;
+         Node = Node->Next)
+    {
+        if (Node->Data == Query)
+        {
+            if (Previous)
+            {
+                Previous->Next = Node->Next;
+            }
+            else
+            {
+                List->Head = Node->Next;
+            }
+
+            free(Node);
+            break;
+        }
+
+        Previous = Node;
+    }
 }
+
+//
+// NOTE(philip): Query AVL-Tree
+//
 
 function void
 InitializeQueryTree(query_tree *Tree)
@@ -237,6 +271,8 @@ RemoveFromSubtree(query_tree_node *Subtree, u32 ID)
                 }
 
                 Subtree->Data = MovingChild->Data;
+                UpdateQueryLocation(&MovingChild->Data, &Subtree->Data);
+
                 Subtree->Right = RemoveFromSubtree(Subtree->Right, MovingChild->Data.ID);
             }
             else
@@ -246,6 +282,8 @@ RemoveFromSubtree(query_tree_node *Subtree, u32 ID)
                 if (Child)
                 {
                     *Subtree = *Child;
+                    UpdateQueryLocation(&Child->Data, &Subtree->Data);
+
                     free(Child);
                 }
                 else

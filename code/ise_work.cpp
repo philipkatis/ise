@@ -111,6 +111,7 @@ RegisterQuery(u32 ID, query_type Type, u64 DistanceThreshold, char *String)
                 ++Keyword->InstanceCount;
 
                 Query->Keywords[Index] = Keyword;
+                InsertIntoQueryList(&Keyword->Queries, Query);
             }
         } break;
 
@@ -132,6 +133,7 @@ RegisterQuery(u32 ID, query_type Type, u64 DistanceThreshold, char *String)
                 ++Keyword->HammingInstanceCount;
 
                 Query->Keywords[Index] = Keyword;
+                InsertIntoQueryList(&Keyword->Queries, Query);
             }
         } break;
 
@@ -152,6 +154,7 @@ RegisterQuery(u32 ID, query_type Type, u64 DistanceThreshold, char *String)
                 ++Keyword->EditInstanceCount;
 
                 Query->Keywords[Index] = Keyword;
+                InsertIntoQueryList(&Keyword->Queries, Query);
             }
         } break;
     }
@@ -175,6 +178,8 @@ UnregisterQuery(u32 ID)
             {
                 keyword *Keyword = Query->Keywords[Index];
 
+                RemoveFromQueryList(&Keyword->Queries, Query);
+
                 --Keyword->InstanceCount;
 
                 if (!Keyword->InstanceCount)
@@ -191,6 +196,8 @@ UnregisterQuery(u32 ID)
                  ++Index)
             {
                 keyword *Keyword = Query->Keywords[Index];
+
+                RemoveFromQueryList(&Keyword->Queries, Query);
 
                 --Keyword->HammingInstanceCount;
                 --Keyword->InstanceCount;
@@ -215,6 +222,8 @@ UnregisterQuery(u32 ID)
                  ++Index)
             {
                 keyword *Keyword = Query->Keywords[Index];
+
+                RemoveFromQueryList(&Keyword->Queries, Query);
 
                 --Keyword->EditInstanceCount;
                 --Keyword->InstanceCount;
@@ -318,21 +327,19 @@ CompileAnsweredQueries(query_tree *Tree, u32 *Result)
     }
 }
 
-global query_tree_node_stack QueryTreeNodeStack = { };
-
 function void
-LookForMatchingQueries(query_tree *Queries, query_tree *PossibleAnswers, u32 Type, keyword *Keyword, u32 Distance)
+LookForMatchingQueries(query_tree *PossibleAnswers, keyword *Keyword, u32 Type, u32 Distance)
 {
-    for (query_tree_node *Node = Queries->Root;
+    for (query_list_node *Node = Keyword->Queries.Head;
          Node;
-         Node = PopFromQueryTreeNodeStack(&QueryTreeNodeStack))
+         Node = Node->Next)
     {
-        query *Query = &Node->Data;
+        query *Query = Node->Data;
 
         if ((GetType(Query) == Type) && (GetDistanceThreshold(Query) >= Distance))
         {
             u64 KeywordCount = GetKeywordCount(Query);
-            query *PossibleAnswer = 0;
+            query *PossibleAnswer = InsertIntoQueryTree(PossibleAnswers, Query->ID, KeywordCount, Type, 0);
 
             for (u64 Index = 0;
                  Index < KeywordCount;
@@ -340,26 +347,10 @@ LookForMatchingQueries(query_tree *Queries, query_tree *PossibleAnswers, u32 Typ
             {
                 if (Query->Keywords[Index] == Keyword)
                 {
-                    if (!PossibleAnswer)
-                    {
-                        PossibleAnswer = InsertIntoQueryTree(PossibleAnswers, Query->ID, KeywordCount, Type, 0);
-                    }
-
-                    PossibleAnswer->HasKeywords[Index] = true;
-
                     // NOTE(philip): Don't break here. Duplicate words.
+                    PossibleAnswer->HasKeywords[Index] = true;
                 }
             }
-        }
-
-        if (Node->Left)
-        {
-            PushIntoQueryTreeNodeStack(&QueryTreeNodeStack, Node->Left);
-        }
-
-        if (Node->Right)
-        {
-            PushIntoQueryTreeNodeStack(&QueryTreeNodeStack, Node->Right);
         }
     }
 }
@@ -419,7 +410,7 @@ GenerateDocumentAnswers(u32 ID, char *String)
         keyword *Keyword = FindKeywordInTable(&GlobalContext.Keywords, Word);
         if (Keyword)
         {
-            LookForMatchingQueries(&GlobalContext.Queries, &Matches, 0, Keyword, 0);
+            LookForMatchingQueries(&Matches, Keyword, 0, 0);
         }
 
         keyword_tree *Tree = GlobalContext.HammingTrees + GetHammingTreeIndex(Word);
@@ -429,7 +420,7 @@ GenerateDocumentAnswers(u32 ID, char *String)
              Match;
              Match = PopFromKeywordTreeMatchStack(&KeywordTreeMatchStack))
         {
-            LookForMatchingQueries(&GlobalContext.Queries, &Matches, 1, Match->Keyword, Match->Distance);
+            LookForMatchingQueries(&Matches, Match->Keyword, 1, Match->Distance);
         }
 
         FindMatchesInKeywordTree(&GlobalContext.EditTree, &KeywordTreeNodeStack, &KeywordTreeMatchStack, Word);
@@ -438,7 +429,7 @@ GenerateDocumentAnswers(u32 ID, char *String)
              Match;
              Match = PopFromKeywordTreeMatchStack(&KeywordTreeMatchStack))
         {
-            LookForMatchingQueries(&GlobalContext.Queries, &Matches, 2, Match->Keyword, Match->Distance);
+            LookForMatchingQueries(&Matches, Match->Keyword, 2, Match->Distance);
         }
     }
 
@@ -487,15 +478,11 @@ InitializeGlobalContext(void)
 
     InitializeKeywordTreeNodeStack(&KeywordTreeNodeStack);
     InitializeKeywordTreeMatchStack(&KeywordTreeMatchStack);
-
-    InitializeQueryTreeNodeStack(&QueryTreeNodeStack);
 }
 
 function void
 DestroyGlobalContext(void)
 {
-    DestroyQueryTreeNodeStack(&QueryTreeNodeStack);
-
     DestroyKeywordTreeMatchStack(&KeywordTreeMatchStack);
     DestroyKeywordTreeNodeStack(&KeywordTreeNodeStack);
 

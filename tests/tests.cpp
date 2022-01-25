@@ -1,12 +1,12 @@
 #include "acutest.h"
 
 #include "ise_base.h"
-#include "ise_keyword.h"
 #include "ise_query.h"
+#include "ise_keyword.h"
 
 #include "ise_base.cpp"
-#include "ise_keyword.cpp"
 #include "ise_query.cpp"
+#include "ise_keyword.cpp"
 
 function void
 Test_IsExactMatch(void)

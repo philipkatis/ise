@@ -1,6 +1,10 @@
 #ifndef ISE_QUERY_H
 #define ISE_QUERY_H
 
+//
+// NOTE(philip): Query
+//
+
 typedef u32 query_type;
 enum
 {
@@ -28,6 +32,25 @@ struct __attribute__ ((__packed__)) query
 #define GetType(Query) (((Query)->PackedInfo >> 3) & 0x3)
 #define GetDistanceThreshold(Query) ((Query)->PackedInfo & 0x7)
 
+//
+// NOTE(philip): Query List
+//
+
+struct query_list_node
+{
+    query *Data;
+    query_list_node *Next;
+};
+
+struct query_list
+{
+    query_list_node *Head;
+};
+
+//
+// NOTE(philip): Query AVL-Tree
+//
+
 struct __attribute__ ((__packed__)) query_tree_node
 {
     query_tree_node *Left;
@@ -35,13 +58,6 @@ struct __attribute__ ((__packed__)) query_tree_node
 
     query Data;
     u16 Height;
-};
-
-struct query_tree_node_stack
-{
-    u64 Capacity;
-    u64 Count;
-    query_tree_node **Data;
 };
 
 struct query_tree

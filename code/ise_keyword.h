@@ -14,10 +14,13 @@ struct __attribute__ ((__packed__)) keyword
     u32 Length;
     u32 Hash;
 
-    u32 InstanceCount;
-    u32 HammingInstanceCount;
-    u32 EditInstanceCount;
-    u32 Padding;
+    query_list Queries;
+
+    u16 InstanceCount;
+    u16 HammingInstanceCount;
+    u16 EditInstanceCount;
+
+    u16 Padding;
 };
 
 struct __attribute__ ((__packed__)) keyword_table_node
