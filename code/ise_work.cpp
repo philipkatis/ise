@@ -551,8 +551,6 @@ WorkerThreadEntryPoint(void *Arguments)
                 u32 ID = *(u32 *)Work.Data;
                 char *String = (char *)(Work.Data + sizeof(u32));
 
-                printf("%d\n", ID);
-
                 GenerateDocumentAnswers(&NodeStack, &MatchStack, ID, String);
             } break;
 

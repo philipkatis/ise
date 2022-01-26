@@ -134,6 +134,8 @@ DestroyKeywordTable(keyword_table *Table)
         while (Node)
         {
             keyword_table_node *Next = Node->Next;
+
+            DestroyQueryList(&Node->Data.Queries);
             free(Node);
             Node = Next;
         }

@@ -68,6 +68,18 @@ RemoveFromQueryList(query_list *List, query *Query)
     }
 }
 
+function void
+DestroyQueryList(query_list *List)
+{
+    query_list_node *Node = List->Head;
+    while (Node)
+    {
+        query_list_node *Next = Node->Next;
+        free(Node);
+        Node = Next;
+    }
+}
+
 //
 // NOTE(philip): Query AVL-Tree
 //
