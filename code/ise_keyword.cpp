@@ -39,8 +39,8 @@ ResizeIfNeeded(keyword_table *Table)
             while (Node)
             {
                 keyword_table_node *Next = Node->Next;
-
                 u64 NewNodeSlotIndex = Node->Data.Hash % NewSlotCount;
+
                 Node->Next = NewSlots[NewNodeSlotIndex];
                 NewSlots[NewNodeSlotIndex] = Node;
 
@@ -220,13 +220,18 @@ InitializeKeywordTreeNodeStack(keyword_tree_node_stack *Stack)
 {
     Stack->Capacity = NODE_STACK_STORAGE_SIZE;
     Stack->Count = 0;
-    Stack->Data = (keyword_tree_node **)calloc(1, Stack->Capacity * sizeof(keyword_tree_node *));
+    Stack->Data = (keyword_tree_node **)malloc(Stack->Capacity * sizeof(keyword_tree_node *));
 }
 
 function void
 PushIntoKeywordTreeNodeStack(keyword_tree_node_stack *Stack, keyword_tree_node *Candidate)
 {
-    Assert((Stack->Count + 1) <= Stack->Capacity);
+    if ((Stack->Count + 1) > Stack->Capacity)
+    {
+        Stack->Capacity *= 2;
+        Stack->Data = (keyword_tree_node **)realloc(Stack->Data, Stack->Capacity * sizeof(keyword_tree_node *));
+    }
+
     Stack->Data[Stack->Count++] = Candidate;
 }
 
@@ -270,13 +275,17 @@ InitializeKeywordTreeMatchStack(keyword_tree_match_stack *Stack)
 {
     Stack->Capacity = MATCH_STACK_STORAGE_SIZE;
     Stack->Count = 0;
-    Stack->Data = (keyword_tree_match *)calloc(1, Stack->Capacity * sizeof(keyword_tree_match));
+    Stack->Data = (keyword_tree_match *)malloc(Stack->Capacity * sizeof(keyword_tree_match));
 }
 
 function void
 PushIntoKeywordTreeMatchStack(keyword_tree_match_stack *Stack, keyword *Keyword, u64 Distance)
 {
-    Assert((Stack->Count + 1) <= Stack->Capacity);
+    if ((Stack->Count + 1) > Stack->Capacity)
+    {
+        Stack->Capacity *= 2;
+        Stack->Data = (keyword_tree_match *)realloc(Stack->Data, Stack->Capacity * sizeof(keyword_tree_match));
+    }
 
     keyword_tree_match *Match = Stack->Data + Stack->Count++;
     Match->Keyword = Keyword;
