@@ -2,16 +2,32 @@
 #define ISE_BASE_H
 
 //
+// NOTE(philip): Platform and Configuration Setup
+//
+
+#ifndef ISE_LINUX
+    #define ISE_LINUX 0
+#endif
+
+#ifndef ISE_DEBUG
+    #define ISE_DEBUG 0
+#endif
+
+//
 // NOTE(philip): Base Keywords
 //
 
-#define function               static
-#define global                 static
-#define local_persistant       static
+#define global   static
+#define function static
 
 //
 // NOTE(philip): Base Types
 //
+
+typedef unsigned char       u8;
+typedef unsigned short      u16;
+typedef unsigned int        u32;
+typedef unsigned long long  u64;
 
 typedef unsigned char          u8;
 typedef unsigned short         u16;
@@ -26,19 +42,6 @@ typedef signed long long       s64;
 typedef float                  f32;
 typedef double                 f64;
 
-static_assert(sizeof(u8)  == 1);
-static_assert(sizeof(u16) == 2);
-static_assert(sizeof(u32) == 4);
-static_assert(sizeof(u64) == 8);
-
-static_assert(sizeof(s8)  == 1);
-static_assert(sizeof(s16) == 2);
-static_assert(sizeof(s32) == 4);
-static_assert(sizeof(s64) == 8);
-
-static_assert(sizeof(f32) == 4);
-static_assert(sizeof(f64) == 8);
-
 typedef s8                     b8;
 typedef s32                    b32;
 typedef s64                    b64;
@@ -47,46 +50,28 @@ typedef s64                    b64;
 // NOTE(philip): Base Macros
 //
 
-#define Assert(Condition) if (!(Condition)) { *(int *)0 = 0; }
+#if ISE_DEBUG
+    #define Assert(Condition) \
+        if (!(Condition)) \
+        { \
+            printf("\n"); \
+            printf("*** Assertion Failed ***\n"); \
+            printf("\n"); \
+            printf("  File: %s\n", __FILE__); \
+            printf("  Line: %d\n", __LINE__); \
+            printf("  Condition: %s\n", #Condition); \
+            printf("\n"); \
+            printf("************************\n"); \
+            printf("\n"); \
+            *(int *)0 = 0; \
+        }
+#else
+    #define Assert(Condition)
+#endif
 
 #define Min(A, B) (((A) < (B)) ? (A) : (B))
 #define Max(A, B) (((A) > (B)) ? (A) : (B))
 
-#define ArrayCount(Array) (sizeof((Array)) / sizeof(*(Array)))
-
-#define KB(X) (X * 1024)
-#define MB(X) (X * 1024 * 1024)
-#define GB(X) (X * 1024 * 1024 * 1024)
-
-//
-// NOTE(philip): Memory
-//
-
-struct memory_block
-{
-    memory_block *Previous;
-
-    u8 *Base;
-    u64 Size;
-    u64 Used;
-};
-
-struct memory_arena
-{
-    u64 BlockSize;
-    memory_block *CurrentBlock;
-};
-
-//
-// NOTE(philip): Other
-//
-
-typedef u32 match_type;
-enum
-{
-    MatchType_Exact   = 0,
-    MatchType_Hamming = 1,
-    MatchType_Edit    = 2
-};
+#define ArrayCount(Array) (sizeof((Array)) / sizeof((Array)[0]))
 
 #endif

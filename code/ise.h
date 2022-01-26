@@ -2,19 +2,10 @@
 #define ISE_H
 
 //
-// NOTE(philip): Constants
+// NOTE(philip): ISE Interface
 //
 
-#define MIN_KEYWORD_LENGTH              4
-#define MAX_KEYWORD_LENGTH              31
-#define MAX_KEYWORD_COUNT_PER_QUERY     5
-#define MAX_DISTANCE_THRESHOLD          3
-#define MAX_DOCUMENT_LENGTH             (1 << 22)
-#define HAMMING_TREE_COUNT              (MAX_KEYWORD_LENGTH - MIN_KEYWORD_LENGTH)
-
-//
-// NOTE(philip): ISE Library Interface
-//
+#define MAX_DOCUMENT_LENGTH (1 << 22)
 
 typedef unsigned int QueryID;
 typedef unsigned int DocID;
@@ -33,13 +24,13 @@ enum ErrorCode
     EC_FAIL
 };
 
-ErrorCode InitializeIndex();
-ErrorCode DestroyIndex();
+ErrorCode InitializeIndex(void);
+ErrorCode DestroyIndex(void);
 
-ErrorCode StartQuery(QueryID ID, const char *String, MatchType Type, unsigned int Distance);
+ErrorCode StartQuery(QueryID ID, const char *String, MatchType Type, unsigned int DistanceThreshold);
 ErrorCode EndQuery(QueryID ID);
 
 ErrorCode MatchDocument(DocID ID, const char *String);
-ErrorCode GetNextAvailRes(DocID *DocumentID, unsigned int *QueryCount, QueryID **QueryIDs);
+ErrorCode GetNextAvailRes(DocID *DocumentID, unsigned int *QueryCount, QueryID **Queries);
 
 #endif
