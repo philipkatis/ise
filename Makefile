@@ -1,4 +1,4 @@
-CommonCompilerFlags=-Wall -Wno-address-of-packed-member -Wno-write-strings -pthread -DISE_LINUX=1 -DISE_DEBUG=0 -O2 -g
+CommonCompilerFlags=-Wall -Wno-address-of-packed-member -Wno-write-strings -fPIC -pthread -DISE_LINUX=1 -DISE_DEBUG=0 -O2 -g
 
 build_all: build_ise build_tests build_example
 
