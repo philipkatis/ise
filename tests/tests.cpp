@@ -1,6 +1,3 @@
-// TODO(philip): Clean up the includes.
-#include <sys/mman.h>
-
 #include "acutest.h"
 
 #include "ise_base.h"
@@ -10,8 +7,6 @@
 #include "ise_base.cpp"
 #include "ise_query.cpp"
 #include "ise_keyword.cpp"
-
-// TODO(philip): Test the answers.
 
 function void
 Test_IsExactMatch(void)
