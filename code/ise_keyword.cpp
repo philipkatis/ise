@@ -439,7 +439,10 @@ RemoveFromKeywordTree(keyword_tree *Tree, keyword_tree_node_stack *Candidates, k
          Subtree;
          Subtree = PopFromKeywordTreeNodeStack(Candidates))
     {
-        if (Subtree->Data == Keyword)
+        u64 Distance = Tree->CalculateDistance(Subtree->Data->Word, Subtree->Data->Length,
+                                               Keyword->Word, Keyword->Length);
+
+        if (!Distance)
         {
             Subtree->IsActive = false;
             break;
@@ -450,7 +453,11 @@ RemoveFromKeywordTree(keyword_tree *Tree, keyword_tree_node_stack *Candidates, k
                  Child;
                  Child = Child->NextSibling)
             {
-                PushIntoKeywordTreeNodeStack(Candidates, Child);
+                if (Child->DistanceFromParent == Distance)
+                {
+                    PushIntoKeywordTreeNodeStack(Candidates, Child);
+                    break;
+                }
             }
         }
     }
