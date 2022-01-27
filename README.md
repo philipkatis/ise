@@ -5,6 +5,9 @@
 This repository has the code for the Inverted Search Engine project. It is comprised of the
 core codebase as well as a few unit tests and an example application.
 
+[Here](/documentation/ise_final_report.pdf) you can find the final report on the project, containing the performance characteristics
+and different optimizations.
+
 ***
 
 ## Instructions
